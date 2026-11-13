@@ -148,7 +148,7 @@ As escolhas são destinadas à futura personalização do pedido; a aprovação 
 - O consumidor não poderá criar créditos de pontos para si mesmo.
 
 **Ainda pendente:**
-- Definir como identificar o consumidor e associar a compra à conta correta.
+- **Identificação aprovada:** utilizar o número de telefone cadastrado pelo consumidor para localizar sua conta e associar a compra. O fluxo de verificação/validação do telefone ainda será definido.
 - Definir o tratamento de cancelamentos, devoluções, estornos e correções após o crédito.
 - Definir limites e controles antifraude para confirmações e ajustes manuais.
 - Definir os detalhes da referência única/idempotência para impedir crédito duplicado.
