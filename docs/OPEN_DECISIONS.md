@@ -18,7 +18,7 @@ Este arquivo impede que decisões não tomadas sejam inventadas durante a implem
 | D-12 | Fidelidade | **PARCIALMENTE APROVADA** — programa individual por restaurante; parâmetros de acúmulo e regras operacionais ainda pendentes | Fidelidade |
 | D-13 | Fidelidade | **PARCIALMENTE APROVADA** — confirmação manual após compra concluída por garçom ou gerente; estornos e controles restantes pendentes | Fidelidade |
 | D-14 | Escopo da fidelidade | **APROVADA** — MVP terá somente fidelidade individual por restaurante; Boraê Club compartilhado fica para uma fase futura | Concluído |
-| D-15 | Club | Termos, fraude, estorno, expiração e saída de parceiro | Boraê Club |
+| D-15 | Fidelidade | **PARCIALMENTE APROVADA** — regras de validade, estorno, antifraude e encerramento definidas; ordem de consumo dos pontos pendente | Fidelidade |
 | D-16 | Descoberta | Taxonomia, geolocalização, raio e ordenação | Descoberta |
 | D-17 | Consumidor | Conta única, dados de perfil e login social | Fidelidade/Club |
 | D-18 | Monetização | Planos, limites, cobrança, trial e cancelamento | SaaS |
@@ -126,10 +126,9 @@ A experiência inicial de fidelidade será vinculada ao restaurante onde a compr
 
 **Ainda pendente nesta decisão:**
 - Momento exato de concessão dos pontos e mecanismo confiável de confirmação da compra.
-- Tratamento de cancelamentos, devoluções e estornos.
-- Expiração dos pontos e ordem de consumo.
 - Configuração detalhada dos parâmetros do programa local (incluindo valor fixo por compra ou taxa por real).
-- Papéis autorizados e limites para registro/ajuste manual.
+- Ordem de consumo dos pontos quando houver lotes com datas de expiração diferentes.
+- Papéis autorizados e limites para ajustes manuais.
 
 **Motivação:** permitir que cada restaurante mantenha relacionamento próprio com seus clientes e, ao mesmo tempo, criar um incentivo de circulação entre estabelecimentos da rede Boraê, com uma regra de acúmulo Club simples e consistente.
 
@@ -148,8 +147,6 @@ A experiência inicial de fidelidade será vinculada ao restaurante onde a compr
 
 **Ainda pendente:**
 - **Identificação aprovada:** utilizar o número de telefone cadastrado pelo consumidor para localizar sua conta e associar a compra. O fluxo de verificação/validação do telefone ainda será definido.
-- Definir o tratamento de cancelamentos, devoluções, estornos e correções após o crédito.
-- Definir limites e controles antifraude para confirmações e ajustes manuais.
 - Definir os detalhes da referência única/idempotência para impedir crédito duplicado.
 - Definir o momento exato em que o crédito ficará disponível após a confirmação.
 
@@ -170,7 +167,28 @@ A experiência inicial de fidelidade será vinculada ao restaurante onde a compr
 
 **Motivação:** começar com um modelo mais simples, no qual quem define e oferece a recompensa também assume seu custo. Isso reduz a complexidade operacional, financeira, contábil e contratual do lançamento, sem impedir uma evolução futura para um programa compartilhado.
 
-**Impactos:** priorizar o módulo de fidelidade individual; tratar o Boraê Club apenas como possibilidade futura, sem desenvolver carteira compartilhada, resgate cruzado, compensação ou liquidação no MVP. As regras locais de acúmulo, recompensas, expiração, estorno e controles continuam sujeitas às decisões pendentes de D-12, D-13 e D-15. Esta decisão não significa que a fidelidade já esteja implementada.
+**Impactos:** priorizar o módulo de fidelidade individual; tratar o Boraê Club apenas como possibilidade futura, sem desenvolver carteira compartilhada, resgate cruzado, compensação ou liquidação no MVP. As regras locais de acúmulo e a ordem de consumo dos pontos permanecem sujeitas às pendências registradas em D-12 e D-15. Esta decisão não significa que a fidelidade já esteja implementada.
+
+### D-15 — Regras operacionais da fidelidade individual
+
+**Status:** Parcialmente aprovada pelo responsável pelo produto em 13/11/2026. As políticas abaixo foram decididas; a ordem de consumo dos pontos permanece pendente.
+
+**Decisões aprovadas:**
+
+1. **Validade dos pontos:** cada restaurante define o prazo de validade do próprio programa. A validade deve ser acompanhada por crédito/lote de pontos, permitindo identificar quando cada saldo expira. Mudanças nas regras valem somente para pontos acumulados a partir da entrada em vigor da nova regra; o saldo já acumulado continua sujeito às regras anteriores.
+2. **Cancelamento, devolução e estorno:** quando uma compra for cancelada, devolvida ou corrigida por funcionário autorizado, o sistema registra o estorno correspondente automaticamente, sem apagar o lançamento original. A operação deve manter funcionário responsável, motivo e histórico antes/depois, com proteção contra duplicidade.
+3. **Pontos já resgatados:** se parte dos pontos originados pela compra já tiver sido utilizada, o sistema não cria saldo negativo. Registra uma pendência para análise do restaurante.
+4. **Antifraude:** não haverá confirmação adicional exigida do consumidor a cada compra. O sistema mantém auditoria e detecta padrões suspeitos, gerando alertas para análise do gerente; não haverá bloqueio automático no MVP.
+5. **Encerramento voluntário do programa:** os clientes devem ser comunicados e terão prazo para resgatar os pontos existentes. O Boraê define prazo mínimo obrigatório de **60 dias**; o restaurante pode oferecer prazo maior, nunca menor.
+6. **Fechamento definitivo planejado:** o restaurante deve comunicar os clientes e respeitar o período de transição, permitindo o resgate das recompensas durante o prazo aplicável.
+7. **Fechamento repentino/imprevisível:** se não houver possibilidade prática de cumprir o período de transição, a prioridade é comunicar os clientes assim que possível. O Boraê não assume automaticamente o custo das recompensas nem permite resgate em outros restaurantes.
+8. **Mudança das regras do programa:** o restaurante pode alterar regras para pontos acumulados após a entrada em vigor da mudança. Pontos já acumulados permanecem sob as regras anteriores, e recompensas já conquistadas não podem ser retiradas por alteração posterior.
+
+**Ainda pendente:** definir a ordem de consumo de pontos quando houver créditos de diferentes datas/validade (por exemplo, consumir primeiro os pontos que expiram antes).
+
+**Motivação:** dar autonomia operacional aos restaurantes, preservando transparência, histórico e previsibilidade para consumidores que já acumularam pontos.
+
+**Impactos:** o modelo deverá versionar as regras do programa, registrar a validade por crédito/lote, manter ledger imutável e suportar reversões e pendências de estorno sem saldo negativo. Encerramento do programa e fechamento do restaurante devem gerar comunicação aos consumidores. Estas decisões não significam que as funcionalidades estejam implementadas.
 
 ## Como resolver uma decisão
 
@@ -187,6 +205,7 @@ Para cada ID:
 - **D-02 — Múltiplos cardápios:** aprovada e registrada nesta documentação.
 - **D-03 — Publicação por cardápio:** aprovada e registrada nesta documentação.
 - **D-14 — Escopo da fidelidade no MVP:** aprovada; somente programas individuais por restaurante. Boraê Club compartilhado fica para uma fase futura.
+- **D-15 — Regras operacionais da fidelidade:** parcialmente aprovada; validade, estornos, antifraude e encerramento definidos. Ordem de consumo dos pontos permanece pendente.
 ### D-06 — Preços e valores monetários
 
 **Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
@@ -301,7 +320,10 @@ O limite numérico de convites simultâneos por restaurante não foi definido ne
 
 **Impactos:** atualizar módulo de IA, PRD, API e painel/analytics. Esta decisão não implica que as métricas já estejam implementadas.
 
-- **D-12 — Fidelidade/Club:** parcialmente aprovada; estrutura dos dois programas e fórmulas de acúmulo definidas. Gatilho de crédito, expiração, estornos e comprovação da compra permanecem pendentes.
-- **D-13 a D-20:** permanecem pendentes; não presumir aprovação nem iniciar implementação de regras de negócio correspondentes sem alinhamento.
+- **D-12 — Fidelidade individual:** parcialmente aprovada; modelos de acúmulo definidos, parâmetros exatos e ordem de consumo dos pontos pendentes.
+- **D-13 — Confirmação da compra:** parcialmente aprovada; confirmação manual por funcionário e identificação por telefone definidas. Verificação do telefone, idempotência detalhada e momento de disponibilidade do crédito permanecem pendentes.
+- **D-14 — Escopo da fidelidade:** aprovada; somente programas individuais por restaurante no MVP.
+- **D-15 — Regras operacionais da fidelidade:** parcialmente aprovada; políticas registradas acima, com ordem de consumo dos pontos pendente.
+- **D-16 a D-20:** permanecem pendentes; não presumir aprovação nem iniciar implementação de regras de negócio correspondentes sem alinhamento.
 
 Ausência de decisão significa que o desenvolvimento do recurso correspondente deve aguardar alinhamento.
