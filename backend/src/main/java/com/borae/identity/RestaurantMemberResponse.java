@@ -4,6 +4,7 @@ import java.util.UUID;
 
 public record RestaurantMemberResponse(
         UUID membershipId,
+        UUID restaurantId,
         UUID userId,
         String fullName,
         String email,
@@ -13,6 +14,7 @@ public record RestaurantMemberResponse(
         UserAccount user = membership.getUser();
         return new RestaurantMemberResponse(
                 membership.getId(),
+                membership.getRestaurant().getId(),
                 user.getId(),
                 user.getFullName(),
                 user.getEmail(),
