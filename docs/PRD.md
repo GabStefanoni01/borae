@@ -164,7 +164,7 @@ Os papéis são atribuídos por vínculo com cada restaurante. O mesmo usuário 
 
 **Decisão de produto aprovada (D-06, 13/11/2026):** preços em BRL, armazenados em centavos como inteiros; cálculos monetários no backend, sem `float` ou `double`.
 
-**Decisão de produto aprovada (D-09, 13/11/2026):** imagens JPG/JPEG, PNG e WebP e modelos GLB/glTF serão armazenados em object storage externo; PostgreSQL mantém apenas metadados e referências. Cloudinary será avaliado como candidato. Limites numéricos e provedor definitivo permanecem pendentes.
+**Decisão de produto aprovada (D-09, 13/11/2026):** imagens JPG/JPEG, PNG e WebP e modelos GLB/glTF serão armazenados em object storage externo; PostgreSQL mantém apenas metadados e referências. Cloudflare R2 será utilizado como object storage no MVP, dentro das cotas gratuitas disponíveis. Limites numéricos de upload permanecem pendentes e o consumo deverá ser monitorado.
 
 ### RF-05 — Cardápio público
 - Carregar dados publicados do restaurante.
@@ -184,7 +184,7 @@ Os papéis são atribuídos por vínculo com cada restaurante. O mesmo usuário 
 - Validar tipo, tamanho e integridade do arquivo.
 - Armazenar modelos e imagens em object storage externo; manter somente metadados e referências no PostgreSQL.
 - Suportar CDN, otimização de imagens e carregamento sob demanda.
-- Avaliar Cloudinary como candidato para mídia, sem fixar o provedor definitivo antes de validar custos e suporte aos formatos 3D.
+- Avaliar Cloudflare R2 como provedor definido para mídia, sem fixar o provedor definitivo antes de validar custos e suporte aos formatos 3D.
 - Oferecer visualização 3D e AR somente quando suportado.
 - Manter fallback visual.
 
