@@ -3,15 +3,18 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService, AuthUser, RestaurantAccess, RestaurantMember } from './auth.service';
 import { forkJoin } from 'rxjs';
+import { BrandLogoComponent } from './shared/brand-logo.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, BrandLogoComponent],
   template: `
     <main class="dashboard">
       <header class="topbar">
-        <a class="brand" href="/" aria-label="Boraê início">bor<span>aê</span></a>
+        <a class="brand" href="/" aria-label="Boraê início">
+          <bo-brand-logo tone="dark" [size]="32" />
+        </a>
         <button class="logout" type="button" (click)="logout()">Sair</button>
       </header>
 
