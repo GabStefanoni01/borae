@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { AuthService, AuthUser } from './auth.service';
+import { AuthService, AuthUser, RestaurantAccess } from './auth.service';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-dashboard',
@@ -24,6 +25,19 @@ import { AuthService, AuthUser } from './auth.service';
             <span class="avatar">{{ user.fullName.charAt(0).toUpperCase() }}</span>
             <span><strong>{{ user.fullName }}</strong><small>{{ user.email }}</small></span>
           </div>
+          <section class="access">
+            <h2>Seus acessos</h2>
+            @if (restaurants.length === 0) {
+              <p class="empty">Você ainda não possui vínculo com nenhum restaurante. Quando receber um convite, ele aparecerá aqui.</p>
+            } @else {
+              @for (access of restaurants; track access.membershipId) {
+                <article class="restaurant">
+                  <div><strong>{{ access.restaurantName }}</strong><small>{{ access.restaurantSlug }}</small></div>
+                  <span class="role">{{ roleLabel(access.role) }}</span>
+                </article>
+              }
+            }
+          </section>
           <p class="status">Sessão autenticada e perfil carregado pela API.</p>
         } @else {
           <h1>Não foi possível carregar seu perfil.</h1>
@@ -48,6 +62,11 @@ import { AuthService, AuthUser } from './auth.service';
     .avatar{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:#d6f36a;color:#1b1d16;font-weight:800}
     .profile strong,.profile small{display:block}.profile small{color:#929588;margin-top:5px}
     .status{color:#a6c84e;font-size:12px;margin-top:20px}
+    .access{margin-top:30px;max-width:560px}.access h2{font-size:18px;letter-spacing:0;margin:0 0 12px}
+    .empty{color:#929588;font-size:14px;line-height:1.6;background:#20221c;border:1px solid #35382e;border-radius:12px;padding:16px}
+    .restaurant{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;margin-top:8px;background:#20221c;border:1px solid #35382e;border-radius:12px}
+    .restaurant strong,.restaurant small{display:block}.restaurant small{color:#929588;margin-top:4px}
+    .role{font-size:11px;font-weight:700;color:#d6f36a;background:#343a25;border-radius:20px;padding:6px 9px}
     footer{padding:24px 0;border-top:1px solid #34362f;color:#777a70;font-size:12px}
     @media(max-width:600px){.dashboard{width:calc(100% - 32px)}h1{letter-spacing:-2px}}
   `]
@@ -57,18 +76,31 @@ export class DashboardPage implements OnInit {
   private readonly router = inject(Router);
 
   user: AuthUser | null = null;
+  restaurants: RestaurantAccess[] = [];
   loading = true;
 
   ngOnInit(): void {
-    this.auth.getCurrentUser().subscribe({
-      next: user => {
-        this.user = user;
+    forkJoin({
+      user: this.auth.getCurrentUser(),
+      restaurants: this.auth.getMyRestaurants()
+    }).subscribe({
+      next: result => {
+        this.user = result.user;
+        this.restaurants = result.restaurants;
         this.loading = false;
       },
       error: () => {
         this.loading = false;
       }
     });
+  }
+
+  roleLabel(role: RestaurantAccess['role']): string {
+    return {
+      OWNER: 'Proprietário',
+      MANAGER: 'Gerente',
+      STAFF: 'Equipe'
+    }[role];
   }
 
   logout(): void {

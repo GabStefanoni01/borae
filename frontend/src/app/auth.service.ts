@@ -13,6 +13,13 @@ export interface AuthResponse {
   expiresIn: number;
   user: AuthUser;
 }
+export interface RestaurantAccess {
+  membershipId: string;
+  restaurantId: string;
+  restaurantName: string;
+  restaurantSlug: string;
+  role: 'OWNER' | 'MANAGER' | 'STAFF';
+}
 export interface LoginPayload { email: string; password: string; }
 export interface RegisterPayload extends LoginPayload { fullName: string; }
 
@@ -52,6 +59,10 @@ export class AuthService {
         if (this.session) this.saveSession({ ...this.session, user });
       })
     );
+  }
+
+  getMyRestaurants(): Observable<RestaurantAccess[]> {
+    return this.http.get<RestaurantAccess[]>(`${API_URL}/api/v1/users/me/restaurants`);
   }
 
   logout(): void {
