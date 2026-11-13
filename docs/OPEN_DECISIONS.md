@@ -15,15 +15,15 @@ Este arquivo impede que decisões não tomadas sejam inventadas durante a implem
 | D-09 | Mídia | **APROVADA** — object storage, Cloudflare R2 como provedor definido, formatos e CDN | Concluído |
 | D-10 | IA | **APROVADA** — Gemini API no plano gratuito inicialmente; integração desacoplada e controles de consumo | Concluído |
 | D-11 | IA | **APROVADA** — não persistir conversas; armazenar somente métricas agregadas por restaurante | Concluído |
-| D-12 | Fidelidade | **PARCIALMENTE APROVADA** — programa individual por restaurante; parâmetros de acúmulo e regras operacionais ainda pendentes | Fidelidade |
-| D-13 | Fidelidade | **PARCIALMENTE APROVADA** — confirmação manual e identificação por telefone definidas; verificação do telefone, idempotência e disponibilidade do crédito pendentes | Fidelidade |
+| D-12 | Fidelidade | **APROVADA** — modelos, cálculo, base de pontuação e estornos definidos | Concluído |
+| D-13 | Consumidor/fidelidade | **APROVADA** — conta global, verificação, consentimento, confirmação e idempotência definidos | Concluído |
 | D-14 | Escopo da fidelidade | **APROVADA** — MVP terá somente fidelidade individual por restaurante; Boraê Club compartilhado fica para uma fase futura | Concluído |
-| D-15 | Fidelidade | **PARCIALMENTE APROVADA** — regras de validade, estorno, antifraude e encerramento definidas; ordem de consumo dos pontos pendente | Fidelidade |
-| D-16 | Descoberta | Taxonomia, geolocalização, raio e ordenação | Descoberta |
-| D-17 | Consumidor | Conta única, dados de perfil e login social | Fidelidade/Club |
-| D-18 | Monetização | Planos, limites, cobrança, trial e cancelamento | SaaS |
-| D-19 | Administração | Papéis globais, auditoria e suporte | Admin |
-| D-20 | Pedidos | Se haverá pedido online, integração POS e responsabilidade de pagamento | Pedidos |
+| D-15 | Fidelidade | **APROVADA** — validade, FEFO, expiração, avisos e estornos definidos | Concluído |
+| D-16 | Descoberta | **APROVADA** — localização, busca, filtros, avaliações, favoritos e páginas de marca/unidade definidos | Concluído |
+| D-17 | Consumidor | **APROVADA** — cadastro, autenticação, segurança, perfil e notificações definidos | Concluído |
+| D-18 | Monetização | **APROVADA** — assinatura fixa, plano único, teste, cobrança, cancelamento e indicação definidos | Concluído* |
+| D-19 | Administração | **APROVADA** — papéis globais, permissões, auditoria e manutenção definidos | Concluído |
+| D-20 | Pedidos/integrações | **APROVADA** — sem pedidos/POS no lançamento; API autenticada, webhooks e canais definidos | Concluído |
 
 ## Decisões aprovadas
 
@@ -112,91 +112,161 @@ As escolhas são destinadas à futura personalização do pedido; a aprovação 
 
 **Impactos:** modelar adicionais com seus preços e prever observações/instruções de pedido para comunicação ao garçom; atualizar PRD, modelo de domínio, API, fluxo de telas e módulo de catálogo. Esta decisão não implica que a funcionalidade já esteja implementada.
 
-### D-12 — Estrutura dos programas e regra de acúmulo
+### D-12 — Estrutura e cálculo do programa de fidelidade
 
-**Status:** Parcialmente aprovada pelo responsável pelo produto em 13/11/2026.
-
-**Decisões aprovadas:**
-- A fidelidade individual será um programa próprio de cada restaurante, com saldo, regras, recompensas e ledger independentes.
-- Cada restaurante poderá escolher entre dois modelos de acúmulo: pontos proporcionais ao valor gasto ou quantidade fixa de pontos por compra; parâmetros exatos ainda serão definidos.
-- O consumidor poderá ter contas de fidelidade em vários restaurantes, sem transferência ou conversão de pontos entre eles.
-- O Boraê Club compartilhado permanece como conceito de evolução futura, mas não fará parte do MVP. Não haverá carteira compartilhada, pontos aceitos entre restaurantes nem obrigação de financiamento/compensação pelo Boraê nesta etapa.
-
-A experiência inicial de fidelidade será vinculada ao restaurante onde a compra ocorreu. A identificação do consumidor e o fluxo de adesão permanecem sujeitos às decisões de conta e verificação já pendentes.
-
-**Ainda pendente nesta decisão:**
-- Momento exato de concessão dos pontos e mecanismo confiável de confirmação da compra.
-- Configuração detalhada dos parâmetros do programa local (incluindo valor fixo por compra ou taxa por real).
-- Ordem de consumo dos pontos quando houver lotes com datas de expiração diferentes.
-- Papéis autorizados e limites para ajustes manuais.
-
-**Motivação:** permitir que cada restaurante mantenha relacionamento próprio com seus clientes e, ao mesmo tempo, criar um incentivo de circulação entre estabelecimentos da rede Boraê, com uma regra de acúmulo Club simples e consistente.
-
-**Impactos:** manter entidades, saldos e ledgers separados; atualizar PRD, modelo de domínio, módulo de fidelidade e contratos de API. A aprovação não significa que pedidos, pagamentos, integração POS, crédito automático ou liquidação financeira estejam implementados ou definidos.
-
-### D-13 — Confirmação da compra e autorização para conceder pontos
-
-**Status:** Parcialmente aprovada pelo responsável pelo produto em 13/11/2026.
+**Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
 
 **Decisões aprovadas:**
-- Os pontos só poderão ser concedidos depois que a compra for efetivamente concluída e confirmada; abrir o cardápio, fazer um pedido ou iniciar o atendimento não gera pontos.
-- No fluxo inicial, a confirmação será manual por meio de uma ação no sistema durante o fechamento da conta, sem depender de integração com POS ou processamento de pagamento pelo Boraê.
-- Garçons e gerentes poderão confirmar a compra e registrar o valor efetivamente pago.
-- A confirmação deverá identificar o funcionário responsável e o restaurante, mantendo registro auditável.
-- O consumidor não poderá criar créditos de pontos para si mesmo.
+- Cada restaurante mantém um programa de fidelidade individual, com carteira, saldo, regras, recompensas e histórico independentes.
+- O restaurante escolhe entre acúmulo proporcional ao valor gasto ou quantidade fixa de pontos por compra.
+- No modelo proporcional, o restaurante pode configurar uma taxa por valor ou faixas de pontuação. Mesmo quando configurado por faixa, o cálculo é proporcional ao valor efetivamente pago dentro da faixa aplicável.
+- O cálculo proporcional admite frações; o resultado final é arredondado para baixo (ex.: 37,9 resulta em 37 pontos).
+- A base de cálculo é o valor efetivamente pago após descontos e cupons. Taxas de entrega, serviço e outros encargos não geram pontos.
+- Os parâmetros do programa devem ser versionados. Alterações só afetam compras/pontos gerados após a vigência da nova regra.
+- O consumidor pode ter uma conta global e carteiras independentes em vários restaurantes. Não há transferência ou conversão de pontos entre restaurantes.
 
-**Ainda pendente:**
-- **Identificação aprovada:** utilizar o número de telefone cadastrado pelo consumidor para localizar sua conta e associar a compra. O fluxo de verificação/validação do telefone ainda será definido.
-- Definir os detalhes da referência única/idempotência para impedir crédito duplicado.
-- Definir o momento exato em que o crédito ficará disponível após a confirmação.
+**Estorno e compensação:**
+- Cancelamento/estorno remove os pontos ainda disponíveis originados pela compra.
+- Se parte dos pontos já tiver sido utilizada, o sistema registra o saldo pendente de compensação, sem criar saldo negativo.
+- Os próximos acúmulos compensam primeiro essa pendência; somente o excedente é adicionado ao saldo disponível.
+- O estorno pode ser automático quando uma integração confiável enviar o evento ou manual por funcionário autorizado. A operação deve ser idempotente e auditável.
 
-**Motivação:** vincular a pontuação a uma compra concluída, evitando créditos por simples pedidos ou consultas ao cardápio, sem exigir integração externa no primeiro fluxo.
+**Observação:** o valor mínimo de compra do modelo de pontos fixos já foi definido anteriormente pelo responsável pelo produto; não alterar nem inventar esse valor nesta consolidação. Se a especificação numérica não estiver disponível no repositório, recuperá-la antes de codificar a validação.
 
-**Impactos:** prever confirmação manual autorizada e auditável no fluxo de fechamento. Esta decisão não aprova pedidos online, pagamentos pelo Boraê nem integração POS.
+### D-13 — Consumidor, confirmação da compra e prevenção de duplicidade
+
+**Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
+
+**Conta e identificação:**
+- Existe uma conta global por consumidor, identificada pelo número de telefone verificado por SMS.
+- A mesma conta pode possuir carteiras de fidelidade independentes em vários restaurantes.
+- O cadastro exige nome, telefone verificado, e-mail e senha.
+- O acesso usa telefone + senha. SMS é obrigatório na verificação inicial do telefone e na recuperação/troca de número, não em todo login.
+- A adesão à fidelidade exige consentimento explícito. Autorização para ofertas e promoções é separada e opcional.
+- Para trocar o telefone, validar o novo número por SMS; preservar conta, carteiras e histórico, sem exigir validação do número antigo.
+- Recuperação de senha por SMS ou link de e-mail, à escolha do consumidor; os mecanismos devem ter validade limitada, uso único e limites contra abuso.
+- Apenas uma sessão/dispositivo conectado por vez; novo login encerra a sessão anterior.
+- Após cinco tentativas consecutivas de senha incorreta, bloquear temporariamente o acesso por 15 minutos.
+- Contas não expiram por inatividade.
+- O consumidor pode solicitar exclusão; dados pessoais devem ser anonimizados quando aplicável, preservando o que for necessário por obrigação legal e auditoria.
+- Notificações de segurança abrangem novos logins, alterações de senha, telefone e e-mail e atividades suspeitas.
+
+**Confirmação e crédito:**
+- Pontos só ficam disponíveis após confirmação efetiva do pagamento da compra.
+- Quando houver integração confiável disponível, a confirmação pode chegar automaticamente; no fluxo sem integração, funcionário autorizado confirma manualmente.
+- Garçons e gerentes autorizados podem confirmar a compra no fechamento e registrar o valor efetivamente pago.
+- O consumidor não pode gerar pontos para si próprio.
+- A confirmação registra restaurante, funcionário responsável e referência única da compra.
+
+**Idempotência:** a referência/identificador único da compra é a proteção principal contra crédito duplicado. Análise complementar de restaurante, consumidor, valor, horário e demais atributos da compra pode identificar possíveis duplicidades ou inconsistências.
 
 ### D-14 — Escopo da fidelidade no MVP
 
 **Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
 
-**Decisão:**
-- O MVP terá exclusivamente programas de fidelidade individuais, administrados por cada restaurante.
-- Cada restaurante será responsável por definir suas próprias recompensas e por arcar com o custo dos benefícios que oferecer dentro do seu programa.
-- Os pontos acumulados em um restaurante só poderão ser utilizados no programa daquele mesmo restaurante; não haverá transferência, conversão ou resgate em outro estabelecimento.
-- O Boraê Club compartilhado entre restaurantes parceiros fica fora do MVP e poderá ser reavaliado em uma fase futura, depois de validar a adesão dos restaurantes e definir um modelo financeiro sustentável.
-- Nesta etapa, o Boraê não financiará recompensas, não manterá reserva para resgates entre parceiros e não assumirá obrigações de compensação ou liquidação entre restaurantes.
+O MVP terá exclusivamente programas de fidelidade individuais, administrados e financiados por cada restaurante. Pontos, carteiras e recompensas não circulam entre estabelecimentos. O Boraê Club compartilhado permanece como visão de longo prazo, fora do MVP; qualquer retomada exigirá nova decisão sobre financiamento, compensação, liquidação, responsabilidades e regras legais/operacionais.
 
-**Motivação:** começar com um modelo mais simples, no qual quem define e oferece a recompensa também assume seu custo. Isso reduz a complexidade operacional, financeira, contábil e contratual do lançamento, sem impedir uma evolução futura para um programa compartilhado.
-
-**Impactos:** priorizar o módulo de fidelidade individual; tratar o Boraê Club apenas como possibilidade futura, sem desenvolver carteira compartilhada, resgate cruzado, compensação ou liquidação no MVP. As regras locais de acúmulo e a ordem de consumo dos pontos permanecem sujeitas às pendências registradas em D-12 e D-15. Esta decisão não significa que a fidelidade já esteja implementada.
-
-### D-15 — Regras operacionais da fidelidade individual
-
-**Status:** Parcialmente aprovada pelo responsável pelo produto em 13/11/2026. As políticas abaixo foram decididas; a ordem de consumo dos pontos permanece pendente.
-
-**Decisões aprovadas:**
-
-1. **Validade dos pontos:** cada restaurante define o prazo de validade do próprio programa. A validade deve ser acompanhada por crédito/lote de pontos, permitindo identificar quando cada saldo expira. Mudanças nas regras valem somente para pontos acumulados a partir da entrada em vigor da nova regra; o saldo já acumulado continua sujeito às regras anteriores.
-2. **Cancelamento, devolução e estorno:** quando uma compra for cancelada, devolvida ou corrigida por funcionário autorizado, o sistema registra o estorno correspondente automaticamente, sem apagar o lançamento original. A operação deve manter funcionário responsável, motivo e histórico antes/depois, com proteção contra duplicidade.
-3. **Pontos já resgatados:** se parte dos pontos originados pela compra já tiver sido utilizada, o sistema não cria saldo negativo. Registra uma pendência para análise do restaurante.
-4. **Antifraude:** não haverá confirmação adicional exigida do consumidor a cada compra. O sistema mantém auditoria e detecta padrões suspeitos, gerando alertas para análise do gerente; não haverá bloqueio automático no MVP.
-5. **Encerramento voluntário do programa:** os clientes devem ser comunicados e terão prazo para resgatar os pontos existentes. O Boraê define prazo mínimo obrigatório de **60 dias**; o restaurante pode oferecer prazo maior, nunca menor.
-6. **Fechamento definitivo planejado:** o restaurante deve comunicar os clientes e respeitar o período de transição, permitindo o resgate das recompensas durante o prazo aplicável.
-7. **Fechamento repentino/imprevisível:** se não houver possibilidade prática de cumprir o período de transição, a prioridade é comunicar os clientes assim que possível. O Boraê não assume automaticamente o custo das recompensas nem permite resgate em outros restaurantes.
-8. **Mudança das regras do programa (D-15.8):** aprovada. O restaurante pode alterar as regras, mas a nova versão só se aplica aos pontos acumulados a partir de sua data/hora de vigência. Pontos já acumulados permanecem vinculados à versão e aos parâmetros anteriores; recompensas já conquistadas não podem ser retiradas por alteração posterior. A mudança deve preservar histórico auditável, sem reescrever lançamentos anteriores.
-
-**D-15.8 — Alteração das regras do programa**
+### D-15 — Validade, estornos, expiração e encerramento da fidelidade
 
 **Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
 
-**Decisão:** o restaurante pode alterar as regras do programa. A nova versão passa a valer somente para pontos acumulados a partir da data/hora de sua entrada em vigor. Pontos já acumulados continuam vinculados à versão e aos parâmetros sob os quais foram creditados. Recompensas já conquistadas não podem ser retiradas por uma mudança posterior. Toda alteração deve manter histórico auditável e não pode reescrever lançamentos anteriores.
+- Cada restaurante define a validade dos pontos de seu próprio programa.
+- Cada crédito/lote mantém sua data de expiração e a versão da regra que o originou.
+- O consumo segue FEFO (*first expired, first out*): utilizar primeiro os pontos que vencem antes. Em caso de mesma data de vencimento, consumir primeiro o crédito mais antigo.
+- A expiração é automática: retirar o saldo disponível e registrar evento no histórico ligado ao crédito original, com quantidade e data.
+- Durante os 14 dias anteriores ao vencimento, o consumidor recebe pelo menos uma notificação por dia sobre os pontos próximos de expirar.
+- As notificações usam push e central interna do app. Cada aviso diário agrupa os lotes próximos do vencimento, preservando restaurante, quantidade e data de vencimento de cada lote.
+- O horário de envio deve considerar o comportamento do consumidor e seu fuso, evitando períodos de descanso; usar horário padrão seguro quando não houver dados suficientes.
+- Notificações transacionais de expiração não podem ser desativadas por preferências de marketing. Promoções podem ser desativadas separadamente.
+- Se o push estiver desativado no aparelho, manter os avisos na central interna; não enviar SMS como canal alternativo.
+- Alterações de regras só afetam pontos acumulados após sua data/hora de vigência. Pontos anteriores mantêm a versão e as condições originais; recompensas já conquistadas não podem ser retiradas.
+- Estornos preservam o lançamento original e criam lançamentos compensatórios. Pontos já utilizados geram pendência de compensação, sem saldo negativo; os próximos acúmulos compensam a pendência primeiro.
+- Ao encerrar voluntariamente o programa, comunicar os consumidores e garantir pelo menos 60 dias para resgate. O restaurante pode oferecer prazo maior.
+- Em fechamento repentino/imprevisível, comunicar os consumidores assim que possível. O Boraê não assume automaticamente o custo das recompensas nem permite resgate em outro restaurante.
 
-**Impactos:** versionar as regras e registrar em cada crédito a versão, os parâmetros aplicáveis e a validade correspondente. A decisão não altera retroativamente o saldo ou as recompensas existentes.
+### D-16 — Descoberta de restaurantes
 
-**Ainda pendente em D-15:** definir a ordem de consumo de pontos quando houver créditos de diferentes datas/validade (por exemplo, consumir primeiro os pontos que expiram antes).
+**Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
 
-**Motivação:** dar autonomia operacional aos restaurantes, preservando transparência, histórico e previsibilidade para consumidores que já acumularam pontos.
+- Usar a localização atual como referência padrão, permitindo pesquisar ou selecionar manualmente outra região.
+- Ordenar por relevância, considerando distância, avaliações, popularidade e completude/qualidade das informações. Personalização por histórico fica para evolução futura.
+- Oferecer filtros por categoria, distância, faixa de preço, avaliação, horário de funcionamento, benefícios de fidelidade e modalidade de atendimento (entrega/retirada).
+- A página do restaurante apresenta fotos, descrição, endereço/mapa, horários, cardápios e preços, avaliações, fidelidade e modalidades de atendimento.
+- Modelos 3D dos pratos são opcionais e aparecem somente quando disponíveis.
+- Somente consumidores com compra confirmada podem avaliar. A avaliação inclui nota geral de 1 a 5, comentário opcional e critérios de atendimento, comida e ambiente.
+- O restaurante pode responder publicamente, mas não pode editar nem apagar avaliações dos consumidores. A moderação de denúncias é responsabilidade do Boraê.
+- Favoritos e listas personalizadas são suportados. Compartilhamento ocorre por links; não haverá mensagens internas, rede social própria nem listas colaborativas.
+- Restaurantes fechados aparecem abaixo dos abertos, com indicação de fechado e próxima abertura quando conhecida.
+- Cadastros incompletos podem aparecer com os dados disponíveis; o sistema não deve inventar informações.
+- Redes com várias unidades terão uma página principal da marca e páginas individuais por unidade. A marca terá nota geral baseada nas unidades; cada unidade terá suas próprias avaliações e nota.
 
-**Impactos:** o modelo deverá versionar as regras do programa, registrar a validade por crédito/lote, manter ledger imutável e suportar reversões e pendências de estorno sem saldo negativo. Encerramento do programa e fechamento do restaurante devem gerar comunicação aos consumidores. Estas decisões não significam que as funcionalidades estejam implementadas.
+### D-17 — Conta e perfil do consumidor
+
+**Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
+
+- Login por telefone + senha; SMS para verificação inicial e recuperação/troca de telefone, não em todo acesso.
+- Cadastro obrigatório: nome, telefone verificado, e-mail e senha.
+- Não haverá foto de perfil; usar identidade visual padrão.
+- Nome e e-mail podem ser editados diretamente. Telefone e senha exigem validação de segurança; novo telefone deve ser verificado por SMS.
+- Exclusão mediante solicitação, com anonimização de dados pessoais quando aplicável e retenção do que for exigido por lei/auditoria.
+- Recuperação de senha por SMS ou link de e-mail, à escolha do consumidor, com validade limitada, uso único e proteção contra abuso.
+- Apenas um dispositivo/sessão ativa por vez; novo login encerra a sessão anterior.
+- Cinco tentativas consecutivas incorretas geram bloqueio temporário por 15 minutos.
+- Contas não expiram por inatividade.
+- Alertas de segurança para novos logins, alterações de senha, telefone e e-mail e atividades suspeitas.
+
+### D-18 — Monetização e cobrança dos restaurantes
+
+**Status:** Aprovada pelo responsável pelo produto em 13/11/2026. Valores numéricos de preço e percentuais de desconto ainda não foram definidos.
+
+- Modelo SaaS por assinatura fixa; não há comissão por compra/transação.
+- Haverá um único plano, com as mesmas funcionalidades e o mesmo preço-base para todos os restaurantes.
+- Novos restaurantes têm 30 dias de teste gratuito.
+- Ao final do teste, o restaurante precisa cadastrar uma forma de pagamento e confirmar a assinatura para continuar; não iniciar cobrança sem essa confirmação.
+- Períodos disponíveis: mensal, trimestral e anual, com descontos progressivos para compromissos mais longos.
+- Cancelamento permitido a qualquer momento, sem multa; o acesso continua até o fim do período já pago.
+- Falha de cobrança gera novas tentativas e notificações, com 7 dias de tolerância para regularização. Após esse prazo, suspender o acesso se o pagamento continuar pendente.
+- Após suspensão por inadimplência, manter dados do restaurante e de seus clientes por 90 dias; depois, poderão ser excluídos, respeitadas obrigações legais de retenção.
+- Não há taxa de implantação ou configuração inicial.
+- O preço-base é único e definido pelo Boraê, igual para todos. Reajustes podem atingir todos os restaurantes, mas só entram em vigor na próxima renovação do período contratado e exigem aviso prévio de pelo menos 30 dias.
+- Troca entre modalidades mensal, trimestral e anual é permitida; a nova modalidade entra em vigor somente na próxima renovação.
+- Programa de indicação: restaurante que indicar outro estabelecimento que efetivamente assine recebe créditos para abater futuras mensalidades.
+- Créditos de indicação podem quitar uma mensalidade integralmente, mas não podem ser sacados nem transferidos para outro restaurante. Expiram em 12 meses.
+- Após cancelamento, créditos ficam indisponíveis e só poderão voltar a ser utilizados se o restaurante reativar a assinatura, respeitada a validade.
+- Não haverá multa ou juros por atraso.
+- Formas de pagamento aprovadas: cartão de crédito e Pix.
+- Emitir nota fiscal automaticamente a cada cobrança.
+
+### D-19 — Administração global da plataforma
+
+**Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
+
+- A administração global terá um administrador principal e uma equipe de suporte com permissões limitadas. Não confundir papéis globais com OWNER/MANAGER/STAFF de cada restaurante.
+- O administrador principal pode criar outros administradores; somente o administrador principal original pode excluir outros administradores.
+- Suporte acessa apenas dados técnicos; não acessa dados pessoais de consumidores, histórico de compras nem dados financeiros dos restaurantes.
+- Suporte pode suspender restaurantes temporariamente, mas não reativá-los nem aplicar suspensão permanente.
+- Todas as ações administrativas devem gerar registros de auditoria.
+- O painel global apresenta indicadores de restaurantes, consumidores, compras e receita. Dados financeiros não ficam disponíveis à equipe de suporte.
+- O administrador pode bloquear consumidores temporária ou permanentemente.
+- Não haverá painel próprio de denúncias/moderação neste escopo; a responsabilidade de moderação do Boraê definida em D-16 permanece.
+- Administrador não edita informações dos restaurantes, mas pode excluí-los da plataforma. Exclusão exige confirmação e justificativa obrigatórias.
+- Manutenções programadas devem ser comunicadas previamente aos usuários.
+- Administradores e equipe técnica autorizada podem ativar o modo de manutenção.
+
+### D-20 — Pedidos, integrações e canais de acesso
+
+**Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
+
+- Não haverá pedidos online no lançamento. O primeiro escopo público contempla descoberta, páginas de restaurantes, cardápios e fidelidade.
+- Não haverá integração com sistemas de gestão/PDV/ERP no lançamento; as operações iniciais serão próprias e os registros poderão ser manuais.
+- Haverá API pública para integrações futuras, mas ela será protegida por chaves de API e permissões. “Pública” significa documentada e disponível para integrações autorizadas, não anônima ou sem autenticação.
+- A API terá rate limiting e documentação pública Swagger/OpenAPI.
+- Haverá webhooks para eventos do Boraê, com tentativas automáticas de reenvio em caso de falha.
+- Haverá ambiente Sandbox para testar integrações sem afetar dados reais.
+- Restaurantes usarão painel web responsivo; não haverá aplicativo nativo para restaurantes no lançamento.
+- Consumidores usarão web responsiva; não haverá aplicativos nativos Android/iOS no lançamento.
+- Notificações por e-mail serão suportadas.
+- Haverá chat de suporte dentro da plataforma, inicialmente com IA e possibilidade de encaminhamento para atendimento humano.
 
 ## Como resolver uma decisão
 
