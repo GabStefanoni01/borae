@@ -140,3 +140,21 @@ Painel global com indicadores de restaurantes, consumidores, compras e receita. 
 
 ### Pedidos e integrações
 Não haverá pedidos online nem integração PDV/ERP no lançamento. A API externa será pública para integrações autorizadas, protegida por chaves e permissões, rate limiting e documentação Swagger/OpenAPI. Webhooks terão reenvio automático e haverá Sandbox. Restaurantes e consumidores usarão web responsiva, sem aplicativos nativos no lançamento. Notificações por e-mail e chat de suporte com IA e encaminhamento humano serão oferecidos.
+
+
+## Decisões comerciais e operacionais aprovadas — 13/11/2026
+
+- Plano único SaaS: R$ 49,90/mês; trimestral R$ 134,73 (10% de desconto); anual R$ 479,04 (20% de desconto).
+- Pagamentos/assinaturas: Asaas. NFS-e pelo Asaas somente após validação fiscal da empresa e do município.
+- E-mails transacionais: Resend.
+- Armazenamento: Cloudflare R2; logos até 5 MB; fotos e arquivos de mídia permitidos até 10 MB; 100 imagens por restaurante; JPEG/PNG/WebP e otimização automática.
+- Equipe: sem limite fixo de funcionários; convites sujeitos a proteção contra abuso.
+- IA: somente Gemini Flash-Lite nesta fase; 20 interações por consumidor/dia e 100 por restaurante/dia, mais limite de tokens por interação a parametrizar.
+- Webhooks/eventos: reprocessamento interno em até sete tentativas progressivas, com idempotência, auditoria e reprocessamento manual.
+- Avaliações denunciadas: triagem por IA e decisão final humana.
+- Privacidade: retenção por categoria, finalidade e obrigação legal, em conformidade com a LGPD.
+- Administração: aplicação global separada, com endpoints administrativos protegidos.
+- Monitoramento: Sentry inicialmente gratuito; Grafana Cloud opcional.
+- Integrações: API Keys individuais, escopos, rate limits, auditoria e revogação.
+
+A especificação detalhada, incluindo ressalvas de implementação e validação fiscal, está em [DECISIONS_COMMERCIAL_AND_OPERATIONS.md](DECISIONS_COMMERCIAL_AND_OPERATIONS.md).
