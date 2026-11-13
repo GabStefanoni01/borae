@@ -22,7 +22,7 @@ Comece por **[docs/README.md](docs/README.md)**. Ele apresenta a ordem de leitur
 - [Especificação de fidelidade e Boraê Club](docs/MODULE_LOYALTY_CLUB.md)
 - [Especificação 3D/AR](docs/MODULE_3D_AR.md)
 - [Especificação de descoberta](docs/MODULE_DISCOVERY.md)
-- [Decisões pendentes](docs/OPEN_DECISIONS.md)
+- [Registro de decisões e pendências restantes](docs/OPEN_DECISIONS.md)
 - [Roadmap e critérios de conclusão](docs/ROADMAP.md)
 - [Guia de contribuição e fluxo de trabalho](docs/CONTRIBUTING.md)
 
