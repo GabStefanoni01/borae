@@ -1,4 +1,4 @@
-# Roadmap do Boraê
+# Roadmap do Boraê\n\nA especificação funcional e técnica dos módulos está em [PRD.md](PRD.md), [DOMAIN_MODEL.md](DOMAIN_MODEL.md), [API_DESIGN.md](API_DESIGN.md) e nos documentos MODULE_*.md. A existência de uma especificação não significa que o módulo esteja implementado.
 
 Este roadmap organiza dependências. Não é autorização para implementar todas as etapas de uma vez: concluir, testar e validar cada fase antes de avançar.
 
