@@ -23,6 +23,12 @@ server:
     include-message: never
     include-binding-errors: never
 
+security:
+  jwt:
+    # Chave local de desenvolvimento. Defina JWT_SECRET em qualquer ambiente compartilhado/produção.
+    secret: ${JWT_SECRET:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}
+    expiration-ms: ${JWT_EXPIRATION_MS:900000}
+
 management:
   endpoints:
     web:
@@ -42,4 +48,4 @@ springdoc:
 info:
   app:
     name: Boraê API
-    version: 0.1.0
+    version: 0.2.0

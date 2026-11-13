@@ -9,6 +9,7 @@ API da plataforma Boraê, construída com Java 21 e Spring Boot.
 - Maven
 - Spring Web, Validation, Security e Data JPA
 - PostgreSQL + Flyway
+- JWT (JJWT) e BCrypt
 - Springdoc OpenAPI / Swagger UI
 - JUnit 5 e Spring Boot Test
 
@@ -31,16 +32,22 @@ mvn spring-boot:run
 
 O Flyway cria as tabelas iniciais automaticamente na primeira inicialização.
 
-## Endpoints
+## Autenticação
+
+A API utiliza JWT stateless:
 
 | Método | Endpoint | Acesso |
 |---|---|---|
+| POST | `/api/v1/auth/register` | Público |
+| POST | `/api/v1/auth/login` | Público |
 | GET | `/actuator/health` | Público |
 | GET | `/swagger-ui.html` | Público |
 | GET | `/v3/api-docs` | Público |
-| GET | `/api/v1/system/status` | Autenticado |
+| GET | `/api/v1/system/status` | Bearer token |
 
-Nesta etapa, o Spring Security usa HTTP Basic com o usuário temporário gerado pelo Spring Boot. A autenticação definitiva com cadastro, hash de senha, JWT e refresh token será implementada em uma etapa própria. Não utilize a credencial temporária em produção.
+O cadastro cria a conta, armazena a senha com BCrypt e retorna um access token. O login valida as credenciais e retorna um novo token. Envie o token nas rotas protegidas usando `Authorization: Bearer <token>`.
+
+O access token expira por padrão em 15 minutos. Configure `JWT_SECRET` com uma chave Base64 forte de pelo menos 256 bits e `JWT_EXPIRATION_MS` conforme o ambiente. O valor padrão existe apenas para desenvolvimento local e não deve ser usado em produção. Refresh tokens, recuperação de senha, verificação de e-mail e rate limiting ainda não fazem parte desta etapa.
 
 ## Banco de dados
 
@@ -55,7 +62,7 @@ A aplicação usa `ddl-auto: validate`; a evolução do schema deve acontecer po
 ## Testes
 
 ```bash
-mvn test
+mvn verify
 ```
 
-Os testes de contexto usam H2 e não exigem um PostgreSQL local.
+Os testes de integração usam H2 e não exigem um PostgreSQL local.
