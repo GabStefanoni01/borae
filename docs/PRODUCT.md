@@ -154,7 +154,7 @@ Não haverá pedidos online nem integração PDV/ERP no lançamento. A API exter
 - Avaliações denunciadas: triagem por IA e decisão final humana.
 - Privacidade: retenção por categoria, finalidade e obrigação legal, em conformidade com a LGPD.
 - Administração: aplicação global separada, com endpoints administrativos protegidos.
-- Monitoramento: Sentry inicialmente gratuito; Grafana Cloud opcional.
+- Monitoramento: painel próprio para métricas de negócio; ferramenta de captura de erros ainda não escolhida (Sentry é candidato); Grafana Cloud opcional.
 - Integrações: API Keys individuais, escopos, rate limits, auditoria e revogação.
 
 A especificação detalhada, incluindo ressalvas de implementação e validação fiscal, está em [DECISIONS_COMMERCIAL_AND_OPERATIONS.md](DECISIONS_COMMERCIAL_AND_OPERATIONS.md).
