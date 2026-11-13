@@ -4,7 +4,7 @@ Este arquivo impede que decisões não tomadas sejam inventadas durante a implem
 
 | ID | Tema | Decisão necessária | Bloqueia |
 | --- | --- | --- | --- |
-| D-01 | Perfil restaurante | Campos obrigatórios, endereço, contato, horário e status público | Perfil |
+| D-01 | Perfil restaurante | **APROVADA** — estrutura de perfil definida; ver decisão registrada abaixo | Concluído |
 | D-02 | Menus | Um menu ou múltiplos menus por restaurante (ex.: almoço/jantar) | Catálogo |
 | D-03 | Publicação | Publicação imediata ou rascunho + publicar; escopo produto/menu | Catálogo |
 | D-04 | Ingredientes | Estrutura de ingredientes, observações e alergênicos | Catálogo/IA |
