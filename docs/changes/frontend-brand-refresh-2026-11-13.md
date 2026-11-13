@@ -141,6 +141,17 @@ Sem isso, o login exibirá "Não foi possível conectar à API... configuração
 
 ---
 
+### Situação atual da publicação (13/11/2026)
+- Static Site **`borae-web`** criado na conta de Renan Cristiano: **https://borae-web.onrender.com**
+- Configuração: branch `feat/frontend-brand-refresh` (trocar para `main` após o merge), Build Command `cd frontend && npm ci && npm run build`, Publish Directory `frontend/dist/borae-frontend/browser`, `NODE_VERSION=22`, auto-deploy ativo.
+- Pendente no Render: regra de *Rewrite* `/*` → `/index.html` (sem ela, abrir `/auth` ou `/app` direto pela URL retorna 404; navegar pelos links do site funciona).
+- Pendente no backend: incluir a origem no `borae-api`:
+  ```
+  CORS_ALLOWED_ORIGINS=http://localhost:4200,https://borae-web.onrender.com
+  ```
+
+---
+
 ## 11. Limitações conhecidas
 - A URL da API continua fixa em `auth.service.ts` (`https://borae.onrender.com`), como já documentado no guia de desenvolvimento.
 - O painel (`/app`) mantém o tema escuro anterior; somente a logo foi atualizada. Alinhar o painel à identidade laranja é uma entrega futura.
