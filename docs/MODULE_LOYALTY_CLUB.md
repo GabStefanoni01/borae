@@ -23,7 +23,12 @@ Permitir que cada restaurante crie um programa próprio de relacionamento com co
 - Consumidor não pode atribuir pontos a si mesmo.
 - Resgate deve reservar/debitar saldo atomicamente.
 - Estorno gera lançamento compensatório; não apaga o histórico.
-- Alteração de regra não deve reescrever retroativamente lançamentos existentes.
+- Alteração de regra não deve reescrever retroativamente lançamentos existentes; pontos já acumulados seguem a regra vigente quando foram creditados, e recompensas já conquistadas são preservadas.
+- Cada restaurante define a validade dos pontos; a validade deve ser registrada por crédito/lote.
+- No encerramento do programa, o prazo de resgate será de no mínimo 60 dias; o restaurante pode oferecer prazo maior.
+- Estornos são lançamentos compensatórios auditáveis. Se os pontos já tiverem sido utilizados, registrar pendência sem saldo negativo.
+- Detecção de padrões suspeitos gera alertas para o gerente; sem confirmação adicional do consumidor e sem bloqueio automático no MVP.
+- Em fechamento repentino do restaurante, comunicar os clientes assim que possível; o Boraê não assume automaticamente o custo das recompensas e não há resgate cruzado.
 
 ### Regra aprovada parcialmente — D-12
 Cada restaurante escolhe entre dois modelos: (1) pontos proporcionais ao valor gasto; ou (2) quantidade fixa de pontos por compra. O programa local mantém saldo, recompensas e ledger próprios, sem transferência para outros restaurantes ou para o Boraê Club.
@@ -37,14 +42,12 @@ Cada restaurante escolhe entre dois modelos: (1) pontos proporcionais ao valor g
 - O consumidor será localizado pelo telefone cadastrado; o método de verificação desse telefone ainda será definido.
 - Permanecem pendentes o momento de disponibilidade dos pontos, a idempotência detalhada e o tratamento de cancelamentos/estornos.
 
-### Decisões pendentes
-- Parâmetros exatos de cada modelo (taxa por valor gasto ou quantidade fixa por compra).
-- Valor monetário equivalente, se houver.
+### Decisões ainda pendentes
+- Parâmetros exatos de cada modelo de acúmulo (taxa por valor gasto ou quantidade fixa por compra).
+- Valor monetário equivalente dos pontos, se houver.
 - Momento exato de disponibilidade do crédito após a confirmação da compra.
-- Prazo de expiração e ordem de consumo dos pontos.
-- Política de cancelamento/estorno.
-- Controles antifraude, limites de confirmação e comprovação complementar da origem da compra.
-- Limites de ajuste manual e dupla aprovação.
+- Ordem de consumo dos pontos quando houver créditos com datas de expiração diferentes.
+- Verificação do telefone do consumidor, idempotência detalhada e limites de ajustes manuais.
 - Regras fiscais/contratuais aplicáveis.
 
 ## 2. Boraê Club — evolução futura, fora do MVP
