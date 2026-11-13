@@ -58,27 +58,47 @@ Este roadmap organiza dependências. Não é autorização para implementar toda
 - [ ] Medir qualidade, custo, latência e taxa de recomendações úteis.
 
 ## Fase 6 — Fidelidade individual
-- [ ] Regras de pontuação configuráveis por restaurante.
-- [ ] Ledger de pontos e histórico.
-- [ ] Recompensas, resgates e expiração.
-- [ ] Campanhas e benefícios de aniversário.
-- [ ] Proteção contra duplicidade, fraude e concorrência.
+**Regras de produto aprovadas; implementação planejada.**
+- [x] Definir programas individuais por restaurante (D-12/D-14).
+- [x] Definir cálculo proporcional/fixo, base de cálculo e arredondamento (D-12).
+- [x] Definir confirmação de compra, telefone verificado e idempotência (D-13).
+- [x] Definir estorno, compensação, validade, FEFO, expiração e notificações (D-15).
+- [ ] Implementar configuração e versionamento de regras por restaurante.
+- [ ] Implementar ledger, créditos, resgates e compensação de estornos.
+- [ ] Implementar expiração automática e notificações diárias nos 14 dias anteriores ao vencimento.
+- [ ] Testar concorrência, idempotência, fraude e auditoria.
 
 ## Fase 7 — Descoberta de restaurantes
-- [ ] Definir taxonomia, categorias e critérios de busca (D-16).
-- [ ] Definir geolocalização, raio e ordenação dos resultados.
-- [ ] Implementar diretório e busca de restaurantes.
-- [ ] Implementar páginas públicas e acesso aos cardápios.
+**Regras de produto aprovadas em D-16; implementação planejada.**
+- [x] Definir localização padrão e busca manual de região.
+- [x] Definir relevância, filtros, avaliações, favoritos e compartilhamento.
+- [x] Definir páginas de marca e unidades, incluindo avaliações separadas.
+- [ ] Implementar diretório, busca e filtros combináveis.
+- [ ] Implementar páginas públicas de restaurantes e marcas.
+- [ ] Implementar avaliações vinculadas a compras confirmadas e respostas dos restaurantes.
+- [ ] Implementar favoritos e listas compartilháveis por link.
 
 ## Evolução futura — Boraê Club (fora do MVP)
 O Boraê Club compartilhado não integra o roadmap de implementação do MVP. Só deverá voltar ao planejamento após validar a fidelidade individual e a adesão dos restaurantes, com nova decisão de produto e aprovação prévia do modelo financeiro, contratual e operacional. Não implementar carteira compartilhada, ledger Club, resgate cruzado ou liquidação entre parceiros nesta fase.
 
 ## Fase 8 — Monetização e operação ampliada
-- [ ] Planos SaaS para restaurantes.
-- [ ] Cobrança e gestão de assinatura.
-- [ ] Painel administrativo global.
-- [ ] Campanhas patrocinadas e métricas.
-- [ ] Avaliar pedidos, pagamentos e integrações POS somente após validação.
+**Regras de produto aprovadas em D-18 a D-20; implementação planejada.**
+- [x] Definir assinatura fixa, plano único, trial de 30 dias, ciclos de cobrança, cancelamento e inadimplência.
+- [x] Definir créditos de indicação, meios de pagamento e emissão de nota fiscal.
+- [x] Definir papéis globais, permissões do suporte, auditoria e modo de manutenção.
+- [x] Definir API externa com chaves/permissões, rate limiting, Swagger, webhooks e Sandbox.
+- [ ] Definir preço nominal e percentuais dos descontos trimestral/anual.
+- [ ] Implementar assinaturas, cobranças, notas fiscais e créditos de indicação.
+- [ ] Implementar painel administrativo global e trilha de auditoria.
+- [ ] Implementar API keys, rate limiting, webhooks e Sandbox.
+- [ ] Implementar notificações por e-mail e chat de suporte com IA/encaminhamento humano.
+- [ ] Implementar retenção de dados e suspensão por inadimplência conforme D-18.
+
+### Limites explícitos do lançamento — D-20
+- [x] Sem pedidos online.
+- [x] Sem integração com PDV/ERP.
+- [x] Sem aplicativos nativos para restaurantes ou consumidores; ambos usam web responsiva.
+- A API e os webhooks permitem integrações futuras autorizadas, mas não alteram a exclusão de POS/ERP do lançamento.
 
 ## Critério de conclusão de cada etapa
 Uma etapa só é considerada concluída quando:
