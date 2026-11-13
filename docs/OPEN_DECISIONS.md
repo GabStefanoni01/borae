@@ -13,7 +13,7 @@ Este arquivo impede que decisões não tomadas sejam inventadas durante a implem
 | D-07 | Permissões | **APROVADA** — matriz de permissões para OWNER, MANAGER e STAFF | Concluído |
 | D-08 | Convites | **APROVADA** — convite por e-mail, expiração de 7 dias, revogação e reenvio | Concluído |
 | D-09 | Mídia | **APROVADA** — object storage, Cloudflare R2 como provedor definido, formatos e CDN | Concluído |
-| D-10 | IA | Provedor/modelo, orçamento, retenção, rate limits e fallback | Assistente |
+| D-10 | IA | **APROVADA** — Google Gemini como provedor inicial; integração desacoplada e controles de consumo | Concluído |
 | D-11 | IA | Se e como persistir histórico e consentimento | Assistente |
 | D-12 | Fidelidade | Fórmula de pontos, gatilho de crédito e expiração | Fidelidade |
 | D-13 | Fidelidade | Prova de compra, estorno e papéis autorizados | Fidelidade |
@@ -190,10 +190,30 @@ O limite numérico de convites simultâneos por restaurante não foi definido ne
 - Backend valida autorização, MIME real, tamanho, checksum e associação da mídia ao restaurante antes de concluir o upload.
 - Arquivos binários não serão armazenados no PostgreSQL.
 
-**Ainda pendente:** limites numéricos de tamanho para imagens e modelos 3D e política de dimensões/resolução. As cotas e condições do plano gratuito devem ser conferidas na implantação e periodicamente, pois podem mudar. As cotas e condições do plano gratuito devem ser conferidas na implantação e periodicamente, pois podem mudar.
+**Ainda pendente:** limites numéricos de tamanho para imagens e modelos 3D e política de dimensões/resolução. As cotas e condições do plano gratuito devem ser conferidas na implantação e periodicamente, pois podem mudar.
 
 **Impactos:** atualizar modelo de domínio, PRD, API e especificações de catálogo/3D. Esta decisão não implica que upload e processamento estejam implementados.
 
-- **D-10 a D-20:** permanecem pendentes; não presumir aprovação nem iniciar implementação de regras de negócio correspondentes sem alinhamento.
+### D-10 — Provedor inicial de inteligência artificial
+
+**Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
+
+**Decisão:**
+- Google Gemini será o provedor inicial de modelos de IA do Boraê.
+- A integração será realizada exclusivamente pelo backend; frontend não chamará o provedor diretamente.
+- Credenciais serão mantidas em variáveis/segredos de ambiente no servidor, nunca no repositório nem no cliente.
+- A integração ficará atrás de uma camada/contrato interno de abstração, evitando dependência do SDK ou dos formatos proprietários do provedor no domínio do produto e permitindo substituição futura.
+- O modelo receberá somente o contexto mínimo necessário, preparado pelo backend a partir do catálogo publicado e do restaurante em contexto.
+- O modelo não terá acesso direto ao banco de dados, credenciais, ferramentas administrativas ou dados privados de outros restaurantes.
+- Implementar controles de consumo e custo, rate limits por sessão/IP e monitoramento de uso por restaurante.
+- Em indisponibilidade, timeout ou resposta inválida, o cardápio continuará funcional e o consumidor poderá usar busca e filtros convencionais como fallback.
+
+**Ainda pendente:** modelo/versão específica do Gemini, orçamento e cotas numéricas, limites exatos de requisições/tokens, política de retenção do histórico (tratada separadamente em D-11) e estratégia detalhada de retry/fallback. A aprovação do provedor não define esses parâmetros nem implica implementação.
+
+**Motivação:** iniciar com um provedor acessível e manter flexibilidade técnica, segurança, previsibilidade de custos e continuidade da navegação quando a IA falhar.
+
+**Impactos:** atualizar arquitetura do assistente, API e PRD. Esta decisão não implica que a integração já esteja implementada.
+
+- **D-11 a D-20:** permanecem pendentes; não presumir aprovação nem iniciar implementação de regras de negócio correspondentes sem alinhamento.
 
 Ausência de decisão significa que o desenvolvimento do recurso correspondente deve aguardar alinhamento.
