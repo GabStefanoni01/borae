@@ -97,8 +97,8 @@ Não existe publicação individual de produto no MVP. Produto arquivado não ap
 - Gerar variantes otimizadas para mobile e permitir entrega por CDN.
 - Remover metadados EXIF sensíveis quando possível.
 - Restringir acesso a arquivos privados e validar escopo do restaurante.
-- Cloudinary é candidato inicial para avaliação de armazenamento, transformação e entrega de imagens; a decisão final depende de custos, limites e suporte aos modelos GLB/glTF.
-- Limites numéricos de tamanho e resolução permanecem pendentes.
+- Cloudflare R2 será utilizado como object storage para imagens e modelos 3D no MVP, dentro das cotas gratuitas disponíveis. A entrega pode utilizar domínio/CDN da Cloudflare conforme configuração.
+- Limites numéricos de tamanho e resolução permanecem pendentes; monitorar consumo para evitar cobranças.
 
 ## 7. Critérios de aceite
 
