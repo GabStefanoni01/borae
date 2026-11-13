@@ -102,10 +102,18 @@ Precisa moderar e dar suporte à plataforma, com acesso global estritamente audi
 - Convite por e-mail automatizado é evolução futura; fluxo atual compartilha token manualmente.
 
 ### RF-03 — Perfil do restaurante
-- Editar nome público, descrição, endereço, contatos, identidade visual e slug.
-- Definir estado de publicação/visibilidade.
-- Validar unicidade do identificador público.
+- Editar nome do restaurante e nome público/fantasia.
+- Permitir descrição, logo, capa, telefone/WhatsApp, Instagram e site como campos opcionais.
+- Exigir endereço para estabelecimentos físicos e suportar localização no mapa.
+- Configurar horário de funcionamento por dia da semana.
+- Exigir categoria gastronômica.
+- Gerar slug automaticamente e permitir edição quando único e válido.
+- Suportar status `DRAFT`, `PUBLISHED` e `SUSPENDED`.
+- Não bloquear o início do cadastro nem a montagem do cardápio pela ausência de campos opcionais.
+- Validar os campos obrigatórios antes da publicação pública.
 - Registrar quem alterou dados relevantes.
+
+**Decisão de produto aprovada (D-01, 13/11/2026).**
 
 ### RF-04 — Catálogo
 - Criar e ordenar categorias.
