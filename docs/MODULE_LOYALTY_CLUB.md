@@ -25,8 +25,11 @@ Permitir que cada restaurante crie um programa próprio de relacionamento com co
 - Estorno gera lançamento compensatório; não apaga o histórico.
 - Alteração de regra não deve reescrever retroativamente lançamentos existentes.
 
+### Regra aprovada parcialmente — D-12
+Cada restaurante escolhe entre dois modelos: (1) pontos proporcionais ao valor gasto; ou (2) quantidade fixa de pontos por compra. O programa local mantém saldo, recompensas e ledger próprios, sem transferência para outros restaurantes ou para o Boraê Club.
+
 ### Decisões pendentes
-- Fórmula de acúmulo (por valor gasto, visita, item ou regra híbrida).
+- Parâmetros exatos de cada modelo (taxa por valor gasto ou quantidade fixa por compra).
 - Valor monetário equivalente, se houver.
 - Momento de concessão (compra confirmada, validação manual, POS).
 - Prazo de expiração e ordem de consumo dos pontos.
@@ -42,12 +45,16 @@ Programa opcional de benefícios compartilhados entre restaurantes parceiros, co
 
 ### Diferença essencial
 - Fidelidade individual: pontos emitidos e resgatados no programa de um restaurante.
-- Boraê Club: unidade de benefício compartilhada conforme contrato e regras do ecossistema.
+- Boraê Club: carteira de pontos compartilhada entre os restaurantes parceiros.
 
-Não converter nem misturar saldos automaticamente.
+Os dois programas são independentes: um consumidor pode participar de ambos, mas os saldos, regras, recompensas e ledgers não se misturam e não há conversão ou transferência automática.
+
+**Regra aprovada parcialmente — D-12:** o Boraê Club acumula 1 ponto por R$ 1,00 gasto em compra elegível, com a mesma proporção em todos os restaurantes parceiros. Exemplo: R$ 50,00 em compra elegível geram 50 pontos Club. A regra local de cada restaurante não altera essa proporção compartilhada.
 
 ### Capacidades previstas
-- Consumidor adere aos termos do Club.
+- Consumidor adere voluntariamente aos termos do Club.
+- Durante o atendimento/fechamento, o garçom pode perguntar se o consumidor já participa ou deseja aderir; a identificação e adesão dependem da ação e do consentimento explícito do consumidor, sem inscrição automática.
+- O método de identificação (telefone, QR Code ou outro) e o fluxo detalhado de adesão ainda serão definidos.
 - Restaurante solicita/aceita participação.
 - Consumidor consulta saldo, parceiros e benefícios.
 - Consumidor inicia resgate em parceiro.
@@ -65,6 +72,9 @@ Não converter nem misturar saldos automaticamente.
 - Termos e versão contratual aceitos pelo consumidor e parceiro.
 
 ### Decisões pendentes que bloqueiam implementação
+- Confirmação confiável da compra e momento de crédito dos pontos (não há pedidos, pagamentos ou POS definidos no MVP atual).
+- Tratamento de cancelamentos, devoluções e estornos.
+- Expiração dos pontos e ordem de consumo.
 - Quem financia pontos/benefícios.
 - Se pontos são comprados, ganhos, convertidos ou promocionais.
 - Valor e unidade de referência.
