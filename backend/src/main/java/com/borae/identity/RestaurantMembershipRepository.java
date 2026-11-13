@@ -33,6 +33,8 @@ public interface RestaurantMembershipRepository extends JpaRepository<Restaurant
 
     Optional<RestaurantMembership> findByUser_IdAndRestaurant_IdAndActiveTrue(UUID userId, UUID restaurantId);
 
+    Optional<RestaurantMembership> findByUser_IdAndRestaurant_Id(UUID userId, UUID restaurantId);
+
     Optional<RestaurantMembership> findByIdAndRestaurant_IdAndActiveTrue(UUID membershipId, UUID restaurantId);
 
     boolean existsByUser_IdAndRestaurant_IdAndActiveTrue(UUID userId, UUID restaurantId);
