@@ -1,5 +1,7 @@
 package com.borae.auth;
 
+import com.borae.identity.RestaurantMembershipRepository;
+import com.borae.identity.RestaurantRepository;
 import com.borae.identity.UserAccountRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,8 +35,16 @@ class AuthControllerIntegrationTest {
     @Autowired
     private UserAccountRepository userRepository;
 
+    @Autowired
+    private RestaurantRepository restaurantRepository;
+
+    @Autowired
+    private RestaurantMembershipRepository membershipRepository;
+
     @BeforeEach
     void cleanDatabase() {
+        membershipRepository.deleteAll();
+        restaurantRepository.deleteAll();
         userRepository.deleteAll();
     }
 
@@ -75,6 +85,76 @@ class AuthControllerIntegrationTest {
         mockMvc.perform(get("/api/v1/system/status")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void shouldCreateRestaurantAndAutomaticallyAssignOwnerRole() throws Exception {
+        String email = "owner-" + UUID.randomUUID() + "@example.com";
+        String registration = objectMapper.writeValueAsString(Map.of(
+                "fullName", "Pessoa Proprietária",
+                "email", email,
+                "password", "senha-segura-123"
+        ));
+
+        String authResponse = mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(registration))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        String token = objectMapper.readTree(authResponse).get("accessToken").asText();
+
+        String restaurantRequest = objectMapper.writeValueAsString(Map.of(
+                "name", "Café São Paulo",
+                "description", "Café e brunch"
+        ));
+
+        mockMvc.perform(post("/api/v1/restaurants")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(restaurantRequest))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.restaurantName").value("Café São Paulo"))
+                .andExpect(jsonPath("$.restaurantSlug").value(org.hamcrest.Matchers.startsWith("cafe-sao-paulo-")))
+                .andExpect(jsonPath("$.role").value("OWNER"));
+
+        mockMvc.perform(get("/api/v1/users/me/restaurants")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].role").value("OWNER"))
+                .andExpect(jsonPath("$[0].restaurantName").value("Café São Paulo"));
+    }
+
+    @Test
+    void shouldRejectRestaurantCreationWithoutAuthentication() throws Exception {
+        mockMvc.perform(post("/api/v1/restaurants")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("name", "Restaurante Teste"))))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void shouldRejectRestaurantWithBlankName() throws Exception {
+        String email = "invalid-" + UUID.randomUUID() + "@example.com";
+        String registration = objectMapper.writeValueAsString(Map.of(
+                "fullName", "Pessoa Teste",
+                "email", email,
+                "password", "senha-segura-123"
+        ));
+        String authResponse = mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(registration))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String token = objectMapper.readTree(authResponse).get("accessToken").asText();
+
+        mockMvc.perform(post("/api/v1/restaurants")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("name", "   "))))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
