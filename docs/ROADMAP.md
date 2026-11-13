@@ -87,11 +87,11 @@ O Boraê Club compartilhado não integra o roadmap de implementação do MVP. S�
 - [x] Definir créditos de indicação, meios de pagamento e emissão de nota fiscal.
 - [x] Definir papéis globais, permissões do suporte, auditoria e modo de manutenção.
 - [x] Definir API externa com chaves/permissões, rate limiting, Swagger, webhooks e Sandbox.
-- [ ] Definir preço nominal e percentuais dos descontos trimestral/anual.
+- [x] Definir preço e descontos: R$ 49,90 mensal, 10% trimestral e 20% anual.
 - [ ] Implementar assinaturas, cobranças, notas fiscais e créditos de indicação.
-- [ ] Implementar painel administrativo global e trilha de auditoria.
+- [ ] Implementar aplicação administrativa global separada e trilha de auditoria.
 - [ ] Implementar API keys, rate limiting, webhooks e Sandbox.
-- [ ] Implementar notificações por e-mail e chat de suporte com IA/encaminhamento humano.
+- [ ] Implementar notificações por e-mail via Resend e chat de suporte com IA/encaminhamento humano.
 - [ ] Implementar retenção de dados e suspensão por inadimplência conforme D-18.
 
 ### Limites explícitos do lançamento — D-20
