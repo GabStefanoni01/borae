@@ -1,15 +1,18 @@
 import { Component } from '@angular/core';
+import { IconComponent } from '../shared/icon.component';
+import { RevealDirective } from '../shared/reveal.directive';
 
 @Component({
   selector: 'app-purpose',
   standalone: true,
+  imports: [IconComponent, RevealDirective],
   template: `
     <section id="sobre" class="purpose-section" aria-labelledby="purpose-title">
       <div class="container">
         <div class="purpose-wrapper">
           <!-- Coluna Visual Fotográfica -->
           <div class="visual-col">
-            <div class="image-box">
+            <div class="image-box" boReveal>
               <img 
                 src="assets/images/restaurant-kitchen.jpg" 
                 alt="Ambiente acolhedor e vibrante de um restaurante iluminado" 
@@ -19,14 +22,14 @@ import { Component } from '@angular/core';
                 loading="lazy"
               >
               <div class="image-badge">
-                <span class="badge-icon">🧡</span>
+                <bo-icon class="badge-icon" name="heart" [size]="16" />
                 <span>Paixão pela Gastronomia</span>
               </div>
             </div>
           </div>
 
           <!-- Coluna Textual Emocional -->
-          <div class="content-col">
+          <div class="content-col" [boReveal]="150">
             <div class="eyebrow-tag">NOSSO PROPÓSITO</div>
 
             <h2 id="purpose-title" class="section-title">
@@ -40,7 +43,7 @@ import { Component } from '@angular/core';
             </p>
 
             <div class="values-grid">
-              <div class="value-item">
+              <div [boReveal]="0" class="value-item">
                 <span class="value-bullet">01</span>
                 <div>
                   <strong>Valorização Autêntica</strong>
@@ -48,7 +51,7 @@ import { Component } from '@angular/core';
                 </div>
               </div>
 
-              <div class="value-item">
+              <div [boReveal]="90" class="value-item">
                 <span class="value-bullet">02</span>
                 <div>
                   <strong>Tecnologia com Propósito</strong>
@@ -56,7 +59,7 @@ import { Component } from '@angular/core';
                 </div>
               </div>
 
-              <div class="value-item">
+              <div [boReveal]="180" class="value-item">
                 <span class="value-bullet">03</span>
                 <div>
                   <strong>Evolução Transparente</strong>

@@ -1,13 +1,16 @@
 import { Component } from '@angular/core';
+import { IconComponent } from '../shared/icon.component';
+import { RevealDirective } from '../shared/reveal.directive';
 
 @Component({
   selector: 'app-experience',
   standalone: true,
+  imports: [IconComponent, RevealDirective],
   template: `
     <section class="experience-section" aria-labelledby="experience-title">
       <div class="container">
         <!-- Cabeçalho da Seção -->
-        <div class="section-header">
+        <div class="section-header" boReveal>
           <div class="eyebrow-tag">INOVAÇÃO GASTRONÔMICA</div>
           <h2 id="experience-title" class="section-title">A tecnologia encontra o sabor.</h2>
           <p class="section-lead">
@@ -20,9 +23,9 @@ import { Component } from '@angular/core';
         <!-- Grade de 4 Pilares -->
         <div class="pillars-grid">
           <!-- Card 1: Cardápio Digital -->
-          <article class="pillar-card">
+          <article [boReveal]="0" class="pillar-card">
             <div class="card-top">
-              <div class="pillar-icon">📜</div>
+              <div class="pillar-icon"><bo-icon name="book-open" [size]="24" /></div>
               <span class="roadmap-badge">Roadmap: Catálogo</span>
             </div>
             <h3 class="pillar-title">Seu cardápio, em uma nova dimensão.</h3>
@@ -36,9 +39,9 @@ import { Component } from '@angular/core';
           </article>
 
           <!-- Card 2: Experiência 3D e AR -->
-          <article class="pillar-card highlight-pillar">
+          <article [boReveal]="90" class="pillar-card highlight-pillar">
             <div class="card-top">
-              <div class="pillar-icon">🧊</div>
+              <div class="pillar-icon"><bo-icon name="cube" [size]="24" /></div>
               <span class="roadmap-badge">Roadmap: Imersão</span>
             </div>
             <h3 class="pillar-title">Veja além da descrição.</h3>
@@ -52,9 +55,9 @@ import { Component } from '@angular/core';
           </article>
 
           <!-- Card 3: Inteligência Gastronômica -->
-          <article class="pillar-card">
+          <article [boReveal]="180" class="pillar-card">
             <div class="card-top">
-              <div class="pillar-icon">🧠</div>
+              <div class="pillar-icon"><bo-icon name="lightbulb" [size]="24" /></div>
               <span class="roadmap-badge">Roadmap: IA Contextual</span>
             </div>
             <h3 class="pillar-title">Descobrir pode ser mais inteligente.</h3>
@@ -68,9 +71,9 @@ import { Component } from '@angular/core';
           </article>
 
           <!-- Card 4: Fidelidade -->
-          <article class="pillar-card">
+          <article [boReveal]="270" class="pillar-card">
             <div class="card-top">
-              <div class="pillar-icon">⭐</div>
+              <div class="pillar-icon"><bo-icon name="star" [size]="24" /></div>
               <span class="roadmap-badge">Roadmap: Fidelização</span>
             </div>
             <h3 class="pillar-title">Relacionamentos que continuam.</h3>

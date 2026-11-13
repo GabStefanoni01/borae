@@ -1,15 +1,17 @@
 import { Component } from '@angular/core';
+import { IconComponent } from '../shared/icon.component';
 
 @Component({
   selector: 'app-hero',
   standalone: true,
+  imports: [IconComponent],
   template: `
     <section id="inicio" class="hero-section" aria-labelledby="hero-title">
       <div class="container hero-container">
         <!-- Coluna de Texto e Conversão -->
         <div class="hero-content">
           <div class="eyebrow-tag">
-            <span class="eyebrow-icon">✨</span>
+            <bo-icon class="eyebrow-icon" name="sparkles" [size]="14" />
             <span>TECNOLOGIA E GASTRONOMIA EM UMA NOVA EXPERIÊNCIA</span>
           </div>
 
@@ -26,7 +28,7 @@ import { Component } from '@angular/core';
           <div class="hero-actions">
             <a href="#conheca" class="btn btn-primary hero-btn">
               Conheça o Boraê
-              <span class="btn-arrow" aria-hidden="true">→</span>
+              <bo-icon class="btn-arrow" name="arrow-right" [size]="18" />
             </a>
             <a href="#restaurantes" class="btn btn-secondary hero-btn">
               Sou um restaurante
@@ -36,15 +38,15 @@ import { Component } from '@angular/core';
           <!-- Micro Provas e Indicadores -->
           <div class="hero-indicators">
             <div class="indicator-item">
-              <span class="indicator-check">✓</span>
+              <span class="indicator-check"><bo-icon name="check" [size]="12" [strokeWidth]="3" /></span>
               <span>Cardápio digital ágil</span>
             </div>
             <div class="indicator-item">
-              <span class="indicator-check">✓</span>
+              <span class="indicator-check"><bo-icon name="check" [size]="12" [strokeWidth]="3" /></span>
               <span>Visão 3D & AR em preparo</span>
             </div>
             <div class="indicator-item">
-              <span class="indicator-check">✓</span>
+              <span class="indicator-check"><bo-icon name="check" [size]="12" [strokeWidth]="3" /></span>
               <span>Ecossistema Boraê Club</span>
             </div>
           </div>
@@ -74,7 +76,7 @@ import { Component } from '@angular/core';
               </div>
               <div class="mockup-body">
                 <div class="dish-preview">
-                  <div class="dish-avatar">🍽️</div>
+                  <div class="dish-avatar"><bo-icon name="cloche" [size]="22" /></div>
                   <div class="dish-info">
                     <strong>Risoto Trufado com Cogumelos</strong>
                     <span class="dish-meta">Visualização 3D Interativa prevista</span>
@@ -82,7 +84,7 @@ import { Component } from '@angular/core';
                 </div>
                 <div class="mockup-footer">
                   <div class="qr-pill">
-                    <span class="qr-icon">📱</span>
+                    <bo-icon class="qr-icon" name="qr-code" [size]="13" />
                     <span>QR Code Boraê</span>
                   </div>
                   <span class="dish-price">Experiência Imersiva</span>
@@ -92,7 +94,7 @@ import { Component } from '@angular/core';
 
             <!-- Selo Gastronômico Laranja -->
             <div class="floating-badge">
-              <span class="floating-badge-symbol">👨‍🍳</span>
+              <span class="floating-badge-symbol"><bo-icon name="chef-hat" [size]="18" /></span>
               <div class="floating-badge-text">
                 <strong>Alta Gastronomia</strong>
                 <small>Encontra a inovação</small>
@@ -171,7 +173,27 @@ import { Component } from '@angular/core';
       font-weight: 600;
       color: var(--color-text-muted);
     }
-    .indicator-check { color: var(--color-primary); font-weight: 800; }
+    .indicator-check {
+      display: grid;
+      place-items: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--color-primary-light);
+      color: var(--color-primary-dark);
+    }
+    /* Entrada escalonada do conteúdo e flutuação suave dos selos */
+    .hero-content > * { animation: hero-up .8s cubic-bezier(.16, 1, .3, 1) both; }
+    .hero-content > :nth-child(2) { animation-delay: .08s; }
+    .hero-content > :nth-child(3) { animation-delay: .16s; }
+    .hero-content > :nth-child(4) { animation-delay: .24s; }
+    .hero-content > :nth-child(5) { animation-delay: .32s; }
+    .visual-wrapper { animation: hero-zoom 1s cubic-bezier(.16, 1, .3, 1) .15s both; }
+    .concept-mockup { animation: hero-float 6s ease-in-out 1.2s infinite; }
+    .floating-badge { animation: hero-float 7s ease-in-out .6s infinite reverse; }
+    @keyframes hero-up { from { opacity: 0; transform: translateY(22px); } }
+    @keyframes hero-zoom { from { opacity: 0; transform: scale(.96) translateY(16px); } }
+    @keyframes hero-float { 50% { transform: translateY(-8px); } }
     .hero-visual { position: relative; display: flex; justify-content: center; }
     .visual-wrapper { position: relative; width: 100%; max-width: 520px; }
     .image-frame {
@@ -277,7 +299,15 @@ import { Component } from '@angular/core';
       z-index: 2;
     }
     @media (max-width: 520px) { .floating-badge { display: none; } }
-    .floating-badge-symbol { font-size: 20px; }
+    .floating-badge-symbol {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--color-primary);
+      color: var(--color-white);
+    }
     .floating-badge-text strong { display: block; font-size: 12px; font-weight: 700; }
     .floating-badge-text small { font-size: 10.5px; color: #D4D4D4; }
   `]

@@ -1,14 +1,17 @@
 import { Component } from '@angular/core';
+import { IconComponent } from '../shared/icon.component';
+import { RevealDirective } from '../shared/reveal.directive';
 
 @Component({
   selector: 'app-restaurants',
   standalone: true,
+  imports: [IconComponent, RevealDirective],
   template: `
     <section id="restaurantes" class="restaurants-section" aria-labelledby="restaurants-title">
       <div class="container">
         <div class="restaurants-grid">
           <!-- Coluna Textual e Comercial -->
-          <div class="content-col">
+          <div class="content-col" boReveal>
             <div class="eyebrow-tag">PARA ESTABELECIMENTOS</div>
             
             <h2 id="restaurants-title" class="section-title">
@@ -22,48 +25,48 @@ import { Component } from '@angular/core';
 
             <!-- Lista de Benefícios Reais e Transparentes -->
             <div class="benefits-list" role="list">
-              <div class="benefit-item" role="listitem">
-                <div class="benefit-icon-badge">✨</div>
+              <div [boReveal]="0" class="benefit-item" role="listitem">
+                <div class="benefit-icon-badge"><bo-icon name="sparkles" [size]="18" /></div>
                 <div class="benefit-text">
                   <strong>Valorização da identidade do estabelecimento</strong>
                   <p>Apresente sua história, seu ambiente e o cuidado por trás de cada criação gastronômica.</p>
                 </div>
               </div>
 
-              <div class="benefit-item" role="listitem">
-                <div class="benefit-icon-badge">📸</div>
+              <div [boReveal]="60" class="benefit-item" role="listitem">
+                <div class="benefit-icon-badge"><bo-icon name="camera" [size]="18" /></div>
                 <div class="benefit-text">
                   <strong>Apresentação visual dos pratos</strong>
                   <p>Fotos ricas, descrições claras e espaço para o cliente entender a composição de cada item.</p>
                 </div>
               </div>
 
-              <div class="benefit-item" role="listitem">
-                <div class="benefit-icon-badge">📱</div>
+              <div [boReveal]="120" class="benefit-item" role="listitem">
+                <div class="benefit-icon-badge"><bo-icon name="smartphone" [size]="18" /></div>
                 <div class="benefit-text">
                   <strong>Experiência digital responsiva</strong>
                   <p>Cardápios que carregam rápido no celular do cliente através de QR Codes práticos.</p>
                 </div>
               </div>
 
-              <div class="benefit-item" role="listitem">
-                <div class="benefit-icon-badge">🤝</div>
+              <div [boReveal]="180" class="benefit-item" role="listitem">
+                <div class="benefit-icon-badge"><bo-icon name="link" [size]="18" /></div>
                 <div class="benefit-text">
                   <strong>Maior conexão com consumidores</strong>
                   <p>Aproxime o cliente que está na mesa ou pesquisando o que comer de forma intuitiva.</p>
                 </div>
               </div>
 
-              <div class="benefit-item" role="listitem">
-                <div class="benefit-icon-badge">🧊</div>
+              <div [boReveal]="240" class="benefit-item" role="listitem">
+                <div class="benefit-icon-badge"><bo-icon name="cube" [size]="18" /></div>
                 <div class="benefit-text">
                   <strong>Preparação para experiências interativas</strong>
                   <p>Arquitetura projetada para suportar modelos 3D e visualizações em realidade aumentada.</p>
                 </div>
               </div>
 
-              <div class="benefit-item" role="listitem">
-                <div class="benefit-icon-badge">🎁</div>
+              <div [boReveal]="300" class="benefit-item" role="listitem">
+                <div class="benefit-icon-badge"><bo-icon name="gift" [size]="18" /></div>
                 <div class="benefit-text">
                   <strong>Evolução para relacionamento e fidelidade</strong>
                   <p>Futuras opções de programas de benefícios próprios e integração ao Boraê Club.</p>
@@ -74,14 +77,14 @@ import { Component } from '@angular/core';
             <div class="cta-box">
               <a href="#conheca" class="btn btn-primary">
                 Quero conhecer o Boraê para meu restaurante
-                <span aria-hidden="true">→</span>
+                <bo-icon class="btn-arrow" name="arrow-right" [size]="18" />
               </a>
             </div>
           </div>
 
           <!-- Coluna Visual Fotográfica -->
           <div class="visual-col">
-            <div class="visual-card">
+            <div class="visual-card" [boReveal]="150">
               <img 
                 src="assets/images/chef-prep.jpg" 
                 alt="Chef de cozinha finalizando a apresentação impecável de um prato" 

@@ -1,14 +1,16 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { IconComponent } from '../shared/icon.component';
+import { RevealDirective } from '../shared/reveal.directive';
 
 @Component({
   selector: 'app-cta',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, IconComponent, RevealDirective],
   template: `
     <section id="conheca" class="cta-section" aria-labelledby="cta-title">
       <div class="container">
-        <div class="cta-banner">
+        <div class="cta-banner" boReveal>
           <div class="cta-content">
             <div class="eyebrow-tag eyebrow-tag-dark">FAÇA PARTE DA EVOLUÇÃO</div>
             
@@ -24,7 +26,7 @@ import { RouterLink } from '@angular/router';
             <div class="cta-actions">
               <a routerLink="/auth" class="btn btn-primary cta-btn">
                 Conheça o Boraê
-                <span aria-hidden="true">→</span>
+                <bo-icon class="btn-arrow" name="arrow-right" [size]="18" />
               </a>
               <a href="#restaurantes" class="btn btn-outline-white cta-btn">
                 Sou um restaurante
@@ -32,8 +34,8 @@ import { RouterLink } from '@angular/router';
             </div>
 
             <div class="cta-indicators">
-              <span>✓ Plataforma em desenvolvimento contínuo</span>
-              <span>✓ Arquitetura escalável e moderna</span>
+              <span><bo-icon name="check-circle" [size]="16" /> Plataforma em desenvolvimento contínuo</span>
+              <span><bo-icon name="check-circle" [size]="16" /> Arquitetura escalável e moderna</span>
             </div>
           </div>
         </div>
@@ -124,6 +126,16 @@ import { RouterLink } from '@angular/router';
       font-size: 13px;
       color: #A8A49E;
       margin-top: 14px;
+    }
+
+    .cta-indicators span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cta-indicators bo-icon {
+      color: var(--color-primary);
     }
   `]
 })

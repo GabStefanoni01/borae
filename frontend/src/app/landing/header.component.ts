@@ -1,23 +1,19 @@
 import { Component, HostListener, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { IconComponent } from '../shared/icon.component';
+import { BrandLogoComponent } from '../shared/brand-logo.component';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, IconComponent, BrandLogoComponent],
   template: `
     <header class="header" [class.scrolled]="isScrolled()">
+      <span class="scroll-progress" [style.transform]="'scaleX(' + scrollProgress() + ')'" aria-hidden="true"></span>
       <div class="container header-container">
-        <!-- Logo Oficial Boraê -->
+        <!-- Logo Oficial Boraê (vetorial) -->
         <a routerLink="/" class="brand-link" aria-label="Boraê — Início">
-          <img 
-            src="assets/images/borae-logo.png" 
-            alt="Logo Boraê" 
-            class="brand-logo"
-            width="120"
-            height="120"
-          >
-          <span class="sr-only">Boraê</span>
+          <bo-brand-logo [size]="isScrolled() ? 30 : 34" />
         </a>
 
         <!-- Navegação Desktop -->
@@ -51,8 +47,9 @@ import { RouterLink } from '@angular/router';
           </button>
         </div>
       </div>
+    </header>
 
-      <!-- Drawer de Navegação Mobile -->
+    <!-- Drawer de Navegação Mobile (fora do <header>: o backdrop-filter dele prenderia o position: fixed) -->
       @if (mobileMenuOpen()) {
         <div class="mobile-backdrop" (click)="closeMobileMenu()" aria-hidden="true"></div>
       }
@@ -65,8 +62,8 @@ import { RouterLink } from '@angular/router';
         [attr.aria-modal]="mobileMenuOpen()"
       >
         <div class="mobile-drawer-header">
-          <img src="assets/images/borae-logo.png" alt="Logo Boraê" class="drawer-logo" width="48" height="48">
-          <button type="button" class="close-btn" (click)="closeMobileMenu()" aria-label="Fechar menu">✕</button>
+          <bo-brand-logo [size]="30" />
+          <button type="button" class="close-btn" (click)="closeMobileMenu()" aria-label="Fechar menu"><bo-icon name="x" [size]="22" /></button>
         </div>
         <nav class="mobile-nav" aria-label="Navegação móvel">
           <ul class="mobile-nav-list">
@@ -83,7 +80,6 @@ import { RouterLink } from '@angular/router';
           <a href="#conheca" class="btn btn-primary full-width" (click)="closeMobileMenu()">Conheça o Boraê</a>
         </div>
       </div>
-    </header>
   `,
   styles: [`
     :host {
@@ -94,20 +90,38 @@ import { RouterLink } from '@angular/router';
     }
 
     .header {
-      background-color: rgba(255, 255, 255, 0.94);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      position: relative;
+      background-color: rgba(255, 255, 255, 0.82);
+      backdrop-filter: saturate(160%) blur(14px);
+      -webkit-backdrop-filter: saturate(160%) blur(14px);
       border-bottom: 1px solid transparent;
-      transition: all var(--transition-fast);
+      transition: height var(--transition-normal), background-color var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
       height: var(--header-height);
       display: flex;
       align-items: center;
+      animation: header-in .6s cubic-bezier(.16, 1, .3, 1) both;
     }
 
     .header.scrolled {
-      background-color: rgba(255, 255, 255, 0.98);
+      height: 68px;
+      background-color: rgba(255, 255, 255, 0.95);
       border-bottom-color: var(--color-border);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+      box-shadow: 0 6px 24px rgba(25, 25, 25, 0.06);
+    }
+
+    .scroll-progress {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -1px;
+      height: 2px;
+      background: linear-gradient(90deg, var(--color-primary), #FFA04D);
+      transform-origin: 0 50%;
+      transform: scaleX(0);
+    }
+
+    @keyframes header-in {
+      from { opacity: 0; transform: translateY(-12px); }
     }
 
     .header-container {
@@ -123,29 +137,11 @@ import { RouterLink } from '@angular/router';
       text-decoration: none;
     }
 
-    .brand-logo {
-      height: 48px;
-      width: auto;
-      object-fit: contain;
-      border-radius: var(--radius-sm);
-    }
-
-    .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      border: 0;
-    }
-
     .desktop-nav {
       display: none;
     }
 
-    @media (min-width: 960px) {
+    @media (min-width: 1100px) {
       .desktop-nav {
         display: block;
       }
@@ -167,10 +163,28 @@ import { RouterLink } from '@angular/router';
       transition: color var(--transition-fast);
       padding: 8px 0;
       position: relative;
+      white-space: nowrap;
+    }
+
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 2px;
+      height: 2px;
+      border-radius: 2px;
+      background: var(--color-primary);
+      transform: scaleX(0);
+      transition: transform var(--transition-normal);
     }
 
     .nav-link:hover {
-      color: var(--color-primary);
+      color: var(--color-graphite);
+    }
+
+    .nav-link:hover::after {
+      transform: scaleX(1);
     }
 
     .header-actions {
@@ -218,7 +232,7 @@ import { RouterLink } from '@angular/router';
       padding: 8px;
     }
 
-    @media (min-width: 960px) {
+    @media (min-width: 1100px) {
       .mobile-toggle {
         display: none;
       }
@@ -265,11 +279,22 @@ import { RouterLink } from '@angular/router';
       gap: 28px;
       box-shadow: -8px 0 30px rgba(0, 0, 0, 0.15);
       transform: translateX(100%);
-      transition: transform var(--transition-normal);
+      visibility: hidden;
+      transition: transform var(--transition-normal), visibility 0s linear .3s;
     }
 
     .mobile-drawer.active {
       transform: translateX(0);
+      visibility: visible;
+      transition: transform var(--transition-normal), visibility 0s;
+    }
+
+    .mobile-backdrop {
+      animation: backdrop-in .25s ease both;
+    }
+
+    @keyframes backdrop-in {
+      from { opacity: 0; }
     }
 
     .mobile-drawer-header {
@@ -278,18 +303,21 @@ import { RouterLink } from '@angular/router';
       justify-content: space-between;
     }
 
-    .drawer-logo {
-      height: 38px;
-      width: auto;
-      object-fit: contain;
+    .close-btn {
+      display: grid;
+      place-items: center;
+      width: 40px;
+      height: 40px;
+      background: transparent;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      color: var(--color-graphite);
+      transition: transform var(--transition-normal), color var(--transition-fast);
     }
 
-    .close-btn {
-      background: transparent;
-      border: 0;
-      font-size: 20px;
-      color: var(--color-graphite);
-      padding: 6px;
+    .close-btn:hover {
+      color: var(--color-primary);
+      transform: rotate(90deg);
     }
 
     .mobile-nav-list {
@@ -328,12 +356,15 @@ import { RouterLink } from '@angular/router';
 export class HeaderComponent {
   isScrolled = signal(false);
   mobileMenuOpen = signal(false);
+  scrollProgress = signal(0);
 
   @HostListener('window:scroll')
   onScroll(): void {
-    if (typeof window !== 'undefined') {
-      this.isScrolled.set(window.scrollY > 20);
-    }
+    if (typeof window === 'undefined') return;
+    const y = window.scrollY;
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    this.isScrolled.set(y > 20);
+    this.scrollProgress.set(max > 0 ? Math.min(1, y / max) : 0);
   }
 
   @HostListener('window:keydown.escape')
@@ -345,9 +376,15 @@ export class HeaderComponent {
 
   toggleMobileMenu(): void {
     this.mobileMenuOpen.update(v => !v);
+    this.lockScroll(this.mobileMenuOpen());
   }
 
   closeMobileMenu(): void {
     this.mobileMenuOpen.set(false);
+    this.lockScroll(false);
+  }
+
+  private lockScroll(lock: boolean): void {
+    if (typeof document !== 'undefined') document.body.style.overflow = lock ? 'hidden' : '';
   }
 }

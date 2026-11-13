@@ -1,4 +1,6 @@
 import { Component, signal } from '@angular/core';
+import { IconComponent } from '../shared/icon.component';
+import { RevealDirective } from '../shared/reveal.directive';
 
 interface FaqItem {
   id: string;
@@ -9,11 +11,12 @@ interface FaqItem {
 @Component({
   selector: 'app-faq',
   standalone: true,
+  imports: [IconComponent, RevealDirective],
   template: `
     <section id="faq" class="faq-section" aria-labelledby="faq-title">
       <div class="container">
         <!-- Cabeçalho -->
-        <div class="section-header">
+        <div class="section-header" boReveal>
           <div class="eyebrow-tag">DÚVIDAS & TRANSPARÊNCIA</div>
           <h2 id="faq-title" class="section-title">Perguntas frequentes</h2>
           <p class="section-lead">
@@ -25,7 +28,7 @@ interface FaqItem {
         <!-- Accordion Acessível -->
         <div class="accordion-wrapper" role="presentation">
           @for (item of faqs; track item.id; let idx = $index) {
-            <div class="faq-card" [class.open]="isOpen(item.id)">
+            <div class="faq-card" [class.open]="isOpen(item.id)" [boReveal]="idx * 60">
               <button 
                 type="button" 
                 class="faq-trigger" 
@@ -35,7 +38,7 @@ interface FaqItem {
                 (click)="toggle(item.id)"
               >
                 <span class="faq-question">{{ item.question }}</span>
-                <span class="faq-icon" aria-hidden="true" [class.rotated]="isOpen(item.id)">＋</span>
+                <span class="faq-icon" aria-hidden="true" [class.rotated]="isOpen(item.id)"><bo-icon name="plus" [size]="16" [strokeWidth]="2.5" /></span>
               </button>
 
               <div 

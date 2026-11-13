@@ -1,15 +1,18 @@
 import { Component } from '@angular/core';
+import { IconComponent } from '../shared/icon.component';
+import { RevealDirective } from '../shared/reveal.directive';
 
 @Component({
   selector: 'app-consumers',
   standalone: true,
+  imports: [IconComponent, RevealDirective],
   template: `
     <section id="consumidores" class="consumers-section" aria-labelledby="consumers-title">
       <div class="container">
         <div class="consumers-grid">
           <!-- Coluna Visual Fotográfica -->
           <div class="visual-col">
-            <div class="visual-card">
+            <div class="visual-card" boReveal>
               <img 
                 src="assets/images/consumer-dish.jpg" 
                 alt="Mesa gourmet repleta de pratos saborosos e experiências gastronômicas compartilhadas" 
@@ -19,7 +22,7 @@ import { Component } from '@angular/core';
                 loading="lazy"
               >
               <div class="floating-dish-chip">
-                <span class="chip-icon">🥑</span>
+                <span class="chip-icon"><bo-icon name="leaf" [size]="22" /></span>
                 <div class="chip-info">
                   <strong>Descoberta Visual</strong>
                   <span>Sabor que conquista pelos olhos</span>
@@ -29,7 +32,7 @@ import { Component } from '@angular/core';
           </div>
 
           <!-- Coluna Textual e Recursos para Consumidores -->
-          <div class="content-col">
+          <div class="content-col" [boReveal]="150">
             <div class="eyebrow-tag">PARA QUEM AMA COMER BEM</div>
             
             <h2 id="consumers-title" class="section-title">
@@ -44,7 +47,7 @@ import { Component } from '@angular/core';
 
             <!-- Lista de Pilares da Experiência do Usuário -->
             <div class="experience-list">
-              <div class="experience-item">
+              <div [boReveal]="0" class="experience-item">
                 <div class="exp-bullet">1</div>
                 <div class="exp-content">
                   <strong>Descoberta de estabelecimentos</strong>
@@ -52,7 +55,7 @@ import { Component } from '@angular/core';
                 </div>
               </div>
 
-              <div class="experience-item">
+              <div [boReveal]="60" class="experience-item">
                 <div class="exp-bullet">2</div>
                 <div class="exp-content">
                   <strong>Exploração de cardápios interativos</strong>
@@ -60,7 +63,7 @@ import { Component } from '@angular/core';
                 </div>
               </div>
 
-              <div class="experience-item">
+              <div [boReveal]="120" class="experience-item">
                 <div class="exp-bullet">3</div>
                 <div class="exp-content">
                   <strong>Apresentação detalhada de pratos</strong>
@@ -68,7 +71,7 @@ import { Component } from '@angular/core';
                 </div>
               </div>
 
-              <div class="experience-item">
+              <div [boReveal]="180" class="experience-item">
                 <div class="exp-bullet exp-bullet-plan">4</div>
                 <div class="exp-content">
                   <div class="exp-title-row">
@@ -79,7 +82,7 @@ import { Component } from '@angular/core';
                 </div>
               </div>
 
-              <div class="experience-item">
+              <div [boReveal]="240" class="experience-item">
                 <div class="exp-bullet exp-bullet-plan">5</div>
                 <div class="exp-content">
                   <div class="exp-title-row">
@@ -94,7 +97,7 @@ import { Component } from '@angular/core';
             <div class="cta-box">
               <a href="#conheca" class="btn btn-primary">
                 Explore o universo Boraê
-                <span aria-hidden="true">→</span>
+                <bo-icon class="btn-arrow" name="arrow-right" [size]="18" />
               </a>
             </div>
           </div>

@@ -1,23 +1,18 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { BrandLogoComponent } from '../shared/brand-logo.component';
 
 @Component({
   selector: 'app-footer',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, BrandLogoComponent],
   template: `
     <footer class="footer" role="contentinfo">
       <div class="container footer-container">
         <!-- Coluna da Marca -->
         <div class="footer-brand-col">
           <a routerLink="/" class="footer-logo-link" aria-label="Boraê — Início">
-            <img 
-              src="assets/images/borae-logo.png" 
-              alt="Logo Boraê" 
-              class="footer-logo"
-              width="100"
-              height="100"
-            >
+            <bo-brand-logo tone="dark" [size]="34" />
           </a>
           <p class="footer-tagline">
             Boraê — Experiências gastronômicas mais inteligentes.
@@ -94,12 +89,6 @@ import { RouterLink } from '@angular/router';
       max-width: 380px;
     }
 
-    .footer-logo {
-      height: 44px;
-      width: auto;
-      object-fit: contain;
-      border-radius: var(--radius-sm);
-    }
 
     .footer-tagline {
       font-size: 15px;

@@ -1,13 +1,16 @@
 import { Component } from '@angular/core';
+import { IconComponent } from '../shared/icon.component';
+import { RevealDirective } from '../shared/reveal.directive';
 
 @Component({
   selector: 'app-how-it-works',
   standalone: true,
+  imports: [IconComponent, RevealDirective],
   template: `
     <section id="como-funciona" class="how-section" aria-labelledby="how-title">
       <div class="container">
         <!-- Cabeçalho -->
-        <div class="section-header">
+        <div class="section-header" boReveal>
           <div class="eyebrow-tag">JORNADA GASTRONÔMICA</div>
           <h2 id="how-title" class="section-title">Uma experiência conectada em cada etapa.</h2>
           <p class="section-lead">
@@ -20,12 +23,12 @@ import { Component } from '@angular/core';
         <!-- Grade das 3 Etapas -->
         <div class="steps-grid">
           <!-- Etapa 1: Descubra -->
-          <article class="step-card">
+          <article [boReveal]="0" class="step-card">
             <div class="step-badge">
               <span class="step-num">01</span>
               <span class="step-line" aria-hidden="true"></span>
             </div>
-            <div class="step-icon-box">🔍</div>
+            <div class="step-icon-box"><bo-icon name="search" [size]="24" /></div>
             <h3 class="step-title">Descubra</h3>
             <p class="step-text">
               Encontre estabelecimentos e conheça suas propostas gastronômicas.
@@ -36,12 +39,12 @@ import { Component } from '@angular/core';
           </article>
 
           <!-- Etapa 2: Explore -->
-          <article class="step-card highlight-step">
+          <article [boReveal]="120" class="step-card highlight-step">
             <div class="step-badge">
               <span class="step-num num-highlight">02</span>
               <span class="step-line" aria-hidden="true"></span>
             </div>
-            <div class="step-icon-box box-highlight">📖</div>
+            <div class="step-icon-box box-highlight"><bo-icon name="book-open" [size]="24" /></div>
             <h3 class="step-title">Explore</h3>
             <p class="step-text">
               Conheça cardápios e descubra os detalhes de cada experiência.
@@ -52,11 +55,11 @@ import { Component } from '@angular/core';
           </article>
 
           <!-- Etapa 3: Conecte-se -->
-          <article class="step-card">
+          <article [boReveal]="240" class="step-card">
             <div class="step-badge">
               <span class="step-num">03</span>
             </div>
-            <div class="step-icon-box">🤝</div>
+            <div class="step-icon-box"><bo-icon name="link" [size]="24" /></div>
             <h3 class="step-title">Conecte-se</h3>
             <p class="step-text">
               Uma experiência que aproxima consumidores e restaurantes, com possibilidades 

@@ -1,13 +1,16 @@
 import { Component } from '@angular/core';
+import { IconComponent } from '../shared/icon.component';
+import { RevealDirective } from '../shared/reveal.directive';
 
 @Component({
   selector: 'app-ecosystem',
   standalone: true,
+  imports: [IconComponent, RevealDirective],
   template: `
     <section id="ecossistema" class="ecosystem-section" aria-labelledby="ecosystem-title">
       <div class="container">
         <!-- Cabeçalho -->
-        <div class="section-header">
+        <div class="section-header" boReveal>
           <div class="eyebrow-tag">ARQUITETURA INTEGRADA</div>
           <h2 id="ecosystem-title" class="section-title">
             Mais do que uma plataforma. Um ecossistema gastronômico.
@@ -21,8 +24,8 @@ import { Component } from '@angular/core';
         <!-- Grade dos 6 Pilares do Ecossistema -->
         <div class="ecosystem-grid">
           <!-- Pilar 1 -->
-          <article class="eco-card">
-            <div class="eco-icon-wrap">🏢</div>
+          <article [boReveal]="0" class="eco-card">
+            <div class="eco-icon-wrap"><bo-icon name="building" [size]="24" /></div>
             <h3 class="eco-title">Restaurantes Parceiros</h3>
             <p class="eco-desc">
               Gestão de presença digital, controle de equipe e valorização dos diferenciais culinários.
@@ -31,8 +34,8 @@ import { Component } from '@angular/core';
           </article>
 
           <!-- Pilar 2 -->
-          <article class="eco-card">
-            <div class="eco-icon-wrap">👥</div>
+          <article [boReveal]="70" class="eco-card">
+            <div class="eco-icon-wrap"><bo-icon name="users" [size]="24" /></div>
             <h3 class="eco-title">Consumidores</h3>
             <p class="eco-desc">
               Comunidade de amantes da gastronomia que buscam novos sabores com facilidade e transparência.
@@ -41,8 +44,8 @@ import { Component } from '@angular/core';
           </article>
 
           <!-- Pilar 3 -->
-          <article class="eco-card">
-            <div class="eco-icon-wrap">✨</div>
+          <article [boReveal]="140" class="eco-card">
+            <div class="eco-icon-wrap"><bo-icon name="smartphone" [size]="24" /></div>
             <h3 class="eco-title">Experiências Digitais</h3>
             <p class="eco-desc">
               Cardápios responsivos por QR Code e exploração visual de pratos em dispositivos modernos.
@@ -51,8 +54,8 @@ import { Component } from '@angular/core';
           </article>
 
           <!-- Pilar 4 -->
-          <article class="eco-card">
-            <div class="eco-icon-wrap">🤖</div>
+          <article [boReveal]="210" class="eco-card">
+            <div class="eco-icon-wrap"><bo-icon name="sparkles" [size]="24" /></div>
             <h3 class="eco-title">Inteligência Gastronômica</h3>
             <p class="eco-desc">
               Recomendações contextuais de itens reais com base em preferências e ingredientes informados.
@@ -61,8 +64,8 @@ import { Component } from '@angular/core';
           </article>
 
           <!-- Pilar 5 -->
-          <article class="eco-card">
-            <div class="eco-icon-wrap">🎯</div>
+          <article [boReveal]="280" class="eco-card">
+            <div class="eco-icon-wrap"><bo-icon name="target" [size]="24" /></div>
             <h3 class="eco-title">Fidelidade Individual</h3>
             <p class="eco-desc">
               Programas exclusivos configurados por cada estabelecimento para valorizar seus clientes frequentes.
@@ -71,8 +74,8 @@ import { Component } from '@angular/core';
           </article>
 
           <!-- Pilar 6 — Destaque Boraê Club -->
-          <article class="eco-card club-card">
-            <div class="eco-icon-wrap club-icon">🌟</div>
+          <article [boReveal]="350" class="eco-card club-card">
+            <div class="eco-icon-wrap club-icon"><bo-icon name="star" [size]="24" /></div>
             <h3 class="eco-title club-title">Boraê Club</h3>
             <p class="eco-desc">
               Proposta de benefícios compartilhados entre estabelecimentos parceiros, criando uma rede gastronômica colaborativa.
@@ -82,8 +85,8 @@ import { Component } from '@angular/core';
         </div>
 
         <!-- Alerta de Transparência -->
-        <div class="transparency-note" role="note">
-          <span class="note-icon">ℹ️</span>
+        <div class="transparency-note" role="note" boReveal>
+          <bo-icon class="note-icon" name="info" [size]="20" />
           <p>
             <strong>Transparência Boraê:</strong> A rede de benefícios Boraê Club e os módulos de inteligência e 3D/AR 
             fazem parte da visão futura da plataforma e estão sendo construídos incrementalmente.

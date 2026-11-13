@@ -1,13 +1,16 @@
 import { Component } from '@angular/core';
+import { IconComponent } from '../shared/icon.component';
+import { RevealDirective } from '../shared/reveal.directive';
 
 @Component({
   selector: 'app-proposal',
   standalone: true,
+  imports: [IconComponent, RevealDirective],
   template: `
     <section class="proposal-section" aria-labelledby="proposal-title">
       <div class="container">
         <!-- Cabeçalho da Proposta -->
-        <div class="section-header">
+        <div class="section-header" boReveal>
           <div class="eyebrow-tag">CONECTANDO UNIVERSOS</div>
           <h2 id="proposal-title" class="section-title">Um novo jeito de viver a gastronomia.</h2>
           <p class="section-lead">
@@ -20,14 +23,14 @@ import { Component } from '@angular/core';
         <!-- Grade de Dois Blocos (A e B) -->
         <div class="cards-grid">
           <!-- Bloco A: Para Restaurantes -->
-          <article class="audience-card card-restaurant">
+          <article class="audience-card card-restaurant" boReveal>
             <div class="card-pill">
               <span class="pill-dot"></span>
               <span>Para Restaurantes</span>
             </div>
             
             <div class="card-icon-wrapper">
-              <span class="card-icon" aria-hidden="true">🏪</span>
+              <bo-icon class="card-icon" name="store" [size]="26" />
             </div>
 
             <h3 class="card-title">Sua marca merece ser descoberta.</h3>
@@ -47,20 +50,20 @@ import { Component } from '@angular/core';
             <div class="card-action">
               <a href="#restaurantes" class="btn btn-secondary full-width">
                 Conheça a proposta para restaurantes
-                <span aria-hidden="true">→</span>
+                <bo-icon class="btn-arrow" name="arrow-right" [size]="18" />
               </a>
             </div>
           </article>
 
           <!-- Bloco B: Para Consumidores -->
-          <article class="audience-card card-consumer">
+          <article class="audience-card card-consumer" [boReveal]="120">
             <div class="card-pill pill-consumer">
               <span class="pill-dot dot-consumer"></span>
               <span>Para Consumidores</span>
             </div>
             
             <div class="card-icon-wrapper icon-consumer">
-              <span class="card-icon" aria-hidden="true">🍽️</span>
+              <bo-icon class="card-icon" name="utensils" [size]="26" />
             </div>
 
             <h3 class="card-title">Descubra o próximo lugar que vai conquistar você.</h3>
@@ -79,7 +82,7 @@ import { Component } from '@angular/core';
             <div class="card-action">
               <a href="#consumidores" class="btn btn-primary full-width">
                 Descubra o universo Boraê
-                <span aria-hidden="true">→</span>
+                <bo-icon class="btn-arrow" name="arrow-right" [size]="18" />
               </a>
             </div>
           </article>
@@ -244,9 +247,12 @@ import { Component } from '@angular/core';
     }
 
     .feature-checklist li::before {
-      content: '✓';
-      color: var(--color-primary);
-      font-weight: 800;
+      content: '';
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--color-primary-light) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23E85D00' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / 11px no-repeat;
     }
 
     .card-action {
