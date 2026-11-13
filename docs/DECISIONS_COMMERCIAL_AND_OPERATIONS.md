@@ -134,17 +134,86 @@ Foi aprovada a seguinte política de sete tentativas com intervalos progressivos
 - Não conceder acesso direto ao banco de dados; integrações acessam somente endpoints autorizados.
 - OAuth 2.0 não será requisito universal do MVP; poderá ser adotado para integrações que justifiquem fluxos delegados mais complexos.
 
-## 11. Itens técnicos ainda parametrizáveis
+## 11. Parâmetros técnicos e operacionais aprovados na rodada final
 
-As escolhas de produto acima estão aprovadas. Permanecem como parâmetros de implementação, sem bloquear a arquitetura:
-- Limite numérico de tokens por interação e orçamento/alertas de IA.
-- Frequência exata e janelas de rate limit para convites e API Keys.
-- Retenção operacional de logs e métricas por categoria.
-- Regras de alerta, limiares de latência/erro e disponibilidade.
-- Detalhes de configuração do Sandbox, credenciais, homologação e conciliação do Asaas.
-- Configuração fiscal e validação de NFS-e para a empresa e município competentes.
-- Versão estável exata do Gemini Flash-Lite no momento da implementação.
-- Parâmetros de otimização de imagem e política de formatos de mídia 3D, conforme o módulo.
-- Schema físico, índices, constraints, migrações e estratégia de backup/recuperação.
+As decisões abaixo complementam as seções anteriores e foram aprovadas pelo responsável pelo produto em 13/11/2026. São regras de implementação; sua aprovação não significa que estejam codificadas, contratadas ou operacionais.
 
-Esses parâmetros devem ser registrados nos documentos técnicos ou de operação correspondentes quando definidos. Não reabrir as escolhas de produto aprovadas sem uma nova decisão explícita.
+### 11.1 Limites e comportamento da IA
+
+- Limite por interação: até **2.000 tokens de entrada** e **500 tokens de saída**.
+- O backend controla entrada e saída separadamente. Se o contexto exceder o limite de entrada, deve reduzi-lo antes de chamar o modelo.
+- As cotas diárias de 20 interações por consumidor e 100 por restaurante são aplicadas simultaneamente.
+- Ao atingir qualquer cota aplicável, bloquear novas interações de IA até a renovação; informar o usuário que o limite foi atingido.
+- O esgotamento da cota não bloqueia as demais funcionalidades do Boraê e não gera cobrança adicional nem cota extra.
+- Renovar os contadores diariamente à meia-noite no fuso **America/Sao_Paulo**. O cálculo deve ocorrer no backend, independentemente do fuso do dispositivo.
+
+### 11.2 Convites de funcionários
+
+- Funcionários/membros continuam ilimitados por restaurante.
+- Limite de envio: **10 convites por hora por usuário administrador** e **30 convites por dia por restaurante**.
+- Não permitir convites pendentes duplicados para o mesmo e-mail.
+- Convites expiram após **7 dias**. Reenvio permitido pelo administrador, respeitando os limites, e gera novo prazo de 7 dias.
+- Convites são de uso único e ficam inválidos após o aceite.
+- Manter histórico consultável de convites e auditar emissão, reenvio, revogação, aceite e expiração.
+
+### 11.3 Limites de API Keys
+
+Aplicar por chave, no backend:
+
+| Controle | Limite aprovado |
+|---|---:|
+| Requisições por minuto | 60 |
+| Requisições por dia | 10.000 |
+| Rajada (burst) | 10 requisições por segundo |
+
+- Ao exceder o limite, responder com HTTP **429 Too Many Requests** e cabeçalho Retry-After indicando quando a integração poderá tentar novamente.
+- O administrador global pode ajustar os limites individualmente por chave, sem exigir emissão de uma nova chave.
+- Os limites não substituem escopos/permissões, autenticação, auditoria ou isolamento por restaurante.
+
+### 11.4 Validade, rotação e revogação de API Keys
+
+- API Keys não expiram automaticamente por padrão.
+- O administrador global pode definir uma data de expiração individual.
+- O responsável pela integração pode solicitar rotação.
+- Após emitir a nova chave, a chave anterior pode permanecer válida por até **24 horas** para permitir a transição.
+- Revogação manual é imediata e não possui período de tolerância.
+- Enviar avisos antes de uma expiração programada.
+- Segredos não devem ser exibidos novamente após a criação nem armazenados em texto puro.
+
+### 11.5 Retenção de logs operacionais
+
+| Categoria | Retenção |
+|---|---:|
+| Logs de aplicação | 30 dias |
+| Logs de segurança e autenticação | 180 dias |
+| Logs de auditoria administrativa e de API Keys | 365 dias |
+
+Após o prazo, expurgar ou anonimizar conforme a finalidade e as obrigações legais aplicáveis. Nunca registrar senhas, tokens de acesso, chaves secretas ou conteúdo integral de conversas com IA. A política por categoria de dados pessoais e bases legais continua prevalecendo quando exigir tratamento diferente.
+
+### 11.6 Backups e recuperação
+
+- Executar backup completo automático diariamente.
+- Utilizar backups incrementais ou recuperação por ponto no tempo (PITR), quando suportados pelo provedor.
+- Reter backups diários por **30 dias**.
+- Criptografar backups em repouso.
+- Manter os backups separados do ambiente principal.
+- Realizar teste de restauração trimestral e registrar seu resultado.
+- Objetivo de ponto de recuperação (**RPO**): até **1 hora** de perda de dados.
+- Objetivo de tempo de recuperação (**RTO**): até **4 horas** para restaurar os serviços essenciais.
+- RPO/RTO são objetivos operacionais, não garantias de disponibilidade. A infraestrutura contratada deverá ser validada para suportá-los; limitações precisam ser documentadas e tratadas antes da produção.
+
+## 12. Validações que permanecem abertas
+
+As principais decisões de produto, negócio e parâmetros desta rodada estão aprovadas. Permanecem para validação durante o desenvolvimento ou antes da produção:
+
+- Configuração fiscal do Asaas para NFS-e, conforme empresa, município e enquadramento.
+- Versão estável exata do Gemini Flash-Lite, termos de uso de dados, limites e modalidade de faturamento.
+- Limiares de alertas de latência, erros e disponibilidade, definidos com base em métricas reais.
+- Ferramenta externa de observabilidade técnica; não foi escolhida. O painel administrativo separado do Boraê continua sendo uma aplicação própria e não é substituto automático de observabilidade.
+- Dimensões, qualidade e parâmetros de otimização de imagens, respeitando limites já aprovados.
+- Formatos e limites próprios de modelos 3D, conforme a especificação do módulo.
+- Schema físico, índices, constraints e migrações conforme os módulos forem implementados.
+- Homologação do Sandbox, credenciais, conciliação e fluxos de cobrança do Asaas.
+- Confirmação de que o provedor de infraestrutura suporta PITR, RPO de 1 hora, RTO de 4 horas e retenção definida.
+
+Essas validações não reabrem decisões aprovadas. Devem ser registradas nos documentos técnicos/operacionais quando forem detalhadas. Não tratar nenhuma regra documentada como funcionalidade já implementada.
