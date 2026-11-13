@@ -190,7 +190,7 @@ O limite numérico de convites simultâneos por restaurante não foi definido ne
 - Backend valida autorização, MIME real, tamanho, checksum e associação da mídia ao restaurante antes de concluir o upload.
 - Arquivos binários não serão armazenados no PostgreSQL.
 
-**Ainda pendente:** limites numéricos de tamanho para imagens e modelos 3D, política de dimensões/resolução e decisão final do provedor após avaliação de custos e suporte a GLB/glTF.
+**Ainda pendente:** limites numéricos de tamanho para imagens e modelos 3D e política de dimensões/resolução. As cotas e condições do plano gratuito devem ser conferidas na implantação e periodicamente, pois podem mudar. As cotas e condições do plano gratuito devem ser conferidas na implantação e periodicamente, pois podem mudar.
 
 **Impactos:** atualizar modelo de domínio, PRD, API e especificações de catálogo/3D. Esta decisão não implica que upload e processamento estejam implementados.
 
