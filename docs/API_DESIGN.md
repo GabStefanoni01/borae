@@ -125,13 +125,13 @@ Recursos candidatos:
 - `POST /api/v1/restaurants/{restaurantId}/loyalty/transactions`
 - `POST /api/v1/me/reward-redemptions`
 
-D-12 parcialmente aprovada: cada programa local escolhe entre acúmulo proporcional ao valor gasto ou quantidade fixa de pontos por compra. A API de configuração deverá representar o tipo e os parâmetros versionados da regra, sem reescrever lançamentos anteriores.
+D-12 aprovada: cada restaurante escolhe acúmulo proporcional ao valor gasto ou pontos fixos por compra. No modelo proporcional, pode configurar taxa ou faixas; dentro da faixa o cálculo é proporcional ao valor efetivamente pago e o resultado é arredondado para baixo. A base exclui taxas de entrega, serviço e encargos e considera o valor após descontos/cupons. Parâmetros são versionados e não reescrevem lançamentos anteriores.
 
 Crédito/resgate deve exigir chave de idempotência e autorização específica. O consumidor não pode criar créditos para si mesmo. O evento que gera pontos precisa ser validado por origem confiável.
 
-**D-13 parcialmente aprovada:** no fluxo inicial, a compra concluída será confirmada manualmente no fechamento da conta por funcionário com papel de garçom ou gerente. A operação deverá registrar o restaurante e o funcionário responsável; o valor informado será o efetivamente pago. Não há dependência de integração POS nem de pagamento processado pelo Boraê. O consumidor será localizado pelo telefone cadastrado; o método de verificação do telefone ainda será definido. Também permanecem pendentes o contrato de idempotência e o momento de disponibilidade do crédito.
+**D-13 aprovada:** pontos só ficam disponíveis após confirmação efetiva do pagamento. Quando houver integração confiável, a confirmação poderá ser automática; sem integração, garçom ou gerente autorizado confirma manualmente no fechamento, informando o valor efetivamente pago. A operação registra restaurante, funcionário e identificador único da compra. O consumidor é identificado por telefone verificado via SMS; a conta global exige nome, telefone, e-mail e senha, com carteiras independentes por restaurante. O identificador único da compra é a proteção principal contra duplicidade, complementada por análise de restaurante, consumidor, valor e horário.
 
-**D-15 parcialmente aprovada — regras operacionais:** cada restaurante configura a validade dos pontos. A configuração e a versão da regra devem ser preservadas por crédito, sem alteração retroativa: novas regras só se aplicam a pontos acumulados após sua vigência, e recompensas já conquistadas são preservadas. Estornos/cancelamentos de compras são registrados por funcionário autorizado como lançamentos compensatórios idempotentes e auditáveis; se os pontos já tiverem sido utilizados, criar pendência para análise, sem saldo negativo. Detecção de padrões suspeitos gera alertas ao gerente, sem exigir confirmação extra do consumidor e sem bloqueio automático no MVP. Ao encerrar o programa, comunicar clientes e garantir ao menos 60 dias para resgate (prazo maior pode ser oferecido pelo restaurante). Em fechamento repentino, comunicar assim que possível; não há obrigação automática do Boraê de financiar recompensas nem resgate em outro restaurante. A ordem de consumo de pontos com diferentes validades permanece pendente.
+**D-15 aprovada — regras operacionais:** cada restaurante configura a validade dos pontos. Créditos preservam versão e parâmetros da regra; alterações só afetam pontos futuros e não retiram recompensas já conquistadas. Consumo por FEFO: vence primeiro, consome primeiro; empate por crédito mais antigo. Expiração automática gera lançamento vinculado ao crédito original. Enviar ao menos um aviso diário nos 14 dias anteriores ao vencimento, por push e central interna, agrupando lotes sem perder restaurante, quantidade e data. Horário inteligente por comportamento/fuso, com fallback seguro. Avisos transacionais não podem ser desligados por preferências de marketing; sem push, manter na central interna e não usar SMS. Estornos geram compensação; se pontos já foram usados, registrar pendência sem saldo negativo e compensar nos próximos acúmulos. Padrões suspeitos geram alertas ao gerente, sem confirmação extra do consumidor nem bloqueio automático no MVP. Encerramento voluntário exige comunicação e ao menos 60 dias para resgate; fechamento repentino exige comunicação assim que possível, sem transferência automática de custos ao Boraê ou resgate em outro restaurante.
 
 ## 8. Boraê Club — evolução futura, fora do MVP
 
@@ -141,11 +141,14 @@ Se o Boraê Club for retomado futuramente, seus endpoints e contratos dependerã
 
 ## 9. Descoberta — proposta
 
-- `GET /api/v1/public/restaurants` com filtros por categoria, localização e paginação.
-- `GET /api/v1/public/restaurants/{slug}`.
+- `GET /api/v1/public/restaurants` com filtros por categoria, localização, distância, faixa de preço, avaliação, horário, benefícios de fidelidade e modalidade de atendimento, além de paginação.
+- `GET /api/v1/public/restaurants/{slug}` para perfil público de unidade.
+- `GET /api/v1/public/brands/{slug}` para página principal da marca/rede.
 - `GET /api/v1/public/restaurants/{slug}/menu`.
+- Resultados ordenados por relevância considerando distância, avaliações, popularidade e completude; personalização por histórico fica para fase futura.
+- Páginas de marca e unidade mantêm identidade e avaliações próprias. Somente avaliações vinculadas a compras confirmadas podem ser publicadas.
+- Não expor endereço privado, contatos internos, membros ou indicadores do painel. Dados ausentes não devem ser inventados.
 
-Não expor endereço privado, contatos internos, membros ou indicadores do painel.
 
 ## 10. Autorização e erros
 
@@ -167,3 +170,41 @@ A decisão entre 403 e 404 para evitar enumeração deve ser uniforme por recurs
 - Renomear/remover campo exige estratégia de depreciação.
 - Versionar breaking changes.
 - Atualizar OpenAPI, frontend, testes e docs no mesmo PR.
+
+
+## 12. API externa, credenciais e integrações — D-20
+
+A API será pública para integração por terceiros autorizados, mas **não será anônima**. Toda integração externa deve usar chave de API com permissões/escopos explícitos. A autorização deve ser aplicada por recurso e restaurante; chaves devem poder ser revogadas e não podem aparecer em logs ou respostas.
+
+Requisitos:
+- Rate limiting por chave e, quando apropriado, por IP/tenant.
+- Documentação pública Swagger/OpenAPI, distinguindo endpoints públicos de operações autenticadas.
+- Webhooks configuráveis por evento, com autenticação/assinatura e reenvio automático após falha.
+- Registro de tentativas, status e política de retry com backoff e limite configurável; evitar duplicação no consumidor por meio de identificador único do evento.
+- Ambiente Sandbox isolado de dados e operações reais.
+- Não criar integração com PDV/ERP no lançamento. A existência da API e dos webhooks prepara integrações futuras, não autoriza integração POS antecipada.
+
+## 13. Conta do consumidor, assinatura e administração — contratos futuros
+
+### Consumidor
+- Conta global por telefone verificado via SMS, com nome, e-mail e senha.
+- Login por telefone + senha; recuperação por SMS ou link de e-mail.
+- Uma sessão ativa por vez; novo login encerra a anterior.
+- Cinco tentativas incorretas consecutivas: bloqueio temporário de 15 minutos.
+- Troca de telefone exige SMS no novo número; exclusão sob solicitação com anonimização quando aplicável e retenção legal/auditável.
+- Consentimento de fidelidade explícito e separado do consentimento opcional de marketing.
+
+### Assinatura
+- Um plano SaaS, preço-base único, sem comissão por transação.
+- Trial de 30 dias; ativação paga somente após forma de pagamento cadastrada e confirmação expressa.
+- Ciclos mensal, trimestral e anual com descontos progressivos.
+- Cancelamento a qualquer momento, acesso até o fim do período pago; troca de ciclo na próxima renovação.
+- Falha de cobrança: tentativas e avisos, sete dias de tolerância e suspensão posterior.
+- Cartão e Pix; nota fiscal automática a cada cobrança.
+- Valor nominal e percentuais de desconto ainda não definidos.
+
+### Administração global
+- Administrador principal e equipe de suporte limitada, com papéis separados dos papéis dos restaurantes.
+- Suporte acessa dados técnicos, pode suspender temporariamente restaurantes e não acessa dados pessoais, histórico de compras ou dados financeiros.
+- Todas as ações administrativas são auditadas.
+- Operações de administração global exigem autorização específica e justificativa/confirmacão em exclusões.
