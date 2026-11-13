@@ -64,13 +64,14 @@ Este roadmap organiza dependências. Não é autorização para implementar toda
 - [ ] Campanhas e benefícios de aniversário.
 - [ ] Proteção contra duplicidade, fraude e concorrência.
 
-## Fase 7 — Descoberta e Boraê Club
-- [ ] Diretório e busca de restaurantes.
-- [ ] Localização/categorias e páginas públicas.
-- [ ] Especificar regras contratuais e financeiras do Boraê Club.
-- [ ] Ledger separado para pontos compartilhados.
-- [ ] Liquidação entre parceiros, estornos e auditoria.
-- [ ] Piloto fechado com restaurantes parceiros.
+## Fase 7 — Descoberta de restaurantes
+- [ ] Definir taxonomia, categorias e critérios de busca (D-16).
+- [ ] Definir geolocalização, raio e ordenação dos resultados.
+- [ ] Implementar diretório e busca de restaurantes.
+- [ ] Implementar páginas públicas e acesso aos cardápios.
+
+## Evolução futura — Boraê Club (fora do MVP)
+O Boraê Club compartilhado não integra o roadmap de implementação do MVP. Só deverá voltar ao planejamento após validar a fidelidade individual e a adesão dos restaurantes, com nova decisão de produto e aprovação prévia do modelo financeiro, contratual e operacional. Não implementar carteira compartilhada, ledger Club, resgate cruzado ou liquidação entre parceiros nesta fase.
 
 ## Fase 8 — Monetização e operação ampliada
 - [ ] Planos SaaS para restaurantes.
