@@ -1,4 +1,4 @@
-# Produto e regras de negócio
+# Produto e regras de negócio\n\n> Especificação detalhada: consulte [PRD.md](PRD.md), [SCREEN_FLOWS.md](SCREEN_FLOWS.md), os documentos de módulo e [OPEN_DECISIONS.md](OPEN_DECISIONS.md).
 
 ## 1. Visão
 
