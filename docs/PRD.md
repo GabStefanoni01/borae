@@ -115,10 +115,14 @@ Os papéis são atribuídos por vínculo com cada restaurante. O mesmo usuário 
 ### RF-02 — Restaurante e equipe
 - Criar restaurante e vínculo OWNER atomicamente.
 - Listar restaurantes do usuário.
-- Convidar MANAGER/STAFF por token seguro.
-- Aceitar convite apenas com conta autenticada cujo e-mail corresponda.
+- OWNER pode convidar MANAGER ou STAFF; MANAGER pode convidar somente STAFF.
+- Vincular cada convite a um endereço de e-mail específico; aceitar somente com conta autenticada usando o mesmo e-mail.
+- Fazer o convite expirar em 7 dias.
+- Permitir que OWNER e MANAGER revoguem convites pendentes.
+- Permitir reenvio de convites pendentes ou expirados, renovando a validade por 7 dias.
+- Garantir que convites aceitos sejam de uso único.
 - Listar equipe e alterar/remover vínculos conforme autorização.
-- Convite por e-mail automatizado é evolução futura; fluxo atual compartilha token manualmente.
+- O limite de convites simultâneos e a política de entrega de e-mail ainda precisam ser definidos.
 
 ### RF-03 — Perfil do restaurante
 - Editar nome do restaurante e nome público/fantasia.
