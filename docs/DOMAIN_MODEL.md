@@ -111,10 +111,12 @@ Relacionamento: `Restaurant 1:N Menu`. Esta decisão de produto está aprovada; 
 - image_media_id opcional
 - ingredients (estrutura a definir)
 - allergen_declarations (estrutura a definir)
-- availability_status
-- publication_status
+- lifecycle_status (ACTIVE | ARCHIVED; não representa publicação pública)
+- availability_status (AVAILABLE | UNAVAILABLE)
 - display_order
 - timestamps
+
+**Decisão de produto D-03 aprovada:** o estado de publicação pertence ao `Menu` (`DRAFT | PUBLISHED | ARCHIVED`). Não há publicação individual de produto no MVP. Produtos elegíveis e categorias ativas ficam públicos quando o cardápio é publicado. Em cardápio publicado, alterações salvas entram no ar imediatamente. Disponibilidade operacional permanece separada da publicação.
 
 Produto deve pertencer a uma categoria do mesmo restaurante. Validar essa consistência no backend e, se viável, no banco.
 
