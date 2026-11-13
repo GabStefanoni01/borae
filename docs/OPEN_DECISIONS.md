@@ -25,6 +25,32 @@ Este arquivo impede que decisões não tomadas sejam inventadas durante a implem
 | D-19 | Administração | Papéis globais, auditoria e suporte | Admin |
 | D-20 | Pedidos | Se haverá pedido online, integração POS e responsabilidade de pagamento | Pedidos |
 
+## Decisões aprovadas
+
+### D-01 — Perfil do restaurante
+
+**Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
+
+**Decisão:** o perfil terá os seguintes campos e comportamentos:
+
+- **Nome do restaurante:** obrigatório.
+- **Nome fantasia/nome público:** usado na apresentação pública do estabelecimento.
+- **Descrição:** opcional.
+- **Logo e imagem de capa:** opcionais.
+- **Telefone/WhatsApp, Instagram e site:** opcionais.
+- **Endereço:** obrigatório para estabelecimentos físicos.
+- **Localização no mapa:** suportada; coordenadas associadas ao endereço quando disponíveis.
+- **Horário de funcionamento:** configurável por dia da semana.
+- **Categoria gastronômica:** obrigatória.
+- **Slug público:** gerado automaticamente e editável, desde que permaneça único e válido.
+- **Status de publicação do restaurante:** `DRAFT`, `PUBLISHED` ou `SUSPENDED`.
+
+O cadastro não deve exigir o preenchimento de todos os campos opcionais para que o proprietário comece a montar o cardápio. A publicação pública deve respeitar os campos obrigatórios e as validações definidas pelo produto.
+
+**Motivação:** reduzir a fricção do onboarding sem abrir mão das informações essenciais para identificar e localizar estabelecimentos físicos. O perfil público será a identidade digital do restaurante e o ponto de entrada para seu cardápio.
+
+**Impactos:** atualizar PRD, modelo de domínio, fluxo de telas e contrato de API do perfil. Não implica que a funcionalidade já esteja implementada.
+
 ## Como resolver uma decisão
 
 Para cada ID:
