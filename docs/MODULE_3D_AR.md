@@ -29,8 +29,11 @@ Permitir que o restaurante associe representação tridimensional aos produtos, 
 - Preferir GLB para distribuição compacta; validar glTF e dependências quando aplicável.
 - Limitar tamanho, polígonos, texturas e dimensões para evitar travamentos.
 - Processar/validar arquivo em ambiente isolado; não confiar em extensão.
-- Guardar arquivo em object storage; banco guarda metadados e referência.
+- Guardar arquivo em serviço externo de object storage; PostgreSQL guarda somente metadados e referência.
+- Formatos aceitos: GLB e glTF; validar MIME real, integridade e dependências.
 - Usar CDN/URLs assinadas conforme política de acesso.
+- Cloudinary é candidato para avaliação de imagens, mas o provedor definitivo precisa comprovar suporte e adequação a arquivos 3D, além de custos e limites compatíveis.
+- Limites numéricos de tamanho, polígonos e texturas precisam ser definidos antes de habilitar upload em produção.
 - Não permitir que um restaurante associe mídia de outro.
 - Implementar carregamento sob demanda e poster/imagem fallback.
 - Medir tamanho e latência do asset.
