@@ -10,7 +10,7 @@ Este arquivo impede que decisões não tomadas sejam inventadas durante a implem
 | D-04 | Ingredientes | **APROVADA** — lista livre de ingredientes associados ao produto; ver decisão registrada abaixo | Concluído |
 | D-05 | Opções | **APROVADA** — adicionais pagos e remoção de ingredientes; sem tamanhos ou ponto da carne no cadastro | Concluído |
 | D-06 | Preço | **APROVADA** — BRL, valores inteiros em centavos e cálculos no backend | Concluído |
-| D-07 | Permissões | Matriz completa de ações para OWNER, MANAGER e STAFF | Painel |
+| D-07 | Permissões | **APROVADA** — matriz de permissões para OWNER, MANAGER e STAFF | Concluído |
 | D-08 | Convites | Revogação, reenvio, envio por e-mail e limite de convites | Equipe |
 | D-09 | Mídia | Provedor de object storage, limites, formatos e CDN | Imagens/3D |
 | D-10 | IA | Provedor/modelo, orçamento, retenção, rate limits e fallback | Assistente |
@@ -142,6 +142,22 @@ Para cada ID:
 
 **Impactos:** padronizar o modelo de domínio e os contratos da API com valores em centavos (por exemplo, `priceInCents` e `priceDeltaInCents`). Exibição ao consumidor deve formatar os valores como BRL. Esta decisão não implica que pedidos ou pagamentos já façam parte do MVP.
 
-- **D-07 a D-20:** permanecem pendentes; não presumir aprovação nem iniciar implementação de regras de negócio correspondentes sem alinhamento.
+### D-07 — Papéis e permissões da equipe
+
+**Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
+
+**Decisão:** o Boraê terá três papéis por vínculo com restaurante:
+
+- **OWNER:** controle total do restaurante. Pode visualizar o painel; editar o perfil; criar e administrar cardápios, categorias, produtos, preços e publicação; alterar disponibilidade; visualizar e atualizar pedidos quando o módulo existir; gerenciar equipe, convites e papéis; excluir ou transferir a propriedade do restaurante; gerenciar assinatura e cobrança.
+- **MANAGER:** pode visualizar o painel; editar o perfil; criar e administrar cardápios, categorias, produtos e preços; publicar e arquivar cardápios; alterar disponibilidade; visualizar e atualizar pedidos quando o módulo existir; gerenciar equipe e convites. Não pode alterar papéis, excluir ou transferir o restaurante, nem gerenciar assinatura e cobrança.
+- **STAFF:** acesso operacional. Pode visualizar o painel; alterar disponibilidade dos produtos; visualizar pedidos e atualizar seus status quando o módulo existir. Não pode editar perfil, cardápios, categorias, produtos ou preços, publicar cardápios, gerenciar equipe ou convites, alterar papéis, excluir/transferir o restaurante ou gerenciar cobrança.
+
+As permissões são vinculadas ao membership de cada usuário em cada restaurante. Um mesmo usuário pode ter papéis diferentes em restaurantes diferentes. O backend deve validar autorização em toda operação privada; ocultar ações no frontend não substitui essa validação.
+
+**Escopo futuro:** permissões de pedidos ficam definidas desde já, mas não significam que pedidos estejam incluídos no MVP atual.
+
+**Impactos:** atualizar modelo de domínio, PRD e contratos/regras de autorização da API. Esta decisão não implica que todas as funcionalidades estejam implementadas.
+
+- **D-08 a D-20:** permanecem pendentes; não presumir aprovação nem iniciar implementação de regras de negócio correspondentes sem alinhamento.
 
 Ausência de decisão significa que o desenvolvimento do recurso correspondente deve aguardar alinhamento.
