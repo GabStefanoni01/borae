@@ -160,3 +160,58 @@ Toda tela com dados remotos deve prever:
 - Não depender exclusivamente de hover.
 - Formulários devem preservar dados não sensíveis quando ocorrer erro recuperável.
 - Evitar modais para fluxos longos; priorizar páginas ou painéis claros.
+
+
+## 11. Conta e segurança do consumidor (D-13/D-17)
+
+- Cadastro com nome, telefone, e-mail e senha.
+- Verificar telefone por SMS antes de ativar a conta.
+- Login por telefone + senha; não solicitar SMS em todo login.
+- Recuperação de senha por SMS ou link de e-mail, com validade limitada e uso único.
+- Troca de telefone exige verificação do novo número e preserva conta/carteiras/histórico.
+- Novo login encerra a sessão anterior; somente um dispositivo/sessão ativo por vez.
+- Após cinco tentativas consecutivas incorretas, bloquear por 15 minutos.
+- Nome/e-mail editáveis; telefone/senha exigem validação de segurança.
+- Sem foto de perfil; usar identidade visual padrão.
+- Exibir notificações de segurança para novos logins, mudanças de credenciais/contato e atividade suspeita.
+- Exclusão sob solicitação, com anonimização quando aplicável e retenção legal/auditável.
+
+## 12. Descoberta e avaliações (D-16)
+
+- Solicitar permissão de localização para usar posição atual como padrão; sempre oferecer busca manual de outra região.
+- Permitir filtros combináveis e ordenação por relevância.
+- Mostrar restaurantes abertos antes dos fechados e próxima abertura quando conhecida.
+- Página de rede apresenta marca e unidades; abrir unidade para detalhes e avaliação específica.
+- Avaliação só é habilitada após compra confirmada; nota geral, comentário opcional e critérios de atendimento, comida e ambiente.
+- Restaurante pode responder, mas não editar/apagar avaliação.
+- Favoritos e listas personalizadas podem ser compartilhados por link.
+- Não oferecer mensagens internas, feed social ou listas colaborativas.
+
+## 13. Assinatura do restaurante (D-18)
+
+- Exibir plano único e periodicidades mensal, trimestral e anual.
+- Apresentar 30 dias de teste gratuito.
+- Ao final do trial, solicitar forma de pagamento e confirmação expressa antes de iniciar a cobrança.
+- Exibir situação da assinatura, próxima renovação, histórico de cobranças e notas fiscais.
+- Permitir cancelamento a qualquer momento, informando que o acesso permanece até o fim do período pago.
+- Em falha de cobrança, informar tentativas e prazo de tolerância de sete dias.
+- Alteração de periodicidade e reajustes entram em vigor na próxima renovação.
+
+## 14. Administração global e suporte (D-19)
+
+- Painel global separado dos painéis dos restaurantes.
+- Exibir indicadores globais de restaurantes, consumidores, compras e receita; ocultar dados financeiros da equipe de suporte.
+- Exibir ações administrativas com registro de auditoria.
+- Suporte vê apenas dados técnicos e pode suspender restaurante temporariamente.
+- Exclusão de restaurante exige confirmação e justificativa.
+- Modo de manutenção deve informar aviso programado aos usuários.
+
+## 15. Integrações e atendimento (D-20)
+
+- Documentação Swagger/OpenAPI pública para API externa protegida por chaves e permissões.
+- Interface para configurar webhooks e consultar entregas/tentativas; reenvio automático em falhas.
+- Ambiente Sandbox separado de produção.
+- Chat de suporte com IA e ação de encaminhar para atendimento humano.
+- Notificações por e-mail.
+- Não desenhar fluxo de pedido online nem integração POS/ERP no lançamento.
+- Painel de restaurante e experiência do consumidor funcionam em web responsiva, sem apps nativos no lançamento.
