@@ -108,11 +108,16 @@ D-02 aprovada em 13/11/2026.
 - Pré-visualizar como consumidor.
 
 ### Publicação
-- Rascunho não aparece publicamente.
-- Publicação deve validar consistência mínima dos itens.
-- Despublicação deve refletir no acesso público sem apagar dados.
+- Publicação é controlada por cardápio, não individualmente por produto.
+- Cardápio novo começa como `DRAFT` e não aparece publicamente.
+- Antes de publicar, o restaurante pode revisar uma prévia.
+- Publicar valida a consistência mínima e torna visíveis as categorias ativas e os produtos elegíveis.
+- Em cardápio publicado, alterações salvas entram no ar imediatamente.
+- O restaurante pode despublicar ou arquivar o cardápio sem apagar seus dados.
+- Produto arquivado não aparece publicamente; produto indisponível pode continuar visível com indicação clara.
+- Não há fluxo de aprovação/publicação por produto no MVP.
 
-**Pendente:** definir publicação por produto, por menu ou por restaurante; definir se mudanças são publicadas imediatamente ou passam por revisão.
+D-03 aprovada em 13/11/2026.
 
 ## 7. Cardápio público (futuro)
 
