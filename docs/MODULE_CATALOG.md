@@ -89,15 +89,16 @@ Não existe publicação individual de produto no MVP. Produto arquivado não ap
 - Não retorna campos internos, IDs de usuário, equipe ou notas administrativas.
 - Dados são cacheáveis apenas com estratégia de invalidação ao atualizar preço/disponibilidade.
 
-## 6. Upload de imagem
+## 6. Upload de imagem e mídia
 
-- Upload via serviço de mídia, não guardar binário no PostgreSQL.
+- Utilizar serviço externo de object storage; nunca guardar binários no PostgreSQL.
+- Formatos de imagem aceitos: JPG/JPEG, PNG e WebP.
 - Validar MIME real, extensão, tamanho máximo e checksum.
-- Gerar variantes otimizadas para mobile.
+- Gerar variantes otimizadas para mobile e permitir entrega por CDN.
 - Remover metadados EXIF sensíveis quando possível.
 - Restringir acesso a arquivos privados e validar escopo do restaurante.
-
-Limites de tamanho e formatos permitidos precisam ser definidos na configuração do produto.
+- Cloudinary é candidato inicial para avaliação de armazenamento, transformação e entrega de imagens; a decisão final depende de custos, limites e suporte aos modelos GLB/glTF.
+- Limites numéricos de tamanho e resolução permanecem pendentes.
 
 ## 7. Critérios de aceite
 
