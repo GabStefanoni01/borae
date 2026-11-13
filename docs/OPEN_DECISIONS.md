@@ -16,7 +16,7 @@ Este arquivo impede que decisões não tomadas sejam inventadas durante a implem
 | D-10 | IA | **APROVADA** — Gemini API no plano gratuito inicialmente; integração desacoplada e controles de consumo | Concluído |
 | D-11 | IA | **APROVADA** — não persistir conversas; armazenar somente métricas agregadas por restaurante | Concluído |
 | D-12 | Fidelidade | **PARCIALMENTE APROVADA** — programa individual por restaurante; parâmetros de acúmulo e regras operacionais ainda pendentes | Fidelidade |
-| D-13 | Fidelidade | **PARCIALMENTE APROVADA** — confirmação manual após compra concluída por garçom ou gerente; estornos e controles restantes pendentes | Fidelidade |
+| D-13 | Fidelidade | **PARCIALMENTE APROVADA** — confirmação manual e identificação por telefone definidas; verificação do telefone, idempotência e disponibilidade do crédito pendentes | Fidelidade |
 | D-14 | Escopo da fidelidade | **APROVADA** — MVP terá somente fidelidade individual por restaurante; Boraê Club compartilhado fica para uma fase futura | Concluído |
 | D-15 | Fidelidade | **PARCIALMENTE APROVADA** — regras de validade, estorno, antifraude e encerramento definidas; ordem de consumo dos pontos pendente | Fidelidade |
 | D-16 | Descoberta | Taxonomia, geolocalização, raio e ordenação | Descoberta |
