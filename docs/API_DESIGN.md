@@ -14,6 +14,19 @@ Este documento é um guia de desenho para módulos futuros, não uma declaraçã
 - Não confiar em restaurantId, userId, role ou ownerId como prova de autorização.
 - Toda operação privada deriva usuário do JWT, valida membership ativo no restaurante solicitado e aplica a matriz D-07 no backend. OWNER tem controle total; MANAGER administra perfil, catálogo, publicação, disponibilidade, equipe e convites, sem alterar papéis, propriedade ou cobrança; STAFF tem acesso operacional ao painel e à disponibilidade de produtos, além de pedidos quando o módulo existir. O mesmo usuário pode ter papéis diferentes por restaurante. Autorização não pode depender apenas de controles visuais no frontend.
 
+## Convites de equipe — regras D-08
+
+- Criar convite vinculado ao e-mail e papel autorizado: OWNER pode convidar MANAGER/STAFF; MANAGER somente STAFF.
+- Aceitar convite exige usuário autenticado com e-mail correspondente ao convite.
+- Validade de 7 dias a partir da criação ou reenvio.
+- Permitir revogação de convites pendentes por OWNER/MANAGER.
+- Permitir reenvio de convites pendentes ou expirados, rotacionando o token e renovando a validade por 7 dias.
+- Aceitação deve ser atômica e de uso único; convite aceito, revogado ou expirado não pode ser aceito.
+- Persistir somente hash do token; nunca registrar o token em logs.
+- Validar papel de quem convida e membership ativo no restaurante em toda operação.
+
+O limite numérico de convites simultâneos e a política de entrega de e-mail ainda não foram definidos. Os endpoints e payloads finais serão especificados antes da implementação.
+
 ## 2. Recursos já existentes
 
 Consultar [API.md](API.md) para a lista de endpoints confirmados. Não alterar contratos existentes sem compatibilidade ou migração coordenada do frontend.
