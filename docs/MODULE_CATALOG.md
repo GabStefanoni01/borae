@@ -9,6 +9,16 @@ Permitir que o restaurante cadastre e mantenha um cardápio confiável, e que co
 
 ## 2. Escopo inicial
 
+### Cardápios
+- Um restaurante pode possuir múltiplos cardápios, por exemplo Almoço, Jantar e Bebidas.
+- Cada cardápio tem suas próprias categorias e produtos.
+- Vários cardápios podem estar publicados simultaneamente.
+- A página pública do restaurante lista os cardápios publicados para o consumidor escolher.
+- No MVP, não existe alternância automática por horário.
+- O QR Code principal aponta para a página pública do restaurante, não para um cardápio individual.
+
+**Decisão de produto D-02 aprovada em 13/11/2026.**
+
 ### Categorias
 - Nome obrigatório.
 - Descrição opcional.
