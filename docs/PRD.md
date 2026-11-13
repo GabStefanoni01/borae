@@ -141,7 +141,7 @@ Os papéis são atribuídos por vínculo com cada restaurante. O mesmo usuário 
 ### RF-04 — Catálogo
 - Criar e ordenar categorias dentro de um cardápio.
 - Criar, editar e arquivar produtos.
-- Informar nome, descrição, preço, ingredientes individuais, imagem e disponibilidade.
+- Informar nome, descrição, preço, ingredientes individuais, imagem e disponibilidade.\n- Fazer upload de imagens JPG/JPEG, PNG e WebP por serviço externo de mídia, sem armazenar binários no PostgreSQL.
 - Permitir cadastrar livremente vários ingredientes por produto, editar, remover e ordenar sua exibição.
 - Exibir os ingredientes informados pelo restaurante nos detalhes do produto.
 - Permitir cadastrar adicionais opcionais com seus preços/acréscimos, exibidos ao consumidor no cardápio.
@@ -162,7 +162,7 @@ Os papéis são atribuídos por vínculo com cada restaurante. O mesmo usuário 
 **Decisão de produto aprovada (D-04, 13/11/2026):** ingredientes são itens individuais cadastrados livremente pelo restaurante e associados ao produto. Não haverá cadastro específico de alergênicos ou contaminação cruzada neste escopo.
 
 **Decisão de produto aprovada (D-06, 13/11/2026):** preços em BRL, armazenados em centavos como inteiros; cálculos monetários no backend, sem `float` ou `double`.
-
+\n**Decisão de produto aprovada (D-09, 13/11/2026):** imagens JPG/JPEG, PNG e WebP e modelos GLB/glTF serão armazenados em object storage externo; PostgreSQL mantém apenas metadados e referências. Cloudinary será avaliado como candidato. Limites numéricos e provedor definitivo permanecem pendentes.\n
 ### RF-05 — Cardápio público
 - Carregar dados publicados do restaurante.
 - Exibir categorias e produtos disponíveis.
@@ -179,6 +179,9 @@ Os papéis são atribuídos por vínculo com cada restaurante. O mesmo usuário 
 ### RF-07 — 3D/AR
 - Associar modelo GLB/glTF a produto.
 - Validar tipo, tamanho e integridade do arquivo.
+- Armazenar modelos e imagens em object storage externo; manter somente metadados e referências no PostgreSQL.
+- Suportar CDN, otimização de imagens e carregamento sob demanda.
+- Avaliar Cloudinary como candidato para mídia, sem fixar o provedor definitivo antes de validar custos e suporte aos formatos 3D.
 - Oferecer visualização 3D e AR somente quando suportado.
 - Manter fallback visual.
 
