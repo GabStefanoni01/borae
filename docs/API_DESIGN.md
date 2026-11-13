@@ -82,6 +82,9 @@ D-09 aprovada: usar serviço externo de object storage; PostgreSQL guarda soment
 
 ## 6. IA — proposta
 
+D-10 aprovada: Google Gemini é o provedor inicial. A integração ocorre exclusivamente no backend por meio de uma abstração interna de provedor, sem acoplar regras de negócio ao SDK. Credenciais ficam em segredos/variáveis de ambiente do servidor. O backend monta o contexto mínimo a partir do catálogo publicado; o modelo não acessa banco de dados diretamente. Aplicar rate limits por sessão/IP e controles de custo com monitoramento por restaurante. Em falha, timeout ou resposta inválida, manter o cardápio funcional e recorrer à busca/filtros convencionais. Modelo/versão, orçamento e cotas numéricas permanecem pendentes; retenção de histórico é tratada em D-11.
+
+
 - `POST /api/v1/public/restaurants/{slug}/recommendations`
 
 Entrada conceitual:
