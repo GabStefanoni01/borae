@@ -1,16 +1,18 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService, AuthUser } from './auth.service';
 
 @Component({
   selector: 'app-auth-page',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink],
   template: `
     <main class="page">
       <nav class="topbar">
-        <a class="brand" href="/" aria-label="Boraê início">bor<span>aê</span></a>
+        <a class="brand" href="/" aria-label="Boraê início">
+          <img src="assets/images/borae-logo.png" alt="Logo Boraê" style="height:44px;width:auto;border-radius:8px;object-fit:contain;">
+        </a>
         <span class="top-note">COMIDA BOA. ESCOLHAS MELHORES.</span>
       </nav>
 
@@ -27,12 +29,15 @@ import { AuthService, AuthUser } from './auth.service';
             <div class="welcome-icon">✓</div>
             <p class="eyebrow">ACESSO CONFIRMADO</p>
             <h2>Que bom ter você por aqui, {{ signedUser.fullName.split(' ')[0] }}.</h2>
-            <p class="card-copy">Sua conta Boraê está pronta. Em breve você poderá explorar restaurantes, cardápios e benefícios por aqui.</p>
+            <p class="card-copy">Sua conta Boraê está pronta. Acesse seu painel de restaurantes ou explore as novidades da plataforma.</p>
             <div class="user-summary">
               <span class="avatar">{{ signedUser.fullName.charAt(0).toUpperCase() }}</span>
               <span><strong>{{ signedUser.fullName }}</strong><small>{{ signedUser.email }}</small></span>
             </div>
-            <button class="button secondary full" type="button" (click)="logout()">Sair da conta</button>
+            <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;">
+              <a class="button primary" style="flex:1;text-decoration:none;display:flex;align-items:center;justify-content:center;" routerLink="/app">Ir para o painel ↗</a>
+              <button class="button secondary" style="margin-top:0;" type="button" (click)="logout()">Sair</button>
+            </div>
           } @else {
             <div class="card-heading">
               <p class="eyebrow">{{ mode === 'login' ? 'BEM-VINDO DE VOLTA' : 'VAMOS COMEÇAR' }}</p>

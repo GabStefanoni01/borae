@@ -11,7 +11,9 @@ import { forkJoin } from 'rxjs';
   template: `
     <main class="dashboard">
       <header class="topbar">
-        <a class="brand" href="/" aria-label="Boraê início">bor<span>aê</span></a>
+        <a class="brand" href="/" aria-label="Boraê início">
+          <img src="assets/images/borae-logo.png" alt="Logo Boraê" style="height:44px;width:auto;border-radius:8px;object-fit:contain;">
+        </a>
         <button class="logout" type="button" (click)="logout()">Sair</button>
       </header>
 

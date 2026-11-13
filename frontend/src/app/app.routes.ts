@@ -6,7 +6,19 @@ export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    loadComponent: () => import('./auth.page').then(module => module.AuthPage)
+    loadComponent: () => import('./landing/landing.page').then(m => m.LandingPage)
+  },
+  {
+    path: 'auth',
+    loadComponent: () => import('./auth.page').then(m => m.AuthPage)
+  },
+  {
+    path: 'login',
+    redirectTo: 'auth'
+  },
+  {
+    path: 'cadastro',
+    redirectTo: 'auth'
   },
   {
     path: 'app',
