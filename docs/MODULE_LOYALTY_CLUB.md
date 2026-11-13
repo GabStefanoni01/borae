@@ -23,7 +23,7 @@ Permitir que cada restaurante crie um programa próprio de relacionamento com co
 - Consumidor não pode atribuir pontos a si mesmo.
 - Resgate deve reservar/debitar saldo atomicamente.
 - Estorno gera lançamento compensatório; não apaga o histórico.
-- Alteração de regra não deve reescrever retroativamente lançamentos existentes; pontos já acumulados seguem a regra vigente quando foram creditados, e recompensas já conquistadas são preservadas.
+- Alteração de regra não deve reescrever retroativamente lançamentos existentes; cada crédito deve preservar a versão e os parâmetros da regra que o gerou, além da validade aplicável. Pontos já acumulados seguem essa regra histórica, e recompensas já conquistadas são preservadas mesmo após mudanças posteriores.
 - Cada restaurante define a validade dos pontos; a validade deve ser registrada por crédito/lote.
 - No encerramento do programa, o prazo de resgate será de no mínimo 60 dias; o restaurante pode oferecer prazo maior.
 - Estornos são lançamentos compensatórios auditáveis. Se os pontos já tiverem sido utilizados, registrar pendência sem saldo negativo.
@@ -41,6 +41,17 @@ Cada restaurante escolhe entre dois modelos: (1) pontos proporcionais ao valor g
 - O consumidor não pode criar créditos para si mesmo; consulta ao cardápio ou simples pedido não gera pontos.
 - O consumidor será localizado pelo telefone cadastrado; o método de verificação desse telefone ainda será definido.
 - Permanecem pendentes o momento de disponibilidade dos pontos, a idempotência detalhada e o tratamento de cancelamentos/estornos.
+
+### D-15.8 — Alteração das regras do programa
+**Status: Aprovada pelo responsável pelo produto em 13/11/2026.**
+
+**Decisão:** o restaurante pode alterar as regras do programa, mas a nova regra só se aplica aos pontos acumulados a partir de sua data/hora de entrada em vigor.
+- Pontos já acumulados continuam vinculados à versão anterior da regra e às condições sob as quais foram creditados.
+- Novos pontos seguem a nova versão a partir de sua vigência.
+- Recompensas já conquistadas não podem ser retiradas por uma alteração posterior.
+- A alteração deve manter histórico auditável, sem reescrever lançamentos anteriores.
+
+**Impacto técnico:** versionar as regras e registrar em cada crédito a versão (e, quando necessário, um snapshot dos parâmetros) e a validade aplicáveis. A decisão não resolve a ordem de consumo de lotes com validades diferentes, que permanece pendente em D-15.
 
 ### Decisões ainda pendentes
 - Parâmetros exatos de cada modelo de acúmulo (taxa por valor gasto ou quantidade fixa por compra).
