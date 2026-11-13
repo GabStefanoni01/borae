@@ -66,6 +66,12 @@ class AuthControllerIntegrationTest {
                 .andExpect(jsonPath("$.fullName").value("Pessoa Teste"))
                 .andExpect(jsonPath("$.email").value(email));
 
+        mockMvc.perform(get("/api/v1/users/me/restaurants")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(0));
+
         mockMvc.perform(get("/api/v1/system/status")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
@@ -110,6 +116,9 @@ class AuthControllerIntegrationTest {
                 .andExpect(status().isUnauthorized());
 
         mockMvc.perform(get("/api/v1/users/me"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/api/v1/users/me/restaurants"))
                 .andExpect(status().isUnauthorized());
     }
 }
