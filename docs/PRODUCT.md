@@ -12,7 +12,7 @@ O produto deve ser simples para o consumidor e oferecer ferramentas úteis para 
 - Acessa cardápios por QR Code ou pela descoberta de restaurantes.
 - Consulta pratos, preços, descrições, ingredientes, opções e disponibilidade.
 - Poderá receber recomendações personalizadas com base no cardápio real.
-- Poderá participar de programas de fidelidade e do Boraê Club.
+- Poderá participar dos programas de fidelidade individuais dos restaurantes. O Boraê Club compartilhado está fora do MVP e poderá ser reavaliado futuramente.
 
 ### Restaurante
 - Administra dados do estabelecimento, cardápio, produtos e equipe.
@@ -20,9 +20,12 @@ O produto deve ser simples para o consumidor e oferecer ferramentas úteis para 
 - Consulta informações e indicadores do próprio estabelecimento.
 
 ### Equipe do restaurante
-- **OWNER:** proprietário/responsável pelo restaurante; controla equipe e convites.
-- **MANAGER:** gerente; atualmente pode consultar a equipe, além das permissões operacionais que forem implementadas futuramente.
-- **STAFF:** colaborador; papel de equipe com permissões operacionais a definir por módulo.
+A autorização é definida por vínculo com cada restaurante e validada no backend em toda operação privada.
+- **OWNER:** controle total do restaurante, incluindo perfil, catálogo, publicação, disponibilidade, equipe, papéis, propriedade e cobrança; também poderá operar pedidos quando esse módulo existir.
+- **MANAGER:** administra perfil, catálogo, publicação, disponibilidade, equipe e convites; poderá operar pedidos quando esse módulo existir. Não altera papéis, propriedade ou cobrança. Ao convidar, pode convidar somente STAFF.
+- **STAFF:** acesso operacional ao painel, disponibilidade de produtos e pedidos (visualização/atualização de status quando o módulo existir). Não administra perfil, catálogo, publicação, equipe, propriedade ou cobrança.
+
+OWNER pode convidar MANAGER ou STAFF. Um usuário pode ter papéis diferentes em restaurantes diferentes. Permissões futuras de pedidos não significam que pedidos façam parte do MVP.
 
 ### Administrador da plataforma
 Perfil futuro para operações globais: gestão de restaurantes, usuários, assinaturas, campanhas, transações, auditoria e suporte. Não confundir com OWNER de um restaurante.
@@ -72,16 +75,10 @@ Cada restaurante poderá configurar seu próprio programa:
 
 Pontos de um restaurante são independentes dos pontos de outro restaurante. O restaurante define suas regras dentro dos limites da plataforma.
 
-### 3.5 Boraê Club — planejado
-Programa compartilhado de benefícios entre restaurantes parceiros. Deve ser separado da fidelidade individual.
+### 3.5 Boraê Club — evolução futura, fora do MVP
+O Boraê Club compartilhado entre restaurantes parceiros não será implementado no MVP. Nesta primeira versão, existem somente programas de fidelidade individuais: cada restaurante define suas próprias regras e recompensas, assume o custo dos benefícios e mantém saldo e histórico independentes. Pontos não podem ser transferidos, convertidos ou resgatados em outro estabelecimento.
 
-Conceitos:
-- Conta de consumidor única no ecossistema.
-- Pontos/benefícios compartilhados, sujeitos às regras do Club.
-- Participação opcional dos restaurantes.
-- Registro auditável de acúmulo, resgate, estorno e liquidação entre parceiros.
-
-Antes de implementar movimentação financeira ou resgates compartilhados, definir regras contratuais, responsabilidade pelo custo do benefício, compensação entre estabelecimentos, prevenção a fraude, idempotência e trilha de auditoria. Não tratar pontos individuais do restaurante como saldo Boraê Club.
+O Club poderá ser reavaliado depois da validação do produto e da adesão dos restaurantes. Antes de qualquer implementação, será necessário aprovar modelo financeiro, responsabilidades, contratos, compensação, liquidação, estornos e prevenção a fraude. Não desenvolver carteira compartilhada, saldo Club, resgate cruzado ou liquidação entre parceiros no MVP.
 
 ### 3.6 Descoberta de restaurantes — planejado
 - Diretório de estabelecimentos.
