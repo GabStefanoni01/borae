@@ -126,6 +126,22 @@ Para cada ID:
 - **D-01 — Perfil do restaurante:** aprovada e registrada nesta documentação.
 - **D-02 — Múltiplos cardápios:** aprovada e registrada nesta documentação.
 - **D-03 — Publicação por cardápio:** aprovada e registrada nesta documentação.
-- **D-06 a D-20:** permanecem pendentes; não presumir aprovação nem iniciar implementação de regras de negócio correspondentes sem alinhamento.
+### D-06 — Preços e valores monetários
+
+**Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
+
+**Decisão:**
+- O Boraê utilizará somente real brasileiro (BRL) no MVP.
+- Valores terão precisão de duas casas decimais (centavos).
+- Preços de produtos e adicionais serão armazenados em centavos como números inteiros.
+- O backend será responsável pelos cálculos monetários; não utilizar `float` ou `double`.
+- Preços de produtos e adicionais não poderão ser negativos.
+- O preço dos adicionais será somado ao preço do produto conforme a seleção feita no pedido.
+
+**Exemplo:** produto de R$ 25,00 + bacon extra de R$ 5,00 + cheddar extra de R$ 3,00 = R$ 33,00.
+
+**Impactos:** padronizar o modelo de domínio e os contratos da API com valores em centavos (por exemplo, `priceInCents` e `priceDeltaInCents`). Exibição ao consumidor deve formatar os valores como BRL. Esta decisão não implica que pedidos ou pagamentos já façam parte do MVP.
+
+- **D-07 a D-20:** permanecem pendentes; não presumir aprovação nem iniciar implementação de regras de negócio correspondentes sem alinhamento.
 
 Ausência de decisão significa que o desenvolvimento do recurso correspondente deve aguardar alinhamento.
