@@ -15,7 +15,7 @@ Este arquivo impede que decisões não tomadas sejam inventadas durante a implem
 | D-09 | Mídia | **APROVADA** — object storage, Cloudflare R2 como provedor definido, formatos e CDN | Concluído |
 | D-10 | IA | **APROVADA** — Gemini API no plano gratuito inicialmente; integração desacoplada e controles de consumo | Concluído |
 | D-11 | IA | **APROVADA** — não persistir conversas; armazenar somente métricas agregadas por restaurante | Concluído |
-| D-12 | Fidelidade | Fórmula de pontos, gatilho de crédito e expiração | Fidelidade |
+| D-12 | Fidelidade/Club | **PARCIALMENTE APROVADA** — programas separados; acúmulo local configurável e Club a 1 ponto/R$ 1. Gatilho e expiração ainda pendentes | Fidelidade/Club |
 | D-13 | Fidelidade | Prova de compra, estorno e papéis autorizados | Fidelidade |
 | D-14 | Club | Financiamento, valor do ponto, compensação e liquidação | Boraê Club |
 | D-15 | Club | Termos, fraude, estorno, expiração e saída de parceiro | Boraê Club |
@@ -111,6 +111,30 @@ As escolhas são destinadas à futura personalização do pedido; a aprovação 
 **Motivação:** oferecer personalização útil sem exigir que o restaurante configure combinações e variações desnecessárias.
 
 **Impactos:** modelar adicionais com seus preços e prever observações/instruções de pedido para comunicação ao garçom; atualizar PRD, modelo de domínio, API, fluxo de telas e módulo de catálogo. Esta decisão não implica que a funcionalidade já esteja implementada.
+
+### D-12 — Estrutura dos programas e regra de acúmulo
+
+**Status:** Parcialmente aprovada pelo responsável pelo produto em 13/11/2026.
+
+**Decisões aprovadas:**
+- Existirão dois programas independentes: a fidelidade própria de cada restaurante e o Boraê Club, compartilhado entre restaurantes parceiros.
+- Os saldos, regras, recompensas e ledgers dos dois programas serão separados. O consumidor poderá participar de ambos; pontos de um programa não serão convertidos ou transferidos automaticamente para o outro.
+- Na fidelidade individual, cada restaurante poderá escolher entre dois modelos de acúmulo: pontos proporcionais ao valor gasto ou quantidade fixa de pontos por compra.
+- No Boraê Club, a regra será uniforme para todos os parceiros: **1 ponto por R$ 1,00 gasto**. Exemplo: uma compra elegível de R$ 50,00 gera 50 pontos Club.
+- O Boraê Club será opcional para restaurantes parceiros e terá uma carteira/saldo compartilhado do consumidor, distinto dos saldos locais.
+
+**Experiência pretendida:** durante o atendimento/fechamento da compra, o garçom poderá perguntar se o consumidor já participa do Boraê Club ou se deseja conhecer/aderir. A identificação e adesão devem ocorrer com participação e consentimento explícitos do consumidor; não haverá inscrição automática. O método de identificação (telefone, QR Code ou outro) e o fluxo detalhado ainda serão definidos.
+
+**Ainda pendente nesta decisão:**
+- Momento exato de concessão dos pontos e mecanismo confiável de confirmação da compra.
+- Tratamento de cancelamentos, devoluções e estornos.
+- Expiração dos pontos e ordem de consumo.
+- Configuração detalhada dos parâmetros do programa local (incluindo valor fixo por compra ou taxa por real).
+- Papéis autorizados e limites para registro/ajuste manual.
+
+**Motivação:** permitir que cada restaurante mantenha relacionamento próprio com seus clientes e, ao mesmo tempo, criar um incentivo de circulação entre estabelecimentos da rede Boraê, com uma regra de acúmulo Club simples e consistente.
+
+**Impactos:** manter entidades, saldos e ledgers separados; atualizar PRD, modelo de domínio, módulo de fidelidade e contratos de API. A aprovação não significa que pedidos, pagamentos, integração POS, crédito automático ou liquidação financeira estejam implementados ou definidos.
 
 ## Como resolver uma decisão
 
@@ -240,6 +264,7 @@ O limite numérico de convites simultâneos por restaurante não foi definido ne
 
 **Impactos:** atualizar módulo de IA, PRD, API e painel/analytics. Esta decisão não implica que as métricas já estejam implementadas.
 
-- **D-12 a D-20:** permanecem pendentes; não presumir aprovação nem iniciar implementação de regras de negócio correspondentes sem alinhamento.
+- **D-12 — Fidelidade/Club:** parcialmente aprovada; estrutura dos dois programas e fórmulas de acúmulo definidas. Gatilho de crédito, expiração, estornos e comprovação da compra permanecem pendentes.
+- **D-13 a D-20:** permanecem pendentes; não presumir aprovação nem iniciar implementação de regras de negócio correspondentes sem alinhamento.
 
 Ausência de decisão significa que o desenvolvimento do recurso correspondente deve aguardar alinhamento.
