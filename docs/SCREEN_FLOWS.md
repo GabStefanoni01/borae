@@ -104,10 +104,10 @@ D-02 aprovada em 13/11/2026.
 ### Produtos
 - Listar com busca e filtro por categoria/status.
 - Criar/editar dados, preço, imagem e disponibilidade.
-- Na edição do produto, adicionar, editar, remover e ordenar ingredientes individualmente (ex.: pão, carne, queijo, cebola e bacon).
+- Na edição do produto, adicionar, editar, remover e ordenar ingredientes individualmente (ex.: pão, carne, queijo, cebola e bacon).\n- Cadastrar adicionais opcionais com acréscimo de preço (ex.: bacon, cheddar e ovo).\n- Definir quais ingredientes do produto poderão ser removidos pelo cliente (ex.: sem cebola ou sem tomate).
 - Exibir a lista de ingredientes nos detalhes públicos do produto.
 
-D-04 aprovada em 13/11/2026. O cadastro é livre e simples; não inclui formulário específico de alergênicos ou contaminação cruzada.
+D-04 aprovada em 13/11/2026. O cadastro é livre e simples; não inclui formulário específico de alergênicos ou contaminação cruzada.\n\nD-05 aprovada em 13/11/2026. Adicionais podem ter acréscimo de preço; remoção de ingredientes não altera o preço por padrão. Não haverá configuração de tamanhos, ponto da carne ou combos nesta etapa. O cliente fará essas escolhas no momento do pedido, quando esse fluxo existir.
 - Arquivar sem perder histórico necessário.
 - Pré-visualizar como consumidor.
 
@@ -128,7 +128,7 @@ D-03 aprovada em 13/11/2026.
 - Abrir por slug/URL pública.
 - Mostrar nome, identidade visual, categorias e produtos publicados.
 - Navegação por categoria e pesquisa simples quando houver volume.
-- Detalhe do produto com imagem, descrição, preço, ingredientes e opções.
+- Detalhe do produto com imagem, descrição, preço, ingredientes, adicionais e ingredientes que podem ser removidos.
 - Indicar indisponibilidade com clareza.
 - Se falhar mídia 3D, mostrar imagem normal.
 - Não exigir login para consulta.
