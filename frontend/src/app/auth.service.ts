@@ -20,6 +20,10 @@ export interface RestaurantAccess {
   restaurantSlug: string;
   role: 'OWNER' | 'MANAGER' | 'STAFF';
 }
+export interface CreateRestaurantPayload {
+  name: string;
+  description?: string;
+}
 export interface LoginPayload { email: string; password: string; }
 export interface RegisterPayload extends LoginPayload { fullName: string; }
 
@@ -63,6 +67,10 @@ export class AuthService {
 
   getMyRestaurants(): Observable<RestaurantAccess[]> {
     return this.http.get<RestaurantAccess[]>(`${API_URL}/api/v1/users/me/restaurants`);
+  }
+
+  createRestaurant(payload: CreateRestaurantPayload): Observable<RestaurantAccess> {
+    return this.http.post<RestaurantAccess>(`${API_URL}/api/v1/restaurants`, payload);
   }
 
   logout(): void {
