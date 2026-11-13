@@ -339,7 +339,7 @@ Plano único SaaS, sem comissão por compra: R$ 49,90 mensal; R$ 134,73 trimestr
 - Denúncias de avaliações passam por triagem de IA, mas a decisão de remoção é sempre humana.
 - Retenção de dados definida por categoria, finalidade e obrigação legal, conforme LGPD.
 - Painel administrativo global em aplicação separada, consumindo endpoints administrativos protegidos do backend.
-- Sentry para captura de erros inicialmente no plano gratuito; Grafana Cloud opcional, sem contratação inicial obrigatória.
+- Painel administrativo próprio para indicadores de negócio/operação; ferramenta externa de captura de erros ainda não escolhida (Sentry é candidato); Grafana Cloud opcional, sem contratação inicial obrigatória.
 - Integrações externas com API Keys individuais, escopos, rate limits, auditoria e revogação.
 
 As decisões não indicam que serviços estejam contratados ou funcionalidades implementadas. Requisitos de configuração, segurança, validação fiscal e parâmetros pendentes estão descritos em [Decisões comerciais e operacionais](DECISIONS_COMMERCIAL_AND_OPERATIONS.md).
