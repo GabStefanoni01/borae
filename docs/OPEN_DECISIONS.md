@@ -13,8 +13,8 @@ Este arquivo impede que decisões não tomadas sejam inventadas durante a implem
 | D-07 | Permissões | **APROVADA** — matriz de permissões para OWNER, MANAGER e STAFF | Concluído |
 | D-08 | Convites | **APROVADA** — convite por e-mail, expiração de 7 dias, revogação e reenvio | Concluído |
 | D-09 | Mídia | **APROVADA** — object storage, Cloudflare R2 como provedor definido, formatos e CDN | Concluído |
-| D-10 | IA | **APROVADA** — Google Gemini como provedor inicial; integração desacoplada e controles de consumo | Concluído |
-| D-11 | IA | Se e como persistir histórico e consentimento | Assistente |
+| D-10 | IA | **APROVADA** — Gemini API no plano gratuito inicialmente; integração desacoplada e controles de consumo | Concluído |
+| D-11 | IA | **APROVADA** — não persistir conversas; armazenar somente métricas agregadas por restaurante | Concluído |
 | D-12 | Fidelidade | Fórmula de pontos, gatilho de crédito e expiração | Fidelidade |
 | D-13 | Fidelidade | Prova de compra, estorno e papéis autorizados | Fidelidade |
 | D-14 | Club | Financiamento, valor do ponto, compensação e liquidação | Boraê Club |
@@ -199,7 +199,7 @@ O limite numérico de convites simultâneos por restaurante não foi definido ne
 **Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
 
 **Decisão:**
-- Google Gemini será o provedor inicial de modelos de IA do Boraê.
+- Google Gemini será o provedor inicial de modelos de IA do Boraê, utilizando a Gemini API no plano gratuito inicialmente, sem habilitar faturamento para esse projeto.
 - A integração será realizada exclusivamente pelo backend; frontend não chamará o provedor diretamente.
 - Credenciais serão mantidas em variáveis/segredos de ambiente no servidor, nunca no repositório nem no cliente.
 - A integração ficará atrás de uma camada/contrato interno de abstração, evitando dependência do SDK ou dos formatos proprietários do provedor no domínio do produto e permitindo substituição futura.
@@ -208,12 +208,38 @@ O limite numérico de convites simultâneos por restaurante não foi definido ne
 - Implementar controles de consumo e custo, rate limits por sessão/IP e monitoramento de uso por restaurante.
 - Em indisponibilidade, timeout ou resposta inválida, o cardápio continuará funcional e o consumidor poderá usar busca e filtros convencionais como fallback.
 
-**Ainda pendente:** modelo/versão específica do Gemini, orçamento e cotas numéricas, limites exatos de requisições/tokens, política de retenção do histórico (tratada separadamente em D-11) e estratégia detalhada de retry/fallback. A aprovação do provedor não define esses parâmetros nem implica implementação.
+**Ainda pendente:** modelo/versão específica do Gemini, cotas e limites exatos de requisições/tokens por modelo e estratégia detalhada de retry/fallback. O uso gratuito tem limites variáveis e pode estar sujeito às políticas de uso de dados do plano; não enviar informações pessoais ou sensíveis. A evolução para plano pago exige nova aprovação. A aprovação do provedor não define esses parâmetros nem implica implementação.
 
 **Motivação:** iniciar com um provedor acessível e manter flexibilidade técnica, segurança, previsibilidade de custos e continuidade da navegação quando a IA falhar.
 
 **Impactos:** atualizar arquitetura do assistente, API e PRD. Esta decisão não implica que a integração já esteja implementada.
 
-- **D-11 a D-20:** permanecem pendentes; não presumir aprovação nem iniciar implementação de regras de negócio correspondentes sem alinhamento.
+### D-11 — Histórico e métricas do assistente
+
+**Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
+
+**Decisão:**
+- Não persistir o conteúdo das conversas, perguntas ou respostas completas do consumidor.
+- Não criar histórico de conversas no painel do restaurante no MVP.
+- Persistir somente eventos e métricas agregadas, vinculados ao restaurante, sem conteúdo textual das mensagens.
+- Métricas úteis por restaurante:
+  - quantidade de interações com o assistente;
+  - produtos recomendados e frequência com que cada produto é sugerido;
+  - cliques nas recomendações e taxa de clique;
+  - interações sem recomendação adequada/sem resultado;
+  - latência/tempo de resposta;
+  - erros, timeouts, respostas inválidas e acionamentos de fallback;
+  - consumo de tokens e quantidade de chamadas, quando disponibilizados pelo provedor.
+- Exibir essas métricas no painel do respectivo restaurante, respeitando as permissões do restaurante e o isolamento multi-tenant.
+- Não armazenar prompts, respostas livres, identificadores pessoais ou dados sensíveis nos eventos analíticos.
+- Definir retenção mínima necessária para agregados e métricas operacionais na implementação; logs técnicos devem evitar conteúdo de mensagens.
+
+**Motivação:** oferecer ao restaurante indicadores acionáveis sobre interesse dos consumidores e qualidade do assistente, reduzindo armazenamento de dados pessoais e complexidade de privacidade.
+
+**Limites:** cliques indicam interesse, não comprovam compra ou conversão. Métricas de pedidos/vendas só poderão ser adicionadas quando existir integração confiável com o fluxo de pedidos.
+
+**Impactos:** atualizar módulo de IA, PRD, API e painel/analytics. Esta decisão não implica que as métricas já estejam implementadas.
+
+- **D-12 a D-20:** permanecem pendentes; não presumir aprovação nem iniciar implementação de regras de negócio correspondentes sem alinhamento.
 
 Ausência de decisão significa que o desenvolvimento do recurso correspondente deve aguardar alinhamento.
