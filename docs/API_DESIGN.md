@@ -131,18 +131,11 @@ Crédito/resgate deve exigir chave de idempotência e autorização específica.
 
 **D-13 parcialmente aprovada:** no fluxo inicial, a compra concluída será confirmada manualmente no fechamento da conta por funcionário com papel de garçom ou gerente. A operação deverá registrar o restaurante e o funcionário responsável; o valor informado será o efetivamente pago. Não há dependência de integração POS nem de pagamento processado pelo Boraê. O consumidor será localizado pelo telefone cadastrado; o método de verificação do telefone ainda será definido. Também permanecem pendentes o contrato de idempotência, o momento de disponibilidade do crédito e a política de cancelamento/estorno.
 
-## 8. Boraê Club — proposta, bloqueada por decisões comerciais
+## 8. Boraê Club — evolução futura, fora do MVP
 
-D-12 parcialmente aprovada: carteira e ledger do Club são independentes da fidelidade local. Regra uniforme de acúmulo: 1 ponto por R$ 1,00 gasto em compra elegível, em qualquer parceiro. O contrato da API deverá manter a origem da compra e a referência do parceiro, sem permitir que o cliente crie créditos diretamente. A definição de compra elegível, gatilho de crédito, estorno e liquidação permanece bloqueada por decisões comerciais/operacionais.
+D-14 aprovada: o MVP não terá carteira compartilhada, adesão de parceiros, saldo Club, resgate cruzado, compensação ou liquidação entre restaurantes. A API inicial deve contemplar somente os recursos da fidelidade individual de cada restaurante, com isolamento por `restaurantId`.
 
-Recursos candidatos:
-- adesão e saída do programa;
-- consulta de saldo e ledger;
-- consulta de parceiros e benefícios;
-- criação e confirmação de resgate;
-- estorno e liquidação de parceiro.
-
-Não criar endpoints de movimentação real até definir contratos, responsabilidade financeira, fraude, cancelamento, chargeback e conciliação.
+Se o Boraê Club for retomado futuramente, seus endpoints e contratos dependerão de decisões específicas sobre financiamento, valor do ponto, responsabilidade por recompensas, compensação, liquidação, estornos, fraude e obrigações legais/contábeis. Não criar endpoints Club nem movimentar pontos compartilhados nesta etapa.
 
 ## 9. Descoberta — proposta
 
