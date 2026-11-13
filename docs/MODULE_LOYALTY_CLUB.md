@@ -34,7 +34,8 @@ Cada restaurante escolhe entre dois modelos: (1) pontos proporcionais ao valor g
 - Garçons e gerentes podem confirmar a compra e registrar o valor efetivamente pago.
 - A operação deve registrar o funcionário responsável e o restaurante, com trilha de auditoria.
 - O consumidor não pode criar créditos para si mesmo; consulta ao cardápio ou simples pedido não gera pontos.
-- Permanecem pendentes a identificação do consumidor, o momento de disponibilidade dos pontos, a idempotência detalhada e o tratamento de cancelamentos/estornos.
+- O consumidor será localizado pelo telefone cadastrado; o método de verificação desse telefone ainda será definido.
+- Permanecem pendentes o momento de disponibilidade dos pontos, a idempotência detalhada e o tratamento de cancelamentos/estornos.
 
 ### Decisões pendentes
 - Parâmetros exatos de cada modelo (taxa por valor gasto ou quantidade fixa por compra).
