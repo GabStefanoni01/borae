@@ -127,7 +127,9 @@ Recursos candidatos:
 
 D-12 parcialmente aprovada: cada programa local escolhe entre acúmulo proporcional ao valor gasto ou quantidade fixa de pontos por compra. A API de configuração deverá representar o tipo e os parâmetros versionados da regra, sem reescrever lançamentos anteriores.
 
-Crédito/resgate deve exigir chave de idempotência e autorização específica. O consumidor não pode criar créditos para si mesmo. O evento que gera pontos precisa ser validado por origem confiável (ex.: integração aprovada ou ação autorizada do restaurante). O gatilho exato, a confirmação de compra, a expiração e a política de estorno permanecem pendentes.
+Crédito/resgate deve exigir chave de idempotência e autorização específica. O consumidor não pode criar créditos para si mesmo. O evento que gera pontos precisa ser validado por origem confiável.
+
+**D-13 parcialmente aprovada:** no fluxo inicial, a compra concluída será confirmada manualmente no fechamento da conta por funcionário com papel de garçom ou gerente. A operação deverá registrar o restaurante e o funcionário responsável; o valor informado será o efetivamente pago. Não há dependência de integração POS nem de pagamento processado pelo Boraê. Permanecem pendentes a identificação do consumidor, o contrato de idempotência, o momento de disponibilidade do crédito e a política de cancelamento/estorno.
 
 ## 8. Boraê Club — proposta, bloqueada por decisões comerciais
 
