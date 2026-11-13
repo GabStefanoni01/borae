@@ -82,8 +82,9 @@ D-09 aprovada: usar serviço externo de object storage; PostgreSQL guarda soment
 
 ## 6. IA — proposta
 
-D-10 aprovada: Google Gemini é o provedor inicial. A integração ocorre exclusivamente no backend por meio de uma abstração interna de provedor, sem acoplar regras de negócio ao SDK. Credenciais ficam em segredos/variáveis de ambiente do servidor. O backend monta o contexto mínimo a partir do catálogo publicado; o modelo não acessa banco de dados diretamente. Aplicar rate limits por sessão/IP e controles de custo com monitoramento por restaurante. Em falha, timeout ou resposta inválida, manter o cardápio funcional e recorrer à busca/filtros convencionais. Modelo/versão, orçamento e cotas numéricas permanecem pendentes; retenção de histórico é tratada em D-11.
+D-10 aprovada: Google Gemini é o provedor inicial, usando a Gemini API no plano gratuito inicialmente e sem habilitar faturamento para o projeto sem nova aprovação. A integração ocorre exclusivamente no backend por meio de uma abstração interna, sem acoplar regras de negócio ao SDK. Credenciais ficam em segredos/variáveis de ambiente do servidor. O backend monta o contexto mínimo a partir do catálogo publicado; o modelo não acessa banco de dados diretamente. Aplicar rate limits por sessão/IP e controles de consumo por restaurante. As cotas variam por modelo e podem mudar; não enviar informações pessoais ou sensíveis ao plano gratuito. Modelo/versão e cotas numéricas permanecem pendentes.
 
+D-11 aprovada: não persistir conversas, prompts nem respostas completas. Armazenar somente métricas/eventos agregados por restaurante, sem conteúdo textual ou identificadores pessoais: interações, produtos recomendados/frequência, cliques/taxa de clique, interações sem resultado, latência, erros/timeouts/respostas inválidas/fallback e chamadas/tokens quando disponíveis. O painel deve respeitar permissões e isolamento multi-tenant. Cliques não comprovam compra; métricas de vendas dependem de integração futura com pedidos.
 
 - `POST /api/v1/public/restaurants/{slug}/recommendations`
 
@@ -111,7 +112,8 @@ Saída deve conter referências a produtos existentes:
 }
 ```
 
-O backend deve revalidar IDs, publicação, preço e disponibilidade antes de responder. Não expor chain-of-thought, prompt interno ou credenciais do provedor.
+O backend deve revalidar IDs, publicação, preço e disponibilidade antes de responder. Não expor chain-of-thought, prompt interno ou credenciais do provedor. Não persistir conteúdo da conversa; métricas analíticas devem ser agregadas e desprovidas do texto das mensagens.
+
 
 ## 7. Fidelidade — proposta
 
