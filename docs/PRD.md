@@ -195,7 +195,9 @@ Os papéis são atribuídos por vínculo com cada restaurante. O mesmo usuário 
 - Basear explicações sobre a composição somente nos ingredientes cadastrados; não inferir ingredientes que não foram informados.
 
 
-**Decisão D-10 aprovada (13/11/2026):** Google Gemini será o provedor inicial, integrado exclusivamente pelo backend e isolado por uma abstração interna para permitir substituição futura. Credenciais ficam no servidor; o modelo não acessa diretamente o banco. Haverá controles de consumo/custo, rate limits por sessão/IP e fallback para busca/filtros convencionais. Modelo/versão e cotas numéricas permanecem pendentes; retenção do histórico é tratada em D-11.
+**Decisão D-10 aprovada (13/11/2026):** Google Gemini será o provedor inicial, integrado exclusivamente pelo backend e isolado por uma abstração interna para permitir substituição futura. Credenciais ficam no servidor; o modelo não acessa diretamente o banco. Haverá controles de consumo/custo, rate limits por sessão/IP e fallback para busca/filtros convencionais. Modelo/versão e cotas numéricas permanecem pendentes; a Gemini API será usada no plano gratuito inicialmente, sem habilitar faturamento sem nova aprovação. O plano gratuito tem limites variáveis e não deve receber informações pessoais ou sensíveis.
+
+**Decisão D-11 aprovada (13/11/2026):** não persistir histórico, prompts ou respostas completas do assistente. Armazenar somente métricas agregadas por restaurante: interações, produtos recomendados/frequência, cliques/taxa de clique, interações sem resultado, latência, erros/timeouts/respostas inválidas/fallback e chamadas/tokens quando disponíveis. Não registrar conteúdo textual nem identificadores pessoais nos eventos analíticos. Exibir métricas apenas a usuários autorizados do respectivo restaurante. Cliques não comprovam compras; métricas de vendas dependem de integração futura com pedidos.
 ### RF-09 — Fidelidade do restaurante
 - Configurar regras de ganho e recompensa.
 - Registrar eventos de crédito, débito, expiração e estorno.
