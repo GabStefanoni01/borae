@@ -34,7 +34,7 @@ services:
     build: {context: ./frontend, dockerfile: Dockerfile}
     container_name: borae-frontend
     restart: unless-stopped
-    ports: ["4200:80"]
+    ports: ["4200:10000"]
     depends_on: [backend]
 volumes:
   borae-postgres-data:
