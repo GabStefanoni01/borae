@@ -35,7 +35,7 @@ Cada recomendação deve incluir:
 - nome e preço obtidos do catálogo pelo backend.
 - justificativa curta e baseada em atributos cadastrados.
 - sinalização de disponibilidade.
-- aviso de alergênicos quando aplicável.
+- composição baseada nos ingredientes cadastrados pelo restaurante.
 
 O texto gerado pelo modelo não é fonte de verdade para preço, ingredientes ou disponibilidade.
 
@@ -51,12 +51,12 @@ O texto gerado pelo modelo não é fonte de verdade para preço, ingredientes ou
 - Não expor prompt de sistema, chaves ou chain-of-thought.
 - Guardar métricas e logs sem conteúdo pessoal desnecessário.
 
-## 6. Alergênicos e saúde alimentar
+## 6. Uso dos ingredientes
 
-- Dados de ingredientes/alergênicos são declarações do restaurante e podem estar incompletos.
-- Nunca afirmar que um prato é seguro para uma alergia.
-- Sempre orientar confirmação direta com o estabelecimento sobre ingredientes, preparo e contaminação cruzada.
-- Se o usuário informar alergia severa, resposta deve priorizar cautela e não tratar filtragem automática como garantia.
+- Usar somente a lista de ingredientes cadastrada pelo restaurante para explicar a composição do prato.
+- Não presumir ingredientes, receitas ou modos de preparo que não estejam informados.
+- A lista é informativa e não representa uma declaração técnica de alergênicos ou de ausência de contaminação cruzada.
+- Se o consumidor perguntar sobre segurança para uma alergia, orientar que confirme diretamente com o estabelecimento; nunca garantir segurança alimentar com base apenas no cardápio.
 
 ## 7. Experiência
 
@@ -77,5 +77,5 @@ O texto gerado pelo modelo não é fonte de verdade para preço, ingredientes ou
 - Produto não publicado ou indisponível não é sugerido como disponível.
 - Preço exibido vem do backend.
 - Timeout/falha da IA não bloqueia cardápio.
-- Aviso de alergênicos é apresentado.
+- Respostas sobre composição correspondem aos ingredientes cadastrados e não inventam componentes.
 - Testes incluem prompt injection, saída malformada e IDs inventados.
