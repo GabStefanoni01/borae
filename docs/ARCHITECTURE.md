@@ -113,7 +113,7 @@ A IA será um consumidor de capacidades internas controladas, não uma camada co
 - **E-mail transacional:** Resend, com domínio verificado, credenciais no ambiente seguro e tratamento de bounces/falhas.
 - **Mídia:** Cloudflare R2; logos até 5 MB, fotos/arquivos de mídia permitidos até 10 MB, até 100 imagens por restaurante, JPEG/PNG/WebP e otimização automática.
 - **IA:** Gemini Flash-Lite como único modelo aprovado nesta fase. Cotas simultâneas de 20 interações por consumidor/dia e 100 por restaurante/dia; limite de tokens por interação será parametrizado antes de produção.
-- **Erros:** Sentry inicialmente no plano gratuito, respeitando cotas vigentes. Grafana Cloud é opcional e não é dependência inicial.
+- **Observabilidade:** ferramenta de captura de erros ainda não escolhida (Sentry foi considerado como candidato); Grafana Cloud é opcional e não é dependência inicial.
 - **Administração global:** aplicação frontend separada, com autenticação e autorização próprias, consumindo endpoints administrativos do backend principal. Não conceder acesso direto ao banco.
 - **Integrações externas:** API Keys individuais com escopos, rate limits, auditoria, rotação e revogação.
 - **Convites:** sem limite fixo de membros por restaurante; proteger o envio com rate limiting e controles contra abuso.
