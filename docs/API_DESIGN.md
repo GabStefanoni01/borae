@@ -78,7 +78,7 @@ D-06 aprovada: o MVP utiliza BRL e representa valores monetários em centavos co
 - `POST /api/v1/restaurants/{restaurantId}/media/{mediaId}/complete`
 - `DELETE /api/v1/restaurants/{restaurantId}/media/{mediaId}`
 
-D-09 aprovada: usar serviço externo de object storage; PostgreSQL guarda somente metadados e referências. Cloudinary é candidato inicial para avaliação de imagens, não provedor definitivo até validação de custos, limites e suporte a GLB/glTF. Formatos aceitos: JPG/JPEG, PNG, WebP, GLB e glTF. Preferir upload direto por URL assinada quando suportado. Backend valida membership/permissão, MIME real (não confiar no Content-Type declarado), tamanho, checksum, status e vínculo da mídia ao restaurante. Não aceitar URL arbitrária do cliente como mídia confiável. Entrega deve permitir CDN, variantes otimizadas de imagem e carregamento sob demanda. Limites numéricos e provedor final permanecem pendentes.
+D-09 aprovada: usar serviço externo de object storage; PostgreSQL guarda somente metadados e referências. Cloudflare R2 é o provedor definido para imagens e modelos 3D no MVP, utilizando a modalidade gratuita dentro das cotas disponíveis. Formatos aceitos: JPG/JPEG, PNG, WebP, GLB e glTF. Preferir upload direto por URL assinada quando suportado. Backend valida membership/permissão, MIME real (não confiar no Content-Type declarado), tamanho, checksum, status e vínculo da mídia ao restaurante. Não aceitar URL arbitrária do cliente como mídia confiável. Entrega deve permitir CDN, variantes otimizadas de imagem e carregamento sob demanda. Limites numéricos de upload permanecem pendentes; monitorar o consumo para evitar cobranças.
 
 ## 6. IA — proposta
 
