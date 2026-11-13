@@ -62,4 +62,7 @@ Para cada ID:
 
 ## Estado atual
 
-Nenhum item desta tabela deve ser considerado aprovado implicitamente. Ausência de decisão significa que o desenvolvimento do recurso correspondente deve aguardar alinhamento.
+- **D-01 — Perfil do restaurante:** aprovada e registrada nesta documentação.
+- **D-02 a D-20:** permanecem pendentes; não presumir aprovação nem iniciar implementação de regras de negócio correspondentes sem alinhamento.
+
+Ausência de decisão significa que o desenvolvimento do recurso correspondente deve aguardar alinhamento.
