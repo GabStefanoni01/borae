@@ -21,33 +21,26 @@ Boraê conecta restaurantes e consumidores em uma experiência gastronômica dig
 | Servidor web | Nginx em container Docker |
 | Backend | Java 21 + Spring Boot |
 | Containerização | Docker multi-stage + Docker Compose |
-| Banco de dados | PostgreSQL |
+| Banco de dados | PostgreSQL (Neon ou Render) |
 | Cache futuro | Redis |
 | IA futura | Python + FastAPI |
 | 3D/AR | glTF/GLB + model-viewer |
 
-## Executar com Docker
-1. Instale Docker Engine e Docker Compose.
-2. Copie `.env.example` para `.env`.
-3. Defina DB_PASSWORD e um JWT_SECRET Base64 forte (mínimo 32 bytes).
-4. Na raiz, execute:
+## Executar localmente com Docker
+1. Copie `.env.example` para `.env` e configure os valores.
+2. Na raiz, execute `docker compose up --build`.
+3. Frontend: http://localhost:4200; API: http://localhost:8080.
 
-```bash
-docker compose up --build
-```
+## Hospedar no Render
+O arquivo `render.yaml` define dois Web Services Docker independentes: `borae-api` e `borae-web`. No Render, use **New + Blueprint**, conecte este repositório e informe as variáveis pedidas para a API. O backend usa o `PORT` injetado pelo Render; o frontend serve Nginx na porta 10000.
 
-- Frontend: http://localhost:4200
-- Backend: http://localhost:8080
-- Swagger: http://localhost:8080/swagger-ui.html
-- PostgreSQL: localhost:5432
+Configure na API:
+- `DB_URL`: JDBC URL do PostgreSQL gerenciado, por exemplo Neon.
+- `DB_USERNAME` e `DB_PASSWORD`: credenciais do banco.
+- `JWT_SECRET`: segredo Base64 aleatório de pelo menos 32 bytes.
+- `JWT_EXPIRATION_MS`: duração do access token em milissegundos.
 
-O PostgreSQL usa volume persistente. Não versione o arquivo `.env`. Em produção, publique frontend e backend como serviços Docker separados e use PostgreSQL gerenciado, como Neon.
-
-## Estrutura
-- docs/: visão, arquitetura e decisões do produto.
-- backend/: API Java/Spring Boot e Dockerfile.
-- frontend/: aplicação Angular e Dockerfile.
-- docker-compose.yml: ambiente integrado.
+Não use o PostgreSQL do Docker Compose como banco de produção. Não versione o arquivo `.env`.
 
 ## Status
-**Sprint 0 — Fundação:** documentação, backend com autenticação inicial, scaffold Angular e configuração Docker.
+**Sprint 0 — Fundação:** documentação, backend com autenticação inicial, scaffold Angular e configuração Docker/Render.
