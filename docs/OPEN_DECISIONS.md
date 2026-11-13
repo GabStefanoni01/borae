@@ -12,7 +12,7 @@ Este arquivo impede que decisões não tomadas sejam inventadas durante a implem
 | D-06 | Preço | **APROVADA** — BRL, valores inteiros em centavos e cálculos no backend | Concluído |
 | D-07 | Permissões | **APROVADA** — matriz de permissões para OWNER, MANAGER e STAFF | Concluído |
 | D-08 | Convites | **APROVADA** — convite por e-mail, expiração de 7 dias, revogação e reenvio | Concluído |
-| D-09 | Mídia | Provedor de object storage, limites, formatos e CDN | Imagens/3D |
+| D-09 | Mídia | **APROVADA** — object storage, Cloudinary como candidato, formatos e CDN | Concluído |
 | D-10 | IA | Provedor/modelo, orçamento, retenção, rate limits e fallback | Assistente |
 | D-11 | IA | Se e como persistir histórico e consentimento | Assistente |
 | D-12 | Fidelidade | Fórmula de pontos, gatilho de crédito e expiração | Fidelidade |
@@ -177,6 +177,23 @@ O limite numérico de convites simultâneos por restaurante não foi definido ne
 
 **Impactos:** atualizar modelo de domínio, PRD e API para suportar status, expiração, revogação e reenvio. O token deve ser armazenado somente como hash, nunca registrado em logs. Esta decisão não implica que o fluxo esteja implementado.
 
-- **D-09 a D-20:** permanecem pendentes; não presumir aprovação nem iniciar implementação de regras de negócio correspondentes sem alinhamento.
+### D-09 — Armazenamento de imagens e modelos 3D
+
+**Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
+
+**Decisão:**
+- Arquivos de mídia serão armazenados em serviço externo de object storage; PostgreSQL guarda somente metadados e referências, nunca o binário.
+- Cloudinary será o primeiro candidato a avaliar para armazenamento, transformação e entrega de imagens. A escolha definitiva depende da validação de custos, limites do plano, suporte aos formatos e adequação para arquivos 3D.
+- Formatos de imagem aceitos: JPG/JPEG, PNG e WebP.
+- Modelos 3D aceitos: GLB e glTF, com validação de integridade e dependências.
+- A arquitetura deve permitir CDN, otimização/variantes de imagem e carregamento sob demanda.
+- Backend valida autorização, MIME real, tamanho, checksum e associação da mídia ao restaurante antes de concluir o upload.
+- Arquivos binários não serão armazenados no PostgreSQL.
+
+**Ainda pendente:** limites numéricos de tamanho para imagens e modelos 3D, política de dimensões/resolução e decisão final do provedor após avaliação de custos e suporte a GLB/glTF.
+
+**Impactos:** atualizar modelo de domínio, PRD, API e especificações de catálogo/3D. Esta decisão não implica que upload e processamento estejam implementados.
+
+- **D-10 a D-20:** permanecem pendentes; não presumir aprovação nem iniciar implementação de regras de negócio correspondentes sem alinhamento.
 
 Ausência de decisão significa que o desenvolvimento do recurso correspondente deve aguardar alinhamento.
