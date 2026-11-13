@@ -105,3 +105,21 @@ A IA será um consumidor de capacidades internas controladas, não uma camada co
 - Testes frontend para fluxos críticos.
 - CI deve compilar/testar backend e frontend e validar imagens Docker.
 - Não considerar funcionalidade concluída apenas porque compila: validar fluxo real e permissões.
+
+
+## 11. Serviços externos e decisões operacionais aprovadas
+
+- **Pagamentos e assinaturas:** Asaas, integrado somente pelo backend. A emissão de NFS-e pelo Asaas depende de validação fiscal da empresa e do município competente.
+- **E-mail transacional:** Resend, com domínio verificado, credenciais no ambiente seguro e tratamento de bounces/falhas.
+- **Mídia:** Cloudflare R2; logos até 5 MB, fotos/arquivos de mídia permitidos até 10 MB, até 100 imagens por restaurante, JPEG/PNG/WebP e otimização automática.
+- **IA:** Gemini Flash-Lite como único modelo aprovado nesta fase. Cotas simultâneas de 20 interações por consumidor/dia e 100 por restaurante/dia; limite de tokens por interação será parametrizado antes de produção.
+- **Erros:** Sentry inicialmente no plano gratuito, respeitando cotas vigentes. Grafana Cloud é opcional e não é dependência inicial.
+- **Administração global:** aplicação frontend separada, com autenticação e autorização próprias, consumindo endpoints administrativos do backend principal. Não conceder acesso direto ao banco.
+- **Integrações externas:** API Keys individuais com escopos, rate limits, auditoria, rotação e revogação.
+- **Convites:** sem limite fixo de membros por restaurante; proteger o envio com rate limiting e controles contra abuso.
+
+## 12. Eventos, webhooks e resiliência
+
+O processamento interno de eventos recebidos usa sete tentativas progressivas: imediata, 1 minuto, 5 minutos, 15 minutos, 1 hora, 6 horas e 24 horas. Após esgotar as tentativas, manter o evento para análise e reprocessamento manual autorizado. Implementar idempotência, deduplicação, autenticação e trilha de auditoria. Para webhooks recebidos de provedores, respeitar a política de entrega/reenvio do próprio provedor; a agenda acima controla o reprocessamento interno do Boraê.
+
+Detalhes e ressalvas constam em [Decisões comerciais e operacionais](DECISIONS_COMMERCIAL_AND_OPERATIONS.md).
