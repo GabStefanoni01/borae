@@ -15,9 +15,9 @@ Este arquivo impede que decisões não tomadas sejam inventadas durante a implem
 | D-09 | Mídia | **APROVADA** — object storage, Cloudflare R2 como provedor definido, formatos e CDN | Concluído |
 | D-10 | IA | **APROVADA** — Gemini API no plano gratuito inicialmente; integração desacoplada e controles de consumo | Concluído |
 | D-11 | IA | **APROVADA** — não persistir conversas; armazenar somente métricas agregadas por restaurante | Concluído |
-| D-12 | Fidelidade/Club | **PARCIALMENTE APROVADA** — programas separados; acúmulo local configurável e Club a 1 ponto/R$ 1. Gatilho e expiração ainda pendentes | Fidelidade/Club |
+| D-12 | Fidelidade | **PARCIALMENTE APROVADA** — programa individual por restaurante; parâmetros de acúmulo e regras operacionais ainda pendentes | Fidelidade |
 | D-13 | Fidelidade | **PARCIALMENTE APROVADA** — confirmação manual após compra concluída por garçom ou gerente; estornos e controles restantes pendentes | Fidelidade |
-| D-14 | Club | Financiamento, valor do ponto, compensação e liquidação | Boraê Club |
+| D-14 | Escopo da fidelidade | **APROVADA** — MVP terá somente fidelidade individual por restaurante; Boraê Club compartilhado fica para uma fase futura | Concluído |
 | D-15 | Club | Termos, fraude, estorno, expiração e saída de parceiro | Boraê Club |
 | D-16 | Descoberta | Taxonomia, geolocalização, raio e ordenação | Descoberta |
 | D-17 | Consumidor | Conta única, dados de perfil e login social | Fidelidade/Club |
@@ -117,13 +117,12 @@ As escolhas são destinadas à futura personalização do pedido; a aprovação 
 **Status:** Parcialmente aprovada pelo responsável pelo produto em 13/11/2026.
 
 **Decisões aprovadas:**
-- Existirão dois programas independentes: a fidelidade própria de cada restaurante e o Boraê Club, compartilhado entre restaurantes parceiros.
-- Os saldos, regras, recompensas e ledgers dos dois programas serão separados. O consumidor poderá participar de ambos; pontos de um programa não serão convertidos ou transferidos automaticamente para o outro.
-- Na fidelidade individual, cada restaurante poderá escolher entre dois modelos de acúmulo: pontos proporcionais ao valor gasto ou quantidade fixa de pontos por compra.
-- No Boraê Club, a regra será uniforme para todos os parceiros: **1 ponto por R$ 1,00 gasto**. Exemplo: uma compra elegível de R$ 50,00 gera 50 pontos Club.
-- O Boraê Club será opcional para restaurantes parceiros e terá uma carteira/saldo compartilhado do consumidor, distinto dos saldos locais.
+- A fidelidade individual será um programa próprio de cada restaurante, com saldo, regras, recompensas e ledger independentes.
+- Cada restaurante poderá escolher entre dois modelos de acúmulo: pontos proporcionais ao valor gasto ou quantidade fixa de pontos por compra; parâmetros exatos ainda serão definidos.
+- O consumidor poderá ter contas de fidelidade em vários restaurantes, sem transferência ou conversão de pontos entre eles.
+- O Boraê Club compartilhado permanece como conceito de evolução futura, mas não fará parte do MVP. Não haverá carteira compartilhada, pontos aceitos entre restaurantes nem obrigação de financiamento/compensação pelo Boraê nesta etapa.
 
-**Experiência pretendida:** durante o atendimento/fechamento da compra, o garçom poderá perguntar se o consumidor já participa do Boraê Club ou se deseja conhecer/aderir. A identificação e adesão devem ocorrer com participação e consentimento explícitos do consumidor; não haverá inscrição automática. O método de identificação (telefone, QR Code ou outro) e o fluxo detalhado ainda serão definidos.
+A experiência inicial de fidelidade será vinculada ao restaurante onde a compra ocorreu. A identificação do consumidor e o fluxo de adesão permanecem sujeitos às decisões de conta e verificação já pendentes.
 
 **Ainda pendente nesta decisão:**
 - Momento exato de concessão dos pontos e mecanismo confiável de confirmação da compra.
@@ -158,6 +157,21 @@ As escolhas são destinadas à futura personalização do pedido; a aprovação 
 
 **Impactos:** prever confirmação manual autorizada e auditável no fluxo de fechamento. Esta decisão não aprova pedidos online, pagamentos pelo Boraê nem integração POS.
 
+### D-14 — Escopo da fidelidade no MVP
+
+**Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
+
+**Decisão:**
+- O MVP terá exclusivamente programas de fidelidade individuais, administrados por cada restaurante.
+- Cada restaurante será responsável por definir suas próprias recompensas e por arcar com o custo dos benefícios que oferecer dentro do seu programa.
+- Os pontos acumulados em um restaurante só poderão ser utilizados no programa daquele mesmo restaurante; não haverá transferência, conversão ou resgate em outro estabelecimento.
+- O Boraê Club compartilhado entre restaurantes parceiros fica fora do MVP e poderá ser reavaliado em uma fase futura, depois de validar a adesão dos restaurantes e definir um modelo financeiro sustentável.
+- Nesta etapa, o Boraê não financiará recompensas, não manterá reserva para resgates entre parceiros e não assumirá obrigações de compensação ou liquidação entre restaurantes.
+
+**Motivação:** começar com um modelo mais simples, no qual quem define e oferece a recompensa também assume seu custo. Isso reduz a complexidade operacional, financeira, contábil e contratual do lançamento, sem impedir uma evolução futura para um programa compartilhado.
+
+**Impactos:** priorizar o módulo de fidelidade individual; tratar o Boraê Club apenas como possibilidade futura, sem desenvolver carteira compartilhada, resgate cruzado, compensação ou liquidação no MVP. As regras locais de acúmulo, recompensas, expiração, estorno e controles continuam sujeitas às decisões pendentes de D-12, D-13 e D-15. Esta decisão não significa que a fidelidade já esteja implementada.
+
 ## Como resolver uma decisão
 
 Para cada ID:
@@ -172,6 +186,7 @@ Para cada ID:
 - **D-01 — Perfil do restaurante:** aprovada e registrada nesta documentação.
 - **D-02 — Múltiplos cardápios:** aprovada e registrada nesta documentação.
 - **D-03 — Publicação por cardápio:** aprovada e registrada nesta documentação.
+- **D-14 — Escopo da fidelidade no MVP:** aprovada; somente programas individuais por restaurante. Boraê Club compartilhado fica para uma fase futura.
 ### D-06 — Preços e valores monetários
 
 **Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
