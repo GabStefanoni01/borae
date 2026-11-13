@@ -12,7 +12,7 @@ Este arquivo impede que decisões não tomadas sejam inventadas durante a implem
 | D-06 | Preço | **APROVADA** — BRL, valores inteiros em centavos e cálculos no backend | Concluído |
 | D-07 | Permissões | **APROVADA** — matriz de permissões para OWNER, MANAGER e STAFF | Concluído |
 | D-08 | Convites | **APROVADA** — convite por e-mail, expiração de 7 dias, revogação e reenvio | Concluído |
-| D-09 | Mídia | **APROVADA** — object storage, Cloudinary como candidato, formatos e CDN | Concluído |
+| D-09 | Mídia | **APROVADA** — object storage, Cloudflare R2 como provedor definido, formatos e CDN | Concluído |
 | D-10 | IA | Provedor/modelo, orçamento, retenção, rate limits e fallback | Assistente |
 | D-11 | IA | Se e como persistir histórico e consentimento | Assistente |
 | D-12 | Fidelidade | Fórmula de pontos, gatilho de crédito e expiração | Fidelidade |
@@ -183,7 +183,7 @@ O limite numérico de convites simultâneos por restaurante não foi definido ne
 
 **Decisão:**
 - Arquivos de mídia serão armazenados em serviço externo de object storage; PostgreSQL guarda somente metadados e referências, nunca o binário.
-- Cloudinary será o primeiro candidato a avaliar para armazenamento, transformação e entrega de imagens. A escolha definitiva depende da validação de custos, limites do plano, suporte aos formatos e adequação para arquivos 3D.
+- Cloudflare R2 será o provedor de object storage para imagens e modelos 3D no MVP, utilizando a modalidade gratuita dentro das cotas disponíveis. A entrega pública poderá usar domínio/CDN da Cloudflare conforme configuração.
 - Formatos de imagem aceitos: JPG/JPEG, PNG e WebP.
 - Modelos 3D aceitos: GLB e glTF, com validação de integridade e dependências.
 - A arquitetura deve permitir CDN, otimização/variantes de imagem e carregamento sob demanda.
