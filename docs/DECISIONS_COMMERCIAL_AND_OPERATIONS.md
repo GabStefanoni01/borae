@@ -118,10 +118,10 @@ Foi aprovada a seguinte política de sete tentativas com intervalos progressivos
 - O painel administrativo global será uma **aplicação separada** da aplicação principal do Boraê, com autenticação, autorização e sessão próprias.
 - A aplicação administrativa consumirá endpoints internos/administrativos do backend principal, protegidos por permissões específicas; não terá acesso direto ao banco de dados.
 - Manter separação entre papéis administrativos globais e papéis de equipe do restaurante (OWNER/MANAGER/STAFF).
-- **Sentry** aprovado como ferramenta inicial de captura e acompanhamento de erros, começando no plano gratuito, sujeito às cotas vigentes.
+- O painel administrativo próprio exibirá métricas de negócio e operação. Nenhuma ferramenta externa de observabilidade foi escolhida definitivamente; Sentry foi considerado como candidato para captura de erros. Grafana Cloud poderá ser avaliado futuramente.
 - O painel próprio exibirá métricas de negócio e operação disponíveis ao Boraê (restaurantes, consumidores, compras, assinaturas/receita, uso de IA, pagamentos, webhooks, erros e saúde dos serviços, conforme dados instrumentados).
 - Grafana Cloud não será dependência nem contratação inicial obrigatória. Poderá ser avaliado posteriormente para métricas/logs/traces técnicos.
-- A construção do painel próprio não substitui logs, alertas, rastreamento de erros nem monitoramento de infraestrutura.
+- A construção do painel próprio não substitui logs, alertas, rastreamento de erros nem monitoramento de infraestrutura. A ferramenta de captura de erros e a solução de observabilidade técnica permanecem pendentes de escolha.
 
 ## 10. Integrações externas e API Keys — complemento de D-20
 
