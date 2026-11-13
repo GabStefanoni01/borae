@@ -1,5 +1,6 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { AuthService, AuthUser } from './auth.service';
 
 @Component({
@@ -73,8 +74,9 @@ import { AuthService, AuthUser } from './auth.service';
   `,
   styleUrl: './app.css'
 })
-export class App {
+export class App implements OnInit {
   private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
   mode: 'login' | 'register' = 'login';
   fullName = '';
   email = '';
@@ -82,6 +84,10 @@ export class App {
   loading = false;
   errorMessage = '';
   user: AuthUser | null = this.auth.currentUser;
+
+  ngOnInit(): void {
+    if (this.auth.hasSession) void this.router.navigateByUrl('/app');
+  }
 
   setMode(mode: 'login' | 'register'): void {
     this.mode = mode;
@@ -103,6 +109,7 @@ export class App {
         this.loading = false;
         this.fullName = '';
         this.password = '';
+        void this.router.navigateByUrl('/app');
       },
       error: (error: unknown) => {
         this.loading = false;
