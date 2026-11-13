@@ -23,7 +23,7 @@ Essas hipóteses devem ser validadas com restaurantes e consumidores reais antes
 3. Garantir que preços, ingredientes, opções e disponibilidade exibidos correspondam aos dados publicados pelo restaurante.
 4. Criar uma base de dados estruturada que habilite IA, 3D/AR e fidelidade sem duplicar regras.
 5. Permitir que um usuário participe de vários restaurantes com permissões isoladas.
-6. Construir descoberta e benefícios compartilhados gradualmente, após validar o núcleo.
+6. Construir descoberta e fidelidade individual gradualmente, após validar o núcleo.
 
 ### Não objetivos do MVP inicial
 - Processar pagamentos ou pedidos completos.
@@ -207,17 +207,18 @@ Os papéis são atribuídos por vínculo com cada restaurante. O mesmo usuário 
 
 **D-12 parcialmente aprovada:** a fórmula exata/parâmetros locais, o gatilho de crédito, a expiração e a política de estorno ainda precisam ser definidos.
 
-### RF-10 — Boraê Club
-- Permitir adesão voluntária de consumidores e participação de restaurantes parceiros.
-- Manter carteira, saldo e ledger compartilhados entre parceiros, separados dos programas individuais dos restaurantes.
-- Acumular 1 ponto por R$ 1,00 gasto em compra elegível, com a mesma regra para todos os parceiros.
-- Permitir consulta de saldo, parceiros e benefícios e, futuramente, resgate na rede.
-- Registrar origem, destino, custo, resgate e liquidação quando as regras comerciais forem aprovadas.
-- Exigir regras comerciais e financeiras aprovadas antes de movimentar pontos/resgates reais.
+### RF-10 — Fidelidade individual por restaurante
+- Cada restaurante poderá operar seu próprio programa de fidelidade, com contas, saldos, regras, recompensas e histórico independentes.
+- O restaurante define as recompensas oferecidas e assume o custo dos benefícios do próprio programa.
+- Os pontos só podem ser acumulados e utilizados no programa do mesmo restaurante; não há transferência, conversão ou resgate em outro estabelecimento.
+- O restaurante poderá escolher entre acúmulo proporcional ao valor gasto ou quantidade fixa de pontos por compra, com parâmetros a definir.
+- Registrar créditos, débitos, expirações, estornos e ajustes auditáveis; proteger contra duplicidade e concorrência.
 
-**D-12 parcialmente aprovada:** estrutura independente e taxa de 1 ponto por R$ 1,00 definidas. Confirmação da compra, crédito, expiração, estorno, financiamento e liquidação continuam pendentes.
+**D-12 parcialmente aprovada:** estrutura e alternativas de acúmulo da fidelidade individual definidas; parâmetros, gatilho de crédito, expiração e estorno continuam pendentes.
 
-**D-13 parcialmente aprovada:** os pontos só serão concedidos após a compra ser concluída e confirmada manualmente no fechamento da conta por garçom ou gerente. O registro deverá identificar funcionário e restaurante e ser auditável. Não haverá crédito por consulta ao cardápio ou simples criação de pedido. A identificação será feita pelo telefone cadastrado do consumidor. O método de verificação do telefone, estornos, idempotência detalhada e momento de disponibilidade dos pontos ainda serão definidos.
+**D-13 parcialmente aprovada:** no fluxo inicial, a compra concluída será confirmada manualmente no fechamento da conta por garçom ou gerente. O registro deverá identificar funcionário e restaurante e ser auditável. O consumidor será localizado pelo telefone cadastrado. Verificação do telefone, estornos, idempotência detalhada e momento de disponibilidade dos pontos ainda serão definidos.
+
+**D-14 aprovada:** o MVP contempla somente fidelidade individual por restaurante. O Boraê Club compartilhado fica para uma fase futura e não terá carteira, pontos ou resgates entre parceiros nesta etapa.
 
 ### RF-11 — Descoberta
 - Listar estabelecimentos publicados e ativos.
