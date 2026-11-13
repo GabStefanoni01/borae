@@ -29,6 +29,14 @@ public class Restaurant {
     protected Restaurant() {
     }
 
+    public Restaurant(String name, String slug, String description) {
+        this.id = UUID.randomUUID();
+        this.name = name;
+        this.slug = slug;
+        this.description = description;
+        this.active = true;
+    }
+
     public UUID getId() { return id; }
     public String getName() { return name; }
     public String getSlug() { return slug; }
