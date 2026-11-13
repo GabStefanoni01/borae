@@ -72,7 +72,11 @@ Campos candidatos:
 - publication_status
 - created_at / updated_at
 
-**Decisão pendente:** confirmar se perfil será extensão da entidade Restaurant ou tabela separada. Não duplicar dados sem necessidade.
+**Decisão de produto D-01 aprovada:** o perfil inclui nome do restaurante, nome público/fantasia, descrição opcional, logo e capa opcionais, telefone/WhatsApp, Instagram e site opcionais, endereço obrigatório para estabelecimentos físicos, localização no mapa, horário por dia da semana, categoria gastronômica obrigatória e slug gerado automaticamente/editável com unicidade.
+
+Status de publicação do restaurante: `DRAFT | PUBLISHED | SUSPENDED`. Campos opcionais não bloqueiam o início do cadastro nem a montagem do cardápio. A publicação pública deve validar os campos obrigatórios.
+
+**Decisão técnica ainda necessária:** escolher entre estender `Restaurant` ou criar tabela `RestaurantProfile`. A decisão de produto não determina essa estrutura física; evitar duplicação e preservar compatibilidade com os dados existentes.
 
 ### Menu
 - id
