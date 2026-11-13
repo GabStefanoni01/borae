@@ -207,7 +207,7 @@ Pode ser a própria UserAccount com perfis/roles adicionais; evitar criar identi
 - terms_version
 - starts_at / ends_at
 
-**Decisão D-12 parcialmente aprovada:** cada restaurante poderá escolher entre acúmulo proporcional ao valor gasto ou quantidade fixa de pontos por compra. A fórmula exata e os parâmetros de cada modalidade serão configurados pelo restaurante; gatilho de crédito, expiração e estornos permanecem pendentes.
+**Decisões D-12 e D-14:** no MVP, cada restaurante terá seu próprio programa de fidelidade e será responsável pelas recompensas que oferecer. O programa poderá usar acúmulo proporcional ao valor gasto ou quantidade fixa por compra; parâmetros e regras operacionais permanecem pendentes. Não há transferência de pontos entre restaurantes. O Boraê Club compartilhado é futuro e não integra o modelo de dados necessário ao MVP.
 
 ### LoyaltyAccount
 - id
@@ -246,49 +246,11 @@ Saldo deve ser derivado do ledger ou mantido como projeção reconciliável. Nã
 - created_at
 - redeemed_at
 
-## 6. Entidades propostas — Boraê Club
+## 6. Boraê Club — conceito futuro, fora do MVP
 
-O consumidor pode aderir voluntariamente ao Club e manter uma carteira compartilhada entre os parceiros. A carteira não substitui nem agrega as contas de fidelidade individuais dos restaurantes.
+O Boraê Club compartilhado entre restaurantes parceiros não será implementado no MVP, conforme D-14. As entidades de carteira compartilhada, adesão de parceiros, ledger Club, resgate cruzado e liquidação ficam fora do schema inicial. Caso o produto seja retomado no futuro, seu modelo financeiro, responsabilidades, contratos e regras de operação deverão ser aprovados antes da modelagem e implementação.
 
-### ClubMembership
-- id
-- consumer_id
-- status
-- terms_version
-- joined_at
-
-### ClubPartner
-- id
-- restaurant_id
-- status
-- agreement_reference
-- joined_at
-- left_at
-
-### ClubWallet
-- id
-- consumer_id
-- points_unit (pontos inteiros)
-- status
-
-**Decisão D-12 parcialmente aprovada:** o Boraê Club mantém saldo independente da fidelidade local e usa regra uniforme de 1 ponto por R$ 1,00 gasto em compra elegível, em qualquer restaurante parceiro. A compra elegível e o momento de crédito ainda dependem de confirmação confiável e de decisões pendentes.
-
-**Decisão D-13 parcialmente aprovada:** a compra deverá estar concluída e ser confirmada manualmente no fluxo de fechamento por um garçom ou gerente autorizado. A confirmação deve manter vínculo com o restaurante e com o funcionário responsável, com trilha de auditoria. O consumidor não pode gerar créditos para si mesmo. A identificação do consumidor será feita pelo telefone cadastrado, usado para localizar a conta. O método de verificação do telefone, idempotência detalhada, disponibilidade do crédito e estornos permanecem pendentes.
-
-### ClubLedgerEntry
-- id
-- wallet_id
-- entry_type
-- points_delta
-- partner_restaurant_id
-- source_reference
-- idempotency_key
-- created_at
-
-### ClubRedemption / PartnerSettlement
-Registrar resgate e obrigação do parceiro, custo, status, estorno e liquidação. O modelo contábil/financeiro depende de definição comercial e jurídica; não implementar a partir apenas destes nomes.
-
-**Invariante:** ledger do Club e ledger de fidelidade individual são separados e nunca transferidos implicitamente.
+A fidelidade individual de cada restaurante permanece isolada: contas, pontos, recompensas e lançamentos pertencem ao programa daquele estabelecimento. Não existe transferência ou conversão entre restaurantes.
 
 ## 7. Entidades propostas — descoberta e monetização
 
@@ -312,8 +274,7 @@ Registrar resgate e obrigação do parceiro, custo, status, estorno e liquidaç�
 - Restaurant 1:N RestaurantLoyaltyProgram.
 - LoyaltyProgram 1:N LoyaltyAccount e Reward.
 - LoyaltyAccount 1:N LoyaltyLedgerEntry e RewardRedemption.
-- Consumer 1:1 ClubWallet; ClubWallet 1:N ClubLedgerEntry.
-- Restaurant 1:0..1 ClubPartner (ou histórico N:1 se reentrada for permitida).
+- Estruturas de ClubWallet, ClubLedgerEntry e ClubPartner somente poderão ser adicionadas em uma fase futura, após nova decisão de produto e financeira.
 
 ## 9. Regras de integridade obrigatórias
 
@@ -338,5 +299,5 @@ Registrar resgate e obrigação do parceiro, custo, status, estorno e liquidaç�
 - Identidade de consumidor e login social, se houver.
 - Política de retenção de sessões de IA.
 - Gatilho de crédito, expiração e estorno dos programas de fidelidade; a estrutura e as fórmulas-base de acúmulo foram parcialmente aprovadas em D-12.
-- Regras contábeis, contratos e liquidação do Club.
+- Modelo financeiro, contratos e liquidação do Boraê Club, caso o programa compartilhado seja retomado no futuro.
 - Política de reviews e moderação.
