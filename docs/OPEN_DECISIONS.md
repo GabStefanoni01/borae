@@ -63,6 +63,25 @@ A página pública do restaurante apresentará os cardápios disponíveis para e
 
 **Impactos:** o relacionamento de Menu com Restaurant será um-para-muitos; atualizar modelo de domínio, PRD, fluxo de telas, API e módulo de catálogo. Esta decisão não implica que a funcionalidade já esteja implementada.
 
+### D-03 — Publicação por cardápio
+
+**Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
+
+**Decisão:** a publicação será controlada no nível do cardápio, não individualmente por produto nem globalmente por restaurante.
+
+- Todo cardápio novo começa como `DRAFT`.
+- O restaurante organiza categorias e produtos e pode revisar uma prévia antes de publicar.
+- A ação de publicar valida a consistência mínima e muda o cardápio para `PUBLISHED`.
+- Ao publicar um cardápio, seus produtos elegíveis e categorias ativas ficam visíveis na página pública.
+- Não haverá botão de publicar/despublicar por produto no MVP.
+- Em cardápios já publicados, alterações salvas entram em vigor imediatamente, sem etapa adicional de aprovação/publicação.
+- Um produto pode permanecer visível e ser marcado como indisponível; disponibilidade operacional não é estado de publicação.
+- O cardápio pode ser despublicado ou arquivado sem apagar seus dados.
+
+**Motivação:** manter a gestão simples para o restaurante, permitir revisão do conjunto antes da primeira publicação e evitar um fluxo de publicação excessivamente granular. Atualizações operacionais precisam refletir rapidamente no cardápio público.
+
+**Impactos:** estado de publicação pertence a `Menu`; produtos não precisam de estado próprio de publicação no MVP. Atualizar PRD, modelo de domínio, API, fluxo de telas e módulo de catálogo. Esta decisão não implica que a funcionalidade já esteja implementada.
+
 ## Como resolver uma decisão
 
 Para cada ID:
