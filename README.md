@@ -2,64 +2,72 @@
 
 **Experiências gastronômicas mais inteligentes.**
 
-Boraê conecta restaurantes e consumidores em uma experiência gastronômica digital: cardápios por QR Code, visualização 3D/AR de pratos, recomendações com IA, fidelidade e descoberta de estabelecimentos.
+Boraê é uma plataforma que conecta restaurantes e consumidores por meio de cardápios digitais, experiências 3D/AR, recomendações gastronômicas com IA, fidelidade e descoberta de estabelecimentos.
 
-> O projeto está em desenvolvimento incremental. A visão do produto inclui funcionalidades futuras que ainda não estão disponíveis. Consulte o roadmap para distinguir o que já existe do que será construído.
+O projeto está em desenvolvimento incremental. Este repositório é a fonte de verdade técnica; decisões e funcionalidades futuras devem seguir a documentação antes de serem implementadas.
 
-## Comece pela documentação
+## Documentação do projeto
 
-A documentação oficial para quem vai contribuir está em **[docs/README.md](docs/README.md)**.
+Comece por **[docs/README.md](docs/README.md)**. Ele apresenta a ordem de leitura e direciona para:
 
-Leitura recomendada:
-1. [Guia de desenvolvimento](docs/development/guide.md).
-2. [Visão do produto](docs/product/vision.md).
-3. [Requisitos funcionais](docs/product/requirements.md).
-4. [Arquitetura](docs/architecture/overview.md).
-5. [Modelo de domínio e permissões](docs/architecture/domain-model.md).
-6. [Endpoints implementados](docs/api/current-endpoints.md).
-7. [Roadmap](docs/roadmap.md).
+- [PRD — requisitos do produto](docs/PRD.md)
+- [Visão do produto e regras de negócio](docs/PRODUCT.md)
+- [Fluxos de tela](docs/SCREEN_FLOWS.md)
+- [Modelo de domínio e dados](docs/DOMAIN_MODEL.md)
+- [Arquitetura e decisões técnicas](docs/ARCHITECTURE.md)
+- [API implementada](docs/API.md)
+- [Desenho dos contratos futuros da API](docs/API_DESIGN.md)
+- [Especificação do catálogo](docs/MODULE_CATALOG.md)
+- [Especificação do assistente IA](docs/MODULE_AI_ASSISTANT.md)
+- [Especificação de fidelidade e Boraê Club](docs/MODULE_LOYALTY_CLUB.md)
+- [Especificação 3D/AR](docs/MODULE_3D_AR.md)
+- [Especificação de descoberta](docs/MODULE_DISCOVERY.md)
+- [Registro de decisões e pendências restantes](docs/OPEN_DECISIONS.md)
+- [Roadmap e critérios de conclusão](docs/ROADMAP.md)
+- [Guia de contribuição e fluxo de trabalho](docs/CONTRIBUTING.md)
 
-## O que já está implementado
-
-- Backend Java 21 + Spring Boot e frontend Angular 20.
-- PostgreSQL com migrations Flyway.
-- Cadastro e login com JWT.
-- Consulta do perfil autenticado e listagem dos restaurantes do usuário.
-- Cadastro de restaurante com vínculo OWNER.
-- Papéis OWNER, MANAGER e STAFF.
-- Convites de equipe com token seguro, aceite, listagem, alteração de papel e remoção.
-- Swagger/OpenAPI, CI e configuração de deploy.
-
-## Visão do produto
-
-- Cardápio digital responsivo com categorias, pratos, opções e disponibilidade.
-- Visualização 3D e realidade aumentada de pratos.
-- Assistente gastronômico que recomenda itens reais do cardápio.
-- Fidelidade individual por restaurante.
-- Boraê Club: benefícios compartilhados entre estabelecimentos parceiros.
-- Descoberta de restaurantes e painel de gestão.
-
-Esses itens fazem parte da visão; consulte o [roadmap](docs/roadmap.md) para o status de cada módulo.
-
-## Estratégia técnica
+## Stack
 
 | Camada | Tecnologia |
 | --- | --- |
 | Frontend | Angular 20 + TypeScript |
 | Backend | Java 21 + Spring Boot |
-| Persistência | Spring Data JPA |
-| Banco de dados | PostgreSQL |
-| Migrations | Flyway |
-| Segurança | Spring Security + JWT + BCrypt |
-| API | REST + OpenAPI/Swagger |
-| Cache futuro | Redis, se necessário |
-| IA futura | Python + FastAPI |
-| 3D/AR futuro | glTF/GLB + model-viewer |
+| Persistência | PostgreSQL + Spring Data JPA |
+| Migrações | Flyway |
+| Segurança | Spring Security + JWT |
+| Documentação da API | OpenAPI / Swagger |
+| Hospedagem atual | Render |
+| Banco gerenciado | Neon PostgreSQL |
+| Cache futuro | Redis |
+| Serviço de IA planejado | Python + FastAPI |
+| Experiência 3D/AR planejada | GLB/glTF + model-viewer |
+
+## Ambientes publicados
+
+- Frontend: https://borae1.onrender.com/
+- API: https://borae.onrender.com
+
+Consulte a documentação OpenAPI publicada no backend para conferir os contratos atuais. Endpoints e exemplos descritos em `docs/API.md` são apenas os que já foram confirmados no código; funcionalidades futuras estão explicitamente identificadas como planejadas.
 
 ## Executar localmente
 
-Consulte os pré-requisitos e instruções em [backend/README.md](backend/README.md) e [frontend/README.md](frontend/README.md). Docker Compose está disponível para ambientes compatíveis, mas não é obrigatório para o desenvolvimento local.
+O projeto possui configuração Docker Compose, mas o Docker é opcional para desenvolvimento. Para executar sem Docker, instale Java 21, Node.js compatível com Angular 20 e PostgreSQL; configure as variáveis de ambiente conforme `.env.example` e os arquivos de configuração de cada aplicação.
 
-## Deploy
+Com Docker, na raiz do projeto:
 
-A configuração do Render está no `render.yaml`. As variáveis e instruções de deploy devem ser consultadas nos arquivos de configuração e na documentação técnica. Nunca versione `.env), tokens, senhas ou credenciais.
+```bash
+docker compose up --build
+```
+
+Frontend: http://localhost:4200  
+API: http://localhost:8080
+
+## Regras essenciais
+
+1. Não implemente uma funcionalidade futura como se já fizesse parte do produto.
+2. Não altere contratos, regras de negócio ou arquitetura sem atualizar a documentação e explicar a motivação no PR.
+3. Nunca confie no frontend para autorização: valide usuário, restaurante, vínculo ativo e papel no backend.
+4. Não exponha segredos, tokens, credenciais ou dados de outros restaurantes.
+5. Trabalhe em branch própria e abra PR para `main`; não faça commits diretamente em `main`.
+6. Inclua testes para regras de negócio e mantenha a CI aprovada antes do merge.
+
