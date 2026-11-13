@@ -5,7 +5,7 @@ Este arquivo impede que decisões não tomadas sejam inventadas durante a implem
 | ID | Tema | Decisão necessária | Bloqueia |
 | --- | --- | --- | --- |
 | D-01 | Perfil restaurante | **APROVADA** — estrutura de perfil definida; ver decisão registrada abaixo | Concluído |
-| D-02 | Menus | Um menu ou múltiplos menus por restaurante (ex.: almoço/jantar) | Catálogo |
+| D-02 | Menus | **APROVADA** — múltiplos cardápios simultâneos por restaurante; ver decisão registrada abaixo | Concluído |
 | D-03 | Publicação | Publicação imediata ou rascunho + publicar; escopo produto/menu | Catálogo |
 | D-04 | Ingredientes | Estrutura de ingredientes, observações e alergênicos | Catálogo/IA |
 | D-05 | Opções | Variações, adicionais, combos, limites e acréscimos | Catálogo |
