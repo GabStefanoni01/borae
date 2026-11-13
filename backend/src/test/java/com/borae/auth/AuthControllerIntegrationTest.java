@@ -39,7 +39,7 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
-    void shouldRegisterUserAndReturnJwt() throws Exception {
+    void shouldRegisterUserAndReturnJwtAndCurrentProfile() throws Exception {
         String email = "user-" + UUID.randomUUID() + "@example.com";
         String body = objectMapper.writeValueAsString(Map.of(
                 "fullName", "Pessoa Teste",
@@ -59,6 +59,12 @@ class AuthControllerIntegrationTest {
                 .getContentAsString();
 
         String token = objectMapper.readTree(response).get("accessToken").asText();
+
+        mockMvc.perform(get("/api/v1/users/me")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.fullName").value("Pessoa Teste"))
+                .andExpect(jsonPath("$.email").value(email));
 
         mockMvc.perform(get("/api/v1/system/status")
                         .header("Authorization", "Bearer " + token))
@@ -101,6 +107,9 @@ class AuthControllerIntegrationTest {
     @Test
     void shouldRequireJwtForProtectedEndpoints() throws Exception {
         mockMvc.perform(get("/api/v1/system/status"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/api/v1/users/me"))
                 .andExpect(status().isUnauthorized());
     }
 }

@@ -16,8 +16,7 @@ export interface AuthResponse {
 export interface LoginPayload { email: string; password: string; }
 export interface RegisterPayload extends LoginPayload { fullName: string; }
 
-// URL pública da API Boraê. Em desenvolvimento local, altere para http://localhost:8080.
-const API_URL = 'https://borae.onrender.com';
+export const API_URL = 'https://borae.onrender.com';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -29,6 +28,14 @@ export class AuthService {
     return this.session?.user ?? null;
   }
 
+  get accessToken(): string | null {
+    return this.session?.accessToken ?? null;
+  }
+
+  get hasSession(): boolean {
+    return Boolean(this.accessToken);
+  }
+
   login(payload: LoginPayload): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${API_URL}/api/v1/auth/login`, payload)
       .pipe(tap(response => this.saveSession(response)));
@@ -37,6 +44,14 @@ export class AuthService {
   register(payload: RegisterPayload): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${API_URL}/api/v1/auth/register`, payload)
       .pipe(tap(response => this.saveSession(response)));
+  }
+
+  getCurrentUser(): Observable<AuthUser> {
+    return this.http.get<AuthUser>(`${API_URL}/api/v1/users/me`).pipe(
+      tap(user => {
+        if (this.session) this.saveSession({ ...this.session, user });
+      })
+    );
   }
 
   logout(): void {
