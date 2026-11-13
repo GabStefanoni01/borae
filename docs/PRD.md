@@ -123,17 +123,24 @@ Precisa moderar e dar suporte à plataforma, com acesso global estritamente audi
 - Informar nome, descrição, preço, ingredientes individuais, imagem e disponibilidade.
 - Permitir cadastrar livremente vários ingredientes por produto, editar, remover e ordenar sua exibição.
 - Exibir os ingredientes informados pelo restaurante nos detalhes do produto.
-- Permitir cadastrar adicionais opcionais com seus preços/acréscimos, exibidos ao consumidor no cardápio.\n- Remoções de ingredientes serão informadas como observações no momento do pedido e apresentadas ao garçom.\n- Não incluir tamanhos ou combos nesta etapa; ponto da carne poderá ser informado como instrução no pedido, quando aplicável.
+- Permitir cadastrar adicionais opcionais com seus preços/acréscimos, exibidos ao consumidor no cardápio.
+- Remoções de ingredientes serão informadas como observações no momento do pedido e apresentadas ao garçom.
+- Não incluir tamanhos ou combos nesta etapa; ponto da carne poderá ser informado como instrução no pedido, quando aplicável.
 - Controlar publicação no nível do cardápio: novos cardápios começam como `DRAFT`; publicar torna públicos os produtos elegíveis e categorias ativas.
 - Não oferecer publicação individual por produto no MVP.
 - Em cardápios publicados, alterações salvas entram em vigor imediatamente.
 - Separar disponibilidade (`AVAILABLE` / `UNAVAILABLE`) do estado de publicação do cardápio.
 - Impedir que produtos arquivados apareçam no menu público.
-- Utilizar BRL no MVP e armazenar preços de produtos e adicionais como inteiros em centavos.\n- Realizar cálculos monetários no backend, sem `float` ou `double`, e impedir valores negativos.
+- Utilizar BRL no MVP e armazenar preços de produtos e adicionais como inteiros em centavos.
+- Realizar cálculos monetários no backend, sem `float` ou `double`, e impedir valores negativos.
 
-**Decisão de produto aprovada (D-03, 13/11/2026).**\n\n**Decisão de produto aprovada (D-05, 13/11/2026):** o catálogo permite adicionais com preço visível. Remoções e ponto da carne, quando aplicável, são instruções informadas no momento do pedido e repassadas ao garçom; não são opções pré-cadastradas no produto. Não haverá tamanhos ou combos nesta etapa.
+**Decisão de produto aprovada (D-03, 13/11/2026).**
 
-**Decisão de produto aprovada (D-04, 13/11/2026):** ingredientes são itens individuais cadastrados livremente pelo restaurante e associados ao produto. Não haverá cadastro específico de alergênicos ou contaminação cruzada neste escopo.\n\n**Decisão de produto aprovada (D-06, 13/11/2026):** preços em BRL, armazenados em centavos como inteiros; cálculos monetários no backend, sem `float` ou `double`.
+**Decisão de produto aprovada (D-05, 13/11/2026):** o catálogo permite adicionais com preço visível. Remoções e ponto da carne, quando aplicável, são instruções informadas no momento do pedido e repassadas ao garçom; não são opções pré-cadastradas no produto. Não haverá tamanhos ou combos nesta etapa.
+
+**Decisão de produto aprovada (D-04, 13/11/2026):** ingredientes são itens individuais cadastrados livremente pelo restaurante e associados ao produto. Não haverá cadastro específico de alergênicos ou contaminação cruzada neste escopo.
+
+**Decisão de produto aprovada (D-06, 13/11/2026):** preços em BRL, armazenados em centavos como inteiros; cálculos monetários no backend, sem `float` ou `double`.
 
 ### RF-05 — Cardápio público
 - Carregar dados publicados do restaurante.
