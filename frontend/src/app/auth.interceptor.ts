@@ -23,8 +23,9 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
         isApiRequest &&
         !isAuthenticationRequest
       ) {
+        // Sessão expirada: limpa a sessão local e volta ao login com aviso (docs/SCREEN_FLOWS.md §2).
         auth.logout();
-        void router.navigateByUrl('/');
+        void router.navigate(['/auth'], { queryParams: { sessao: 'expirada' } });
       }
 
       return throwError(() => error);

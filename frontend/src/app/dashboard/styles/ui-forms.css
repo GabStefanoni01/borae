@@ -1,0 +1,63 @@
+/* Painel — botões, formulários, alertas e tabelas (.d-*) */
+.d-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border:1px solid transparent;border-radius:10px;font:inherit;font-weight:600;font-size:14px;line-height:1;white-space:nowrap;cursor:pointer;transition:background-color .15s,border-color .15s,color .15s,box-shadow .15s}
+.d-btn:disabled{opacity:.55;cursor:not-allowed}
+.d-btn-primary{background:var(--d-primary);color:#fff;box-shadow:0 1px 2px rgba(240,100,0,.3)}
+.d-btn-primary:hover:not(:disabled){background:var(--d-primary-hover)}
+.d-btn-secondary{background:var(--d-surface);color:var(--d-ink);border-color:var(--d-border)}
+.d-btn-secondary:hover:not(:disabled){background:var(--d-hover);border-color:var(--d-border-strong)}
+.d-btn-ghost{background:transparent;color:var(--d-ink)}
+.d-btn-ghost:hover:not(:disabled){background:var(--d-hover)}
+.d-btn-danger{background:#D92D20;color:#fff}
+.d-btn-danger:hover:not(:disabled){background:#B42318}
+.d-btn-sm{min-height:32px;padding:0 10px;font-size:13px;border-radius:8px}
+.dash a.d-btn{text-decoration:none}
+
+/* Campos */
+.d-form{display:grid;gap:16px}
+.d-form-row{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.d-field{display:grid;gap:6px;min-width:0}
+.d-field label{font-weight:600;font-size:13px}
+.d-field label span{font-weight:400;color:var(--d-muted)}
+.d-input{width:100%;min-height:42px;padding:9px 12px;border:1px solid var(--d-border-strong);border-radius:10px;background:var(--d-surface);color:var(--d-ink);font:inherit;outline:none;transition:border-color .15s,box-shadow .15s}
+.d-input::placeholder{color:var(--d-faint)}
+.d-input:hover{border-color:var(--d-faint)}
+.d-input:focus{border-color:var(--d-primary);box-shadow:0 0 0 3px rgba(255,114,0,.18)}
+textarea.d-input{resize:vertical;min-height:96px}
+select.d-input{appearance:none;padding-right:34px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23909090' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-size:16px}
+.d-input.d-input-sm{min-height:32px;padding:4px 30px 4px 10px;font-size:13px;border-radius:8px}
+.d-hint{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--d-muted)}
+.d-form-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+
+/* Alertas */
+.d-alert{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:10px;border:1px solid;font-size:13.5px}
+.d-alert bo-icon{margin-top:1px;flex-shrink:0}
+.d-alert p{margin:0}
+.d-alert-info{background:var(--d-hover);border-color:var(--d-border);color:var(--d-ink-2)}
+.d-alert-success{background:var(--d-success-soft);border-color:var(--d-success-line);color:var(--d-success-ink)}
+.d-alert-error{background:var(--d-error-soft);border-color:var(--d-error-line);color:var(--d-error-ink)}
+.d-alert-warning{background:var(--d-warning-soft);border-color:var(--d-warning-line);color:var(--d-warning-ink)}
+
+/* Tabela responsiva (vira cartões no mobile) */
+.d-table-wrap{border:1px solid var(--d-border);border-radius:var(--d-radius-lg);background:var(--d-surface);overflow:hidden}
+.d-table{width:100%;border-collapse:collapse}
+.d-table th{padding:11px 16px;text-align:left;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--d-muted);background:var(--d-head);border-bottom:1px solid var(--d-border)}
+.d-table td{padding:12px 16px;border-bottom:1px solid var(--d-border-soft);vertical-align:middle}
+.d-table tr:last-child td{border-bottom:0}
+.d-table tbody tr{transition:background-color .15s}
+.d-table tbody tr:hover{background:var(--d-head)}
+.d-person{display:flex;align-items:center;gap:10px;min-width:0}
+.d-person strong,.d-person small{display:block}
+.d-person small{color:var(--d-muted);font-size:12.5px;overflow-wrap:anywhere}
+.d-row-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+@media (max-width:720px){
+  .d-table thead{display:none}
+  .d-table,.d-table tbody,.d-table tr,.d-table td{display:block;width:100%}
+  .d-table tr{padding:12px 14px;border-bottom:1px solid var(--d-border)}
+  .d-table td{padding:4px 0;border:0}
+  .d-table td[data-label]::before{content:attr(data-label);display:block;font-size:11.5px;color:var(--d-muted);margin-bottom:2px}
+  .d-row-actions{justify-content:flex-start;margin-top:6px}
+}
+
+/* Token de convite */
+.d-token{display:flex;gap:8px;align-items:stretch}
+.d-token code{flex:1;min-width:0;padding:10px 12px;border:1px dashed var(--d-border-strong);border-radius:10px;background:var(--d-head);font-family:ui-monospace,Consolas,monospace;font-size:12.5px;overflow-wrap:anywhere}

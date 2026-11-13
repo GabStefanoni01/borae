@@ -1,0 +1,17 @@
+/* Login — painel de marca (foto, título e benefícios) */
+.showcase{position:relative;display:flex;flex-direction:column;justify-content:space-between;gap:40px;padding:36px clamp(28px,4vw,56px);color:#fff;background:#191919 url('/assets/images/hero-dish.jpg') center/cover;overflow:hidden;isolation:isolate}
+.showcase::before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(160deg,rgba(25,25,25,.6) 0%,rgba(25,25,25,.85) 55%,rgba(232,93,0,.78) 130%)}
+.showcase-top{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.back{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:rgba(255,255,255,.82);padding:8px 14px;border:1px solid rgba(255,255,255,.22);border-radius:var(--radius-pill);transition:all var(--transition-fast)}
+.back:hover{background:#fff;color:var(--color-graphite)}
+.showcase-copy{max-width:520px;animation:rise .8s cubic-bezier(.16,1,.3,1) both}
+.eyebrow{font-family:var(--font-family-headings);font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#FFA04D;margin-bottom:18px}
+.showcase h1{color:#fff;font-size:clamp(36px,4.4vw,56px);font-weight:800;line-height:1.05;letter-spacing:-.035em}
+.showcase h1 em{font-style:normal;color:var(--color-primary)}
+.lead{color:rgba(255,255,255,.78);font-size:16px;line-height:1.7;margin:20px 0 28px;max-width:440px}
+.perks{list-style:none;margin:0;padding:0;display:grid;gap:14px}
+.perks li{display:flex;align-items:center;gap:14px;font-size:14px;color:rgba(255,255,255,.9)}
+.perks bo-icon{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);color:#FFA04D}
+.showcase-foot{font-size:12px;color:rgba(255,255,255,.55)}
+.panel-tools{display:flex;align-items:center;gap:10px}
+.demo-flag{padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--a-warn-bg);border:1px solid var(--a-warn-line);color:var(--a-warn)}

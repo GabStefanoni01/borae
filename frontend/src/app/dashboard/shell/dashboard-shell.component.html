@@ -1,0 +1,108 @@
+<div class="dash" [class.d-nav-open]="navOpen()">
+  <a class="d-skip" href="#d-main">Ir para o conteúdo</a>
+
+  <!-- Sidebar -->
+  <aside class="d-sidebar" id="d-sidebar" aria-label="Navegação do painel">
+    <div class="d-brand">
+      <div class="d-brand-id">
+        <a routerLink="/app" (click)="closeNav()" aria-label="Boraê — início do painel"><bo-brand-logo tone="auto" [size]="30" /></a>
+        <span class="d-brand-env">Painel do restaurante</span>
+      </div>
+      <button type="button" class="d-icon-btn d-nav-close" (click)="closeNav()" aria-label="Fechar menu"><bo-icon name="x" [size]="20" /></button>
+    </div>
+
+    <bo-restaurant-switcher (navigated)="closeNav()" />
+
+    <nav class="d-nav">
+      @for (group of groups; track group.name) {
+        <div class="d-nav-group">
+          <p class="d-nav-label">{{ group.name }}</p>
+          <ul>
+            @for (item of group.modules; track item.id) {
+              <li>
+                <a [routerLink]="link(item.path)" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: item.path === '' }"
+                  #rla="routerLinkActive" [attr.aria-current]="rla.isActive ? 'page' : null" (click)="closeNav()">
+                  <bo-icon [name]="item.icon" [size]="18" />
+                  <span>{{ item.label }}</span>
+                  @if (item.status === 'planned') { <span class="d-nav-tag" title="Em planejamento">Em breve</span> }
+                </a>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </nav>
+
+    <div class="d-sidebar-foot">
+      <p>Recursos marcados como <em>Em breve</em> estão em planejamento e ainda não executam operações.</p>
+    </div>
+  </aside>
+  <div class="d-backdrop" (click)="closeNav()" aria-hidden="true"></div>
+
+  <!-- Coluna principal -->
+  <div class="d-main-col">
+    <header class="d-topbar">
+      <button type="button" class="d-icon-btn d-nav-toggle" (click)="toggleNav()" aria-controls="d-sidebar"
+        [attr.aria-expanded]="navOpen()" aria-label="Abrir menu de navegação">
+        <bo-icon name="menu" [size]="20" />
+      </button>
+
+      <nav class="d-breadcrumb" aria-label="Você está em">
+        <ol>
+          <li><a routerLink="/app">Painel</a></li>
+          <li aria-current="page">{{ crumb() }}</li>
+        </ol>
+      </nav>
+
+      <div class="d-topbar-right">
+        @if (ctx.selected(); as current) {
+          <div class="d-context" aria-label="Restaurante em gestão">
+            <bo-icon name="store" [size]="16" />
+            <span class="d-context-name">{{ current.restaurantName }}</span>
+            <bo-role-badge [role]="current.role" />
+          </div>
+        }
+
+        <bo-theme-toggle class="d-theme" />
+
+        <div class="d-account">
+          <button type="button" class="d-account-btn" (click)="accountOpen.set(!accountOpen())"
+            aria-haspopup="menu" [attr.aria-expanded]="accountOpen()" aria-label="Abrir menu da conta">
+            <span class="d-avatar">{{ userInitial() }}</span>
+            <span class="d-account-name">{{ firstName() }}</span>
+            <bo-icon name="chevron-down" [size]="16" />
+          </button>
+          @if (accountOpen()) {
+            <div class="d-menu" role="menu">
+              @if (ctx.user(); as user) {
+                <div class="d-menu-user"><strong>{{ user.fullName }}</strong><small>{{ user.email }}</small></div>
+              }
+              <a role="menuitem" routerLink="/app/configuracoes" (click)="accountOpen.set(false)"><bo-icon name="user" [size]="16" /> Minha conta</a>
+              <a role="menuitem" routerLink="/" (click)="accountOpen.set(false)"><bo-icon name="globe" [size]="16" /> Site do Boraê</a>
+              <div class="d-menu-theme"><span>Tema</span><bo-theme-toggle /></div>
+              <button role="menuitem" type="button" class="d-menu-danger" (click)="logout()"><bo-icon name="log-out" [size]="16" /> Sair</button>
+            </div>
+          }
+        </div>
+      </div>
+    </header>
+
+    @if (demo) {
+      <div class="d-demo" role="note"><bo-icon name="info" [size]="15" /><span><strong>Modo demonstração:</strong> os dados são fictícios e ficam apenas neste navegador. Nada é enviado à API real.</span></div>
+    }
+
+    <main class="d-content" id="d-main" tabindex="-1">
+      @switch (ctx.status()) {
+        @case ('loading') {
+          <bo-state kind="loading" title="Carregando seu painel" text="Estamos confirmando sua sessão e seus restaurantes." />
+        }
+        @case ('error') {
+          <bo-state kind="error" title="Não foi possível carregar o painel" [text]="ctx.errorMessage()">
+            <button type="button" class="d-btn d-btn-primary" (click)="ctx.load()"><bo-icon name="refresh" [size]="16" /> Tentar novamente</button>
+          </bo-state>
+        }
+        @default { <router-outlet /> }
+      }
+    </main>
+  </div>
+</div>

@@ -1,0 +1,34 @@
+/* Painel — avatares, seletor de restaurante e menu da conta (.d-*) */
+.d-avatar{display:grid;place-items:center;flex-shrink:0;width:32px;height:32px;border-radius:50%;background:var(--d-strong-bg);color:var(--d-strong-ink);font-size:13px;font-weight:600}
+.d-avatar-restaurant{border-radius:10px;background:var(--d-primary-soft);color:var(--d-primary-text);font-weight:700}
+.d-avatar-ghost{border-radius:10px;background:var(--d-hover);color:var(--d-muted);border:1px dashed var(--d-border-strong)}
+.d-avatar-sm{width:28px;height:28px;font-size:11.5px}
+
+/* Seletor de restaurante */
+.d-switch{position:relative;display:block}
+.d-switch-trigger{width:100%;display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--d-border);border-radius:var(--d-radius);background:var(--d-surface);color:var(--d-ink);font:inherit;text-align:left;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.d-switch-trigger:hover{border-color:var(--d-border-strong);box-shadow:var(--d-shadow)}
+.d-switch-trigger>bo-icon{margin-left:auto;color:var(--d-muted)}
+.d-switch-text{display:flex;flex-direction:column;min-width:0}
+.d-switch-text strong{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.d-switch-text small{font-size:12px;color:var(--d-muted)}
+.d-switch-menu{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:70;padding:6px;background:var(--d-surface);border:1px solid var(--d-border);border-radius:var(--d-radius);box-shadow:var(--d-shadow-pop);animation:d-pop .18s var(--d-ease)}
+.d-switch-label{margin:4px 8px 6px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--d-faint)}
+.d-switch-menu ul{list-style:none;margin:0;padding:0;max-height:240px;overflow-y:auto}
+.d-switch-menu li button{width:100%;display:flex;align-items:center;gap:10px;padding:8px;border:0;border-radius:8px;background:none;font:inherit;text-align:left;color:var(--d-ink);cursor:pointer}
+.d-switch-menu li button:hover{background:var(--d-hover)}
+.d-switch-check{margin-left:auto;color:var(--d-primary)}
+.d-switch-footer{display:grid;gap:2px;margin-top:6px;padding-top:6px;border-top:1px solid var(--d-border)}
+.d-switch-footer a{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;color:var(--d-muted);font-weight:500}
+.d-switch-footer a:hover{background:var(--d-hover);color:var(--d-ink)}
+
+/* Menu da conta */
+.d-menu{position:absolute;right:0;top:calc(100% + 8px);z-index:70;min-width:240px;padding:6px;background:var(--d-surface);border:1px solid var(--d-border);border-radius:var(--d-radius);box-shadow:var(--d-shadow-pop);animation:d-pop .18s var(--d-ease)}
+.d-menu-user{padding:8px 10px 10px;margin-bottom:4px;border-bottom:1px solid var(--d-border)}
+.d-menu-user strong,.d-menu-user small{display:block}.d-menu-user small{color:var(--d-muted);font-size:12px}
+.d-menu a,.d-menu button{width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border:0;border-radius:8px;background:none;color:var(--d-ink);font:inherit;text-align:left;cursor:pointer}
+.d-menu a:hover,.d-menu>button:hover{background:var(--d-hover)}
+.d-menu .d-menu-danger{color:var(--d-error)}
+.d-menu-theme{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 10px;margin:4px 0;border-top:1px solid var(--d-border);border-bottom:1px solid var(--d-border);color:var(--d-muted);font-size:13px}
+.d-menu-theme bo-theme-toggle button{width:30px;padding:0}
+@keyframes d-pop{from{opacity:0;transform:translateY(-4px)}}

@@ -2,7 +2,7 @@
   "name": "borae-frontend",
   "version": "0.1.0",
   "private": true,
-  "scripts": {"start": "ng serve --host 0.0.0.0", "build": "ng build"},
+  "scripts": {"start": "ng serve --host 0.0.0.0", "start:demo": "ng serve --host 0.0.0.0 --configuration demo", "build": "ng build"},
   "dependencies": {
     "@angular/common": "20.3.0",
     "@angular/compiler": "20.3.0",

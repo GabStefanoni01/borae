@@ -22,7 +22,13 @@
               ],
               "outputHashing": "all"
             },
-            "development": {"optimization": false, "extractLicenses": false, "sourceMap": true}
+            "development": {"optimization": false, "extractLicenses": false, "sourceMap": true},
+            "demo": {
+              "optimization": false, "extractLicenses": false, "sourceMap": true,
+              "fileReplacements": [
+                {"replace": "src/environments/environment.ts", "with": "src/environments/environment.demo.ts"}
+              ]
+            }
           },
           "defaultConfiguration": "production"
         },
@@ -30,7 +36,8 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {"buildTarget": "borae-frontend:build:production"},
-            "development": {"buildTarget": "borae-frontend:build:development"}
+            "development": {"buildTarget": "borae-frontend:build:development"},
+            "demo": {"buildTarget": "borae-frontend:build:demo"}
           },
           "defaultConfiguration": "development"
         }

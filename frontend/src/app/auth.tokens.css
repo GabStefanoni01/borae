@@ -1,0 +1,4 @@
+/* Login — tokens de cor claro/escuro */
+:host{--a-bg:var(--color-cream);--a-card:#fff;--a-ink:var(--color-graphite);--a-muted:var(--color-text-muted);--a-faint:#8A8A8A;--a-border:var(--color-border);--a-input:#FCFBF9;--a-input-focus:#fff;--a-tabs:var(--color-surface);--a-tab-on:#fff;--a-soft:var(--color-primary-light);--a-eyebrow:var(--color-primary-dark);--a-err-bg:#FFF1EE;--a-err-line:#FFD2C8;--a-err:#B4321A;--a-warn-bg:#FDF5E7;--a-warn-line:#F3E1BD;--a-warn:#7A5014;
+  --tt-bg:var(--a-tabs);--tt-border:var(--a-border);--tt-color:var(--a-muted);--tt-active-bg:var(--a-tab-on);--tt-active-color:var(--a-ink);
+  display:block;min-height:100vh;background:var(--a-bg);color:var(--a-ink);transition:background-color .2s}
