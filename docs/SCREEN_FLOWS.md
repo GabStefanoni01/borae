@@ -103,7 +103,11 @@ D-02 aprovada em 13/11/2026.
 
 ### Produtos
 - Listar com busca e filtro por categoria/status.
-- Criar/editar dados, preço, ingredientes, imagem e disponibilidade.
+- Criar/editar dados, preço, imagem e disponibilidade.
+- Na edição do produto, adicionar, editar, remover e ordenar ingredientes individualmente (ex.: pão, carne, queijo, cebola e bacon).
+- Exibir a lista de ingredientes nos detalhes públicos do produto.
+
+D-04 aprovada em 13/11/2026. O cadastro é livre e simples; não inclui formulário específico de alergênicos ou contaminação cruzada.
 - Arquivar sem perder histórico necessário.
 - Pré-visualizar como consumidor.
 
