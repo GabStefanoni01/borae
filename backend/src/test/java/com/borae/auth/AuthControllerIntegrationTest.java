@@ -1,5 +1,6 @@
 package com.borae.auth;
 
+import com.borae.identity.RestaurantInvitationRepository;
 import com.borae.identity.RestaurantMembershipRepository;
 import com.borae.identity.RestaurantRepository;
 import com.borae.identity.UserAccountRepository;
@@ -43,8 +44,12 @@ class AuthControllerIntegrationTest {
     @Autowired
     private RestaurantMembershipRepository membershipRepository;
 
+    @Autowired
+    private RestaurantInvitationRepository invitationRepository;
+
     @BeforeEach
     void cleanDatabase() {
+        invitationRepository.deleteAll();
         membershipRepository.deleteAll();
         restaurantRepository.deleteAll();
         userRepository.deleteAll();
