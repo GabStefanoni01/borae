@@ -217,7 +217,7 @@ Os papéis são atribuídos por vínculo com cada restaurante. O mesmo usuário 
 
 **D-12 parcialmente aprovada:** estrutura independente e taxa de 1 ponto por R$ 1,00 definidas. Confirmação da compra, crédito, expiração, estorno, financiamento e liquidação continuam pendentes.
 
-**D-13 parcialmente aprovada:** os pontos só serão concedidos após a compra ser concluída e confirmada manualmente no fechamento da conta por garçom ou gerente. O registro deverá identificar funcionário e restaurante e ser auditável. Não haverá crédito por consulta ao cardápio ou simples criação de pedido. Identificação do consumidor, estornos, idempotência detalhada e momento de disponibilidade dos pontos ainda serão definidos.
+**D-13 parcialmente aprovada:** os pontos só serão concedidos após a compra ser concluída e confirmada manualmente no fechamento da conta por garçom ou gerente. O registro deverá identificar funcionário e restaurante e ser auditável. Não haverá crédito por consulta ao cardápio ou simples criação de pedido. A identificação será feita pelo telefone cadastrado do consumidor. O método de verificação do telefone, estornos, idempotência detalhada e momento de disponibilidade dos pontos ainda serão definidos.
 
 ### RF-11 — Descoberta
 - Listar estabelecimentos publicados e ativos.
