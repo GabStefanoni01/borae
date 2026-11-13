@@ -41,6 +41,14 @@ Vínculo entre usuário e restaurante.
 
 Regra: um usuário pode ter vínculos com vários restaurantes. A política de unicidade do vínculo deve impedir duplicação lógica do mesmo usuário no mesmo restaurante; reativação deve reaproveitar o vínculo conforme implementação atual.
 
+**Decisão de produto D-07 aprovada:** os papéis são atribuídos por vínculo e têm as seguintes responsabilidades:
+- `OWNER`: controle total, incluindo perfil, catálogo, publicação, disponibilidade, equipe, papéis, propriedade e cobrança; também pedidos quando esse módulo existir.
+- `MANAGER`: administra perfil, catálogo, publicação, disponibilidade, equipe e convites; pode operar pedidos quando esse módulo existir. Não altera papéis, propriedade ou cobrança.
+- `STAFF`: acesso operacional ao painel, disponibilidade de produtos e pedidos (visualização/atualização de status quando o módulo existir). Não administra perfil, catálogo, publicação, equipe, propriedade ou cobrança.
+
+Um usuário pode ter papéis diferentes em restaurantes diferentes. A autorização deve ser validada no backend em toda operação privada. Permissões futuras de pedidos não significam inclusão de pedidos no MVP.
+
+
 ### RestaurantInvitation
 Convite para integrar equipe.
 - id
