@@ -164,7 +164,7 @@ Os papéis são atribuídos por vínculo com cada restaurante. O mesmo usuário 
 
 **Decisão de produto aprovada (D-06, 13/11/2026):** preços em BRL, armazenados em centavos como inteiros; cálculos monetários no backend, sem `float` ou `double`.
 
-**Decisão de produto aprovada (D-09, 13/11/2026):** imagens JPG/JPEG, PNG e WebP e modelos GLB/glTF serão armazenados em object storage externo; PostgreSQL mantém apenas metadados e referências. Cloudflare R2 será utilizado como object storage no MVP, dentro das cotas gratuitas disponíveis. Limites numéricos de upload permanecem pendentes e o consumo deverá ser monitorado.
+**Decisão de produto aprovada (D-09, 13/11/2026):** imagens JPG/JPEG, PNG e WebP e modelos GLB/glTF serão armazenados em object storage externo; PostgreSQL mantém apenas metadados e referências. Cloudflare R2 será utilizado como object storage no MVP. Logos: até 5 MB; fotos e arquivos de mídia permitidos: até 10 MB; até 100 imagens por restaurante. Imagens aceitas: JPEG, PNG e WebP, com otimização automática. Modelos 3D seguem os formatos definidos no módulo 3D/AR e validação própria.
 
 ### RF-05 — Cardápio público
 - Carregar dados publicados do restaurante.
