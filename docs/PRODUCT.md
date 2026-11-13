@@ -95,7 +95,7 @@ Carrinho, checkout, integração com POS, pagamento, acompanhamento de pedido e 
 
 ## 4. Modelo de negócio (hipóteses a validar)
 - SaaS B2B com planos para restaurantes.
-- Boraê Club e recursos premium para consumidores, mantendo uma experiência básica acessível.
+- Possível evolução futura do Boraê Club e recursos premium para consumidores, fora do MVP e sujeitos a validação de modelo de negócio.
 - Campanhas patrocinadas e parcerias comerciais.
 - Possíveis taxas por transações ou resgates, apenas após validar operação e viabilidade.
 
