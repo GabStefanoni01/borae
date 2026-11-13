@@ -58,14 +58,17 @@ Um produto pode ter grupos de opções. Cada grupo define mínimo e máximo de s
 
 ## 4. Publicação
 
-Proposta de fluxo:
-1. Produto é criado como DRAFT.
-2. Restaurante preenche dados obrigatórios.
-3. Prévia permite conferir a apresentação.
-4. Ação publicar valida consistência e muda estado.
-5. Alterações posteriores seguem política explícita de publicação.
+**Decisão de produto D-03 aprovada em 13/11/2026.** A publicação é controlada por cardápio (`Menu`), não por produto nem globalmente por restaurante.
 
-**Decisão pendente:** publicação imediata ou rascunho de alterações com botão publicar; publicação por produto ou publicação do menu completo. Recomenda-se começar com publicação por produto para reduzir complexidade, mas confirmar com responsável de produto.
+Fluxo:
+1. Um cardápio novo é criado como `DRAFT`.
+2. O restaurante adiciona categorias e produtos e revisa a prévia.
+3. A ação de publicar valida a consistência mínima do cardápio e muda seu estado para `PUBLISHED`.
+4. Categorias ativas e produtos elegíveis do cardápio passam a aparecer na página pública.
+5. Em cardápio publicado, alterações salvas entram no ar imediatamente, sem uma segunda etapa de publicação.
+6. O restaurante pode despublicar ou arquivar o cardápio sem apagar seus dados.
+
+Não existe publicação individual de produto no MVP. Produto arquivado não aparece publicamente. Produto indisponível pode continuar visível, identificado como indisponível. A disponibilidade operacional é independente da publicação do cardápio.
 
 ## 5. Menu público
 
