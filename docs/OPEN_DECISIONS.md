@@ -1,4 +1,4 @@
-# Registro de decisões pendentes
+# Registro de decisões e pendências restantes
 
 Este arquivo impede que decisões não tomadas sejam inventadas durante a implementação. Cada item deve ser resolvido pelo responsável pelo produto antes do módulo correspondente começar.
 
@@ -21,7 +21,7 @@ Este arquivo impede que decisões não tomadas sejam inventadas durante a implem
 | D-15 | Fidelidade | **APROVADA** — validade, FEFO, expiração, avisos e estornos definidos | Concluído |
 | D-16 | Descoberta | **APROVADA** — localização, busca, filtros, avaliações, favoritos e páginas de marca/unidade definidos | Concluído |
 | D-17 | Consumidor | **APROVADA** — cadastro, autenticação, segurança, perfil e notificações definidos | Concluído |
-| D-18 | Monetização | **APROVADA** — assinatura fixa, plano único, teste, cobrança, cancelamento e indicação definidos | Concluído* |
+| D-18 | Monetização | **APROVADA** — assinatura fixa, plano único, teste, cobrança, cancelamento e indicação definidos; preço e descontos aguardam definição comercial | Concluído |
 | D-19 | Administração | **APROVADA** — papéis globais, permissões, auditoria e manutenção definidos | Concluído |
 | D-20 | Pedidos/integrações | **APROVADA** — sem pedidos/POS no lançamento; API autenticada, webhooks e canais definidos | Concluído |
 
@@ -279,129 +279,10 @@ Para cada ID:
 
 ## Estado atual
 
-- **D-01 — Perfil do restaurante:** aprovada e registrada nesta documentação.
-- **D-02 — Múltiplos cardápios:** aprovada e registrada nesta documentação.
-- **D-03 — Publicação por cardápio:** aprovada e registrada nesta documentação.
-- **D-14 — Escopo da fidelidade no MVP:** aprovada; somente programas individuais por restaurante. Boraê Club compartilhado fica para uma fase futura.
-- **D-15 — Regras operacionais da fidelidade:** parcialmente aprovada; validade, estornos, antifraude, encerramento e alteração não retroativa das regras (D-15.8) definidos. Ordem de consumo dos pontos permanece pendente.
-### D-06 — Preços e valores monetários
+- **D-01 a D-11:** aprovadas e registradas nesta documentação.
+- **D-12 a D-17:** aprovadas e registradas nesta documentação.
+- **D-18:** modelo comercial e regras operacionais aprovados. Preço nominal e percentuais dos descontos trimestral/anual ainda precisam de definição comercial antes de configurar a cobrança.
+- **D-19 e D-20:** aprovadas e registradas nesta documentação.
+- **Boraê Club:** visão futura preservada; fora do MVP.
 
-**Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
-
-**Decisão:**
-- O Boraê utilizará somente real brasileiro (BRL) no MVP.
-- Valores terão precisão de duas casas decimais (centavos).
-- Preços de produtos e adicionais serão armazenados em centavos como números inteiros.
-- O backend será responsável pelos cálculos monetários; não utilizar `float` ou `double`.
-- Preços de produtos e adicionais não poderão ser negativos.
-- O preço dos adicionais será somado ao preço do produto conforme a seleção feita no pedido.
-
-**Exemplo:** produto de R$ 25,00 + bacon extra de R$ 5,00 + cheddar extra de R$ 3,00 = R$ 33,00.
-
-**Impactos:** padronizar o modelo de domínio e os contratos da API com valores em centavos (por exemplo, `priceInCents` e `priceDeltaInCents`). Exibição ao consumidor deve formatar os valores como BRL. Esta decisão não implica que pedidos ou pagamentos já façam parte do MVP.
-
-### D-07 — Papéis e permissões da equipe
-
-**Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
-
-**Decisão:** o Boraê terá três papéis por vínculo com restaurante:
-
-- **OWNER:** controle total do restaurante. Pode visualizar o painel; editar o perfil; criar e administrar cardápios, categorias, produtos, preços e publicação; alterar disponibilidade; visualizar e atualizar pedidos quando o módulo existir; gerenciar equipe, convites e papéis; excluir ou transferir a propriedade do restaurante; gerenciar assinatura e cobrança.
-- **MANAGER:** pode visualizar o painel; editar o perfil; criar e administrar cardápios, categorias, produtos e preços; publicar e arquivar cardápios; alterar disponibilidade; visualizar e atualizar pedidos quando o módulo existir; gerenciar equipe e convites. Não pode alterar papéis, excluir ou transferir o restaurante, nem gerenciar assinatura e cobrança.
-- **STAFF:** acesso operacional. Pode visualizar o painel; alterar disponibilidade dos produtos; visualizar pedidos e atualizar seus status quando o módulo existir. Não pode editar perfil, cardápios, categorias, produtos ou preços, publicar cardápios, gerenciar equipe ou convites, alterar papéis, excluir/transferir o restaurante ou gerenciar cobrança.
-
-As permissões são vinculadas ao membership de cada usuário em cada restaurante. Um mesmo usuário pode ter papéis diferentes em restaurantes diferentes. O backend deve validar autorização em toda operação privada; ocultar ações no frontend não substitui essa validação.
-
-**Escopo futuro:** permissões de pedidos ficam definidas desde já, mas não significam que pedidos estejam incluídos no MVP atual.
-
-**Impactos:** atualizar modelo de domínio, PRD e contratos/regras de autorização da API. Esta decisão não implica que todas as funcionalidades estejam implementadas.
-
-### D-08 — Convites para equipe
-
-**Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
-
-**Decisão:**
-- OWNER pode convidar usuários como MANAGER ou STAFF.
-- MANAGER pode convidar usuários somente como STAFF.
-- Cada convite é vinculado a um endereço de e-mail específico.
-- O convidado precisa entrar ou criar uma conta usando o mesmo e-mail do convite.
-- O convite expira após 7 dias.
-- OWNER e MANAGER podem revogar convites pendentes.
-- Convites pendentes podem ser reenviados; o reenvio renova a validade por mais 7 dias.
-- Convites expirados podem ser reenviados, também com nova validade de 7 dias.
-- Convites aceitos são de uso único e não podem ser aceitos novamente.
-
-O limite numérico de convites simultâneos por restaurante não foi definido nesta decisão e permanece em aberto. A política de envio/entrega de e-mail e proteção contra abuso também deverá ser detalhada antes da implementação.
-
-**Impactos:** atualizar modelo de domínio, PRD e API para suportar status, expiração, revogação e reenvio. O token deve ser armazenado somente como hash, nunca registrado em logs. Esta decisão não implica que o fluxo esteja implementado.
-
-### D-09 — Armazenamento de imagens e modelos 3D
-
-**Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
-
-**Decisão:**
-- Arquivos de mídia serão armazenados em serviço externo de object storage; PostgreSQL guarda somente metadados e referências, nunca o binário.
-- Cloudflare R2 será o provedor de object storage para imagens e modelos 3D no MVP, utilizando a modalidade gratuita dentro das cotas disponíveis. A entrega pública poderá usar domínio/CDN da Cloudflare conforme configuração.
-- Formatos de imagem aceitos: JPG/JPEG, PNG e WebP.
-- Modelos 3D aceitos: GLB e glTF, com validação de integridade e dependências.
-- A arquitetura deve permitir CDN, otimização/variantes de imagem e carregamento sob demanda.
-- Backend valida autorização, MIME real, tamanho, checksum e associação da mídia ao restaurante antes de concluir o upload.
-- Arquivos binários não serão armazenados no PostgreSQL.
-
-**Ainda pendente:** limites numéricos de tamanho para imagens e modelos 3D e política de dimensões/resolução. As cotas e condições do plano gratuito devem ser conferidas na implantação e periodicamente, pois podem mudar.
-
-**Impactos:** atualizar modelo de domínio, PRD, API e especificações de catálogo/3D. Esta decisão não implica que upload e processamento estejam implementados.
-
-### D-10 — Provedor inicial de inteligência artificial
-
-**Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
-
-**Decisão:**
-- Google Gemini será o provedor inicial de modelos de IA do Boraê, utilizando a Gemini API no plano gratuito inicialmente, sem habilitar faturamento para esse projeto.
-- A integração será realizada exclusivamente pelo backend; frontend não chamará o provedor diretamente.
-- Credenciais serão mantidas em variáveis/segredos de ambiente no servidor, nunca no repositório nem no cliente.
-- A integração ficará atrás de uma camada/contrato interno de abstração, evitando dependência do SDK ou dos formatos proprietários do provedor no domínio do produto e permitindo substituição futura.
-- O modelo receberá somente o contexto mínimo necessário, preparado pelo backend a partir do catálogo publicado e do restaurante em contexto.
-- O modelo não terá acesso direto ao banco de dados, credenciais, ferramentas administrativas ou dados privados de outros restaurantes.
-- Implementar controles de consumo e custo, rate limits por sessão/IP e monitoramento de uso por restaurante.
-- Em indisponibilidade, timeout ou resposta inválida, o cardápio continuará funcional e o consumidor poderá usar busca e filtros convencionais como fallback.
-
-**Ainda pendente:** modelo/versão específica do Gemini, cotas e limites exatos de requisições/tokens por modelo e estratégia detalhada de retry/fallback. O uso gratuito tem limites variáveis e pode estar sujeito às políticas de uso de dados do plano; não enviar informações pessoais ou sensíveis. A evolução para plano pago exige nova aprovação. A aprovação do provedor não define esses parâmetros nem implica implementação.
-
-**Motivação:** iniciar com um provedor acessível e manter flexibilidade técnica, segurança, previsibilidade de custos e continuidade da navegação quando a IA falhar.
-
-**Impactos:** atualizar arquitetura do assistente, API e PRD. Esta decisão não implica que a integração já esteja implementada.
-
-### D-11 — Histórico e métricas do assistente
-
-**Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
-
-**Decisão:**
-- Não persistir o conteúdo das conversas, perguntas ou respostas completas do consumidor.
-- Não criar histórico de conversas no painel do restaurante no MVP.
-- Persistir somente eventos e métricas agregadas, vinculados ao restaurante, sem conteúdo textual das mensagens.
-- Métricas úteis por restaurante:
-  - quantidade de interações com o assistente;
-  - produtos recomendados e frequência com que cada produto é sugerido;
-  - cliques nas recomendações e taxa de clique;
-  - interações sem recomendação adequada/sem resultado;
-  - latência/tempo de resposta;
-  - erros, timeouts, respostas inválidas e acionamentos de fallback;
-  - consumo de tokens e quantidade de chamadas, quando disponibilizados pelo provedor.
-- Exibir essas métricas no painel do respectivo restaurante, respeitando as permissões do restaurante e o isolamento multi-tenant.
-- Não armazenar prompts, respostas livres, identificadores pessoais ou dados sensíveis nos eventos analíticos.
-- Definir retenção mínima necessária para agregados e métricas operacionais na implementação; logs técnicos devem evitar conteúdo de mensagens.
-
-**Motivação:** oferecer ao restaurante indicadores acionáveis sobre interesse dos consumidores e qualidade do assistente, reduzindo armazenamento de dados pessoais e complexidade de privacidade.
-
-**Limites:** cliques indicam interesse, não comprovam compra ou conversão. Métricas de pedidos/vendas só poderão ser adicionadas quando existir integração confiável com o fluxo de pedidos.
-
-**Impactos:** atualizar módulo de IA, PRD, API e painel/analytics. Esta decisão não implica que as métricas já estejam implementadas.
-
-- **D-12 — Fidelidade individual:** parcialmente aprovada; modelos de acúmulo definidos, parâmetros exatos e ordem de consumo dos pontos pendentes.
-- **D-13 — Confirmação da compra:** parcialmente aprovada; confirmação manual por funcionário e identificação por telefone definidas. Verificação do telefone, idempotência detalhada e momento de disponibilidade do crédito permanecem pendentes.
-- **D-14 — Escopo da fidelidade:** aprovada; somente programas individuais por restaurante no MVP.
-- **D-15 — Regras operacionais da fidelidade:** parcialmente aprovada; políticas registradas acima, com ordem de consumo dos pontos pendente.
-- **D-16 a D-20:** permanecem pendentes; não presumir aprovação nem iniciar implementação de regras de negócio correspondentes sem alinhamento.
-
-Ausência de decisão significa que o desenvolvimento do recurso correspondente deve aguardar alinhamento.
+Uma decisão de produto aprovada define o comportamento esperado, mas não significa que a funcionalidade já esteja implementada. Itens técnicos e parâmetros comerciais explicitamente pendentes devem ser resolvidos antes da implementação correspondente.
