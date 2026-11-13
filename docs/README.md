@@ -1,24 +1,38 @@
 # Documentação do Boraê
 
-Este diretório descreve o produto, suas regras, a arquitetura, o estado real do código e a sequência planejada de desenvolvimento.
+Esta documentação é a referência de produto e engenharia do Boraê. Ela separa o que já existe no código, o comportamento esperado do produto, as decisões aprovadas e as questões ainda pendentes.
 
-## Ordem de leitura para quem está entrando no projeto
+## Ordem de leitura obrigatória
 
-1. [Produto e regras de negócio](PRODUCT.md) — entenda o problema, os usuários, as funcionalidades e as regras que não podem ser quebradas.
-2. [Arquitetura](ARCHITECTURE.md) — entenda a stack, os limites entre módulos, segurança, dados e integrações.
-3. [API e estado implementado](API.md) — saiba o que já existe no backend e o que ainda não deve ser tratado como pronto.
-4. [Roadmap](ROADMAP.md) — siga a ordem de implementação e os critérios de aceite.
-5. [Contribuição](CONTRIBUTING.md) — siga o padrão de branches, PRs, testes e documentação.
+1. [PRD — Requisitos do produto](PRD.md): problema, objetivos, personas, jornadas, requisitos funcionais e não funcionais.
+2. [Produto e regras de negócio](PRODUCT.md): visão geral, princípios e regras transversais.
+3. [Fluxos de tela](SCREEN_FLOWS.md): comportamento esperado das principais jornadas e estados da interface.
+4. [Modelo de domínio e dados](DOMAIN_MODEL.md): entidades atuais e propostas, relações e invariantes.
+5. [Arquitetura](ARCHITECTURE.md): stack, módulos, segurança, infraestrutura e decisões técnicas.
+6. [API implementada](API.md): endpoints e regras que já existem no código.
+7. [Desenho da API futura](API_DESIGN.md): recursos e contratos candidatos ainda não implementados.
+8. [Especificação do catálogo](MODULE_CATALOG.md): categorias, produtos, opções, publicação e cardápio.
+9. [Especificação do assistente IA](MODULE_AI_ASSISTANT.md): fluxo, limites, validação e segurança.
+10. [Fidelidade e Boraê Club](MODULE_LOYALTY_CLUB.md): ledgers, resgates, controles e decisões comerciais.
+11. [Experiência 3D/AR](MODULE_3D_AR.md): mídia, modelos, calibração e fallback.
+12. [Descoberta](MODULE_DISCOVERY.md): diretório, busca e dados públicos.
+13. [Roadmap](ROADMAP.md): sequência de implementação e critérios de conclusão.
+14. [Decisões pendentes](OPEN_DECISIONS.md): questões que precisam de aprovação antes de codificar.
+15. [Contribuição](CONTRIBUTING.md): Git, testes, PRs e Definition of Done.
 
-## Como interpretar os status
+## Como interpretar o status
 
-- **Implementado:** existe no código integrado à branch principal, conforme o estado registrado nesta documentação.
-- **Em validação:** existe implementação, mas ainda precisa de validação funcional/operacional ou de confirmação dos testes.
-- **Planejado:** faz parte da visão do Boraê, mas não deve ser presumido como disponível.
-- **Fora do MVP:** ideia futura que não deve desviar o foco atual.
+- **Implementado:** confirmado no código integrado à branch principal.
+- **Em validação:** implementado, mas ainda depende de validação funcional/operacional.
+- **Planejado:** especificado, mas ainda não deve ser tratado como disponível.
+- **Proposto:** desenho técnico candidato; precisa ser confirmado antes de virar contrato/código.
+- **Pendente de decisão:** não implementar até o responsável pelo produto aprovar uma escolha.
+- **Fora do MVP:** não faz parte do recorte atual.
 
-A documentação acompanha o código. Quando um PR alterar comportamento, endpoints, entidades, permissões, variáveis ou prioridades, atualize os documentos correspondentes no mesmo PR.
+## Regra de precedência
 
-## Princípio de desenvolvimento
+O código e os contratos atualmente publicados determinam o comportamento existente. Para funcionalidades futuras, PRD e especificações de módulo definem o comportamento esperado, mas itens marcados como propostos ou pendentes não são autorização para inventar regras. Em caso de conflito, interromper a implementação e alinhar com o responsável pelo produto.
 
-Não inventar requisitos. Quando uma regra não estiver descrita aqui, procure o responsável pelo produto antes de decidir. Prefira a menor implementação coerente com a arquitetura existente, sem antecipar microserviços, integrações ou funcionalidades que ainda não foram aprovadas.
+## Atualização obrigatória
+
+Toda mudança que altere fluxo, regra, entidade, endpoint, permissão, variável ou prioridade deve atualizar os documentos correspondentes no mesmo PR. Não marcar uma funcionalidade como implementada apenas porque o código compila.
