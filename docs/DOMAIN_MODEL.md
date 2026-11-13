@@ -54,14 +54,19 @@ Convite para integrar equipe.
 - id
 - restaurant_id
 - email
-- role
+- role (MANAGER | STAFF)
 - token_hash
-- expires_at
+- status (PENDING | ACCEPTED | REVOKED | EXPIRED)
+- expires_at (7 dias após criação ou reenvio)
 - accepted_at
+- revoked_at
 - created_by
 - created_at
+- updated_at
 
-O token original é exibido na criação e o hash é persistido. Não registrar o token em logs.
+**Decisão D-08 aprovada:** OWNER pode convidar MANAGER ou STAFF; MANAGER pode convidar somente STAFF. O convite é vinculado ao e-mail e só pode ser aceito por uma conta autenticada com o mesmo endereço. Convites pendentes podem ser revogados por OWNER/MANAGER. Convites pendentes ou expirados podem ser reenviados, renovando a validade por 7 dias. Convites aceitos são de uso único. O token original não é persistido: somente seu hash é armazenado, e o token nunca deve aparecer em logs.
+
+O limite numérico de convites simultâneos e a política de entrega de e-mail permanecem em aberto.
 
 ## 3. Entidades propostas — perfil e catálogo
 
