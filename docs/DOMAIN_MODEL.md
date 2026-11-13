@@ -130,21 +130,19 @@ Cada ingrediente é cadastrado livremente pelo restaurante e pertence a um únic
 ### ProductOptionGroup
 - id
 - product_id
+- type: ADD_ON | REMOVAL
 - name
-- min_selections
-- max_selections
-- required
 - display_order
 
 ### ProductOption
 - id
 - option_group_id
 - name
-- price_delta
+- price_delta (aplicável somente a ADD_ON; REMOVAL usa zero)
 - active
 - display_order
 
-**Decisão pendente:** definir se opções representam tamanhos, escolhas mutuamente exclusivas, adicionais ou todos esses casos. O modelo final deve expressar regras de seleção sem ambiguidades.
+**Decisão de produto D-05 aprovada:** grupos `ADD_ON` representam itens extras escolhidos pelo cliente e podem acrescentar valor ao produto. Grupos `REMOVAL` representam ingredientes existentes que o cliente pode pedir para retirar, sem desconto ou acréscimo por padrão. As seleções são opcionais; não há tamanhos, ponto da carne ou combos nesta etapa. A personalização será utilizada quando houver fluxo de pedidos.
 
 ### MediaAsset
 - id
