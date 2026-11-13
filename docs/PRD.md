@@ -322,3 +322,24 @@ Uma funcionalidade só pode ser liberada quando:
 - A CI está verde.
 - A documentação foi atualizada.
 - O responsável pelo produto validou o comportamento.
+
+
+## 14. Decisões comerciais e operacionais aprovadas (13/11/2026)
+
+### Assinaturas dos restaurantes
+Plano único SaaS, sem comissão por compra: R$ 49,90 mensal; R$ 134,73 trimestral (10% de desconto); R$ 479,04 anual (20% de desconto). Mantêm-se o teste gratuito de 30 dias e as demais regras de D-18.
+
+### Serviços e operação
+- Asaas para pagamentos e assinaturas; emissão automática de NFS-e pelo Asaas condicionada à validação fiscal da empresa e do município.
+- Resend para e-mails transacionais.
+- Cloudflare R2 para mídia: logos até 5 MB; fotos/arquivos permitidos até 10 MB; até 100 imagens por restaurante; JPEG, PNG e WebP; otimização automática.
+- Funcionários sem limite fixo por restaurante; envio de convites protegido contra abuso.
+- Gemini Flash-Lite como único modelo de IA nesta fase; cotas simultâneas de 20 interações por consumidor/dia e 100 por restaurante/dia, além de limite de tokens por interação a parametrizar.
+- Processamento interno de eventos com sete tentativas progressivas (imediata, 1 min, 5 min, 15 min, 1 h, 6 h e 24 h), idempotência, registro e reprocessamento manual.
+- Denúncias de avaliações passam por triagem de IA, mas a decisão de remoção é sempre humana.
+- Retenção de dados definida por categoria, finalidade e obrigação legal, conforme LGPD.
+- Painel administrativo global em aplicação separada, consumindo endpoints administrativos protegidos do backend.
+- Sentry para captura de erros inicialmente no plano gratuito; Grafana Cloud opcional, sem contratação inicial obrigatória.
+- Integrações externas com API Keys individuais, escopos, rate limits, auditoria e revogação.
+
+As decisões não indicam que serviços estejam contratados ou funcionalidades implementadas. Requisitos de configuração, segurança, validação fiscal e parâmetros pendentes estão descritos em [Decisões comerciais e operacionais](DECISIONS_COMMERCIAL_AND_OPERATIONS.md).
