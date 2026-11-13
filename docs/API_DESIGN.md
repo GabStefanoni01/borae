@@ -129,7 +129,7 @@ D-12 parcialmente aprovada: cada programa local escolhe entre acúmulo proporcio
 
 Crédito/resgate deve exigir chave de idempotência e autorização específica. O consumidor não pode criar créditos para si mesmo. O evento que gera pontos precisa ser validado por origem confiável.
 
-**D-13 parcialmente aprovada:** no fluxo inicial, a compra concluída será confirmada manualmente no fechamento da conta por funcionário com papel de garçom ou gerente. A operação deverá registrar o restaurante e o funcionário responsável; o valor informado será o efetivamente pago. Não há dependência de integração POS nem de pagamento processado pelo Boraê. Permanecem pendentes a identificação do consumidor, o contrato de idempotência, o momento de disponibilidade do crédito e a política de cancelamento/estorno.
+**D-13 parcialmente aprovada:** no fluxo inicial, a compra concluída será confirmada manualmente no fechamento da conta por funcionário com papel de garçom ou gerente. A operação deverá registrar o restaurante e o funcionário responsável; o valor informado será o efetivamente pago. Não há dependência de integração POS nem de pagamento processado pelo Boraê. O consumidor será localizado pelo telefone cadastrado; o método de verificação do telefone ainda será definido. Também permanecem pendentes o contrato de idempotência, o momento de disponibilidade do crédito e a política de cancelamento/estorno.
 
 ## 8. Boraê Club — proposta, bloqueada por decisões comerciais
 
