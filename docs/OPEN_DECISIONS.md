@@ -281,7 +281,7 @@ Para cada ID:
 
 - **D-01 a D-11:** aprovadas e registradas nesta documentação.
 - **D-12 a D-17:** aprovadas e registradas nesta documentação.
-- **D-18:** modelo comercial e regras operacionais aprovados. Preço nominal e percentuais dos descontos trimestral/anual ainda precisam de definição comercial antes de configurar a cobrança.
+- **D-18:** modelo comercial, preços, descontos e regras operacionais aprovados; ver [decisões comerciais e operacionais](DECISIONS_COMMERCIAL_AND_OPERATIONS.md).
 - **D-19 e D-20:** aprovadas e registradas nesta documentação.
 - **Boraê Club:** visão futura preservada; fora do MVP.
 
