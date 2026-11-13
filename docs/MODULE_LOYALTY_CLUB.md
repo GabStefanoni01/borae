@@ -28,13 +28,21 @@ Permitir que cada restaurante crie um programa próprio de relacionamento com co
 ### Regra aprovada parcialmente — D-12
 Cada restaurante escolhe entre dois modelos: (1) pontos proporcionais ao valor gasto; ou (2) quantidade fixa de pontos por compra. O programa local mantém saldo, recompensas e ledger próprios, sem transferência para outros restaurantes ou para o Boraê Club.
 
+### Decisão parcialmente aprovada — D-13: confirmação da compra
+- Os pontos só podem ser gerados após a compra estar efetivamente concluída.
+- No fluxo inicial, a confirmação é manual durante o fechamento da conta, sem exigir integração POS ou pagamento processado pelo Boraê.
+- Garçons e gerentes podem confirmar a compra e registrar o valor efetivamente pago.
+- A operação deve registrar o funcionário responsável e o restaurante, com trilha de auditoria.
+- O consumidor não pode criar créditos para si mesmo; consulta ao cardápio ou simples pedido não gera pontos.
+- Permanecem pendentes a identificação do consumidor, o momento de disponibilidade dos pontos, a idempotência detalhada e o tratamento de cancelamentos/estornos.
+
 ### Decisões pendentes
 - Parâmetros exatos de cada modelo (taxa por valor gasto ou quantidade fixa por compra).
 - Valor monetário equivalente, se houver.
-- Momento de concessão (compra confirmada, validação manual, POS).
+- Momento exato de disponibilidade do crédito após a confirmação da compra.
 - Prazo de expiração e ordem de consumo dos pontos.
 - Política de cancelamento/estorno.
-- Quem pode registrar compra e como comprovar a origem.
+- Controles antifraude, limites de confirmação e comprovação complementar da origem da compra.
 - Limites de ajuste manual e dupla aprovação.
 - Regras fiscais/contratuais aplicáveis.
 
