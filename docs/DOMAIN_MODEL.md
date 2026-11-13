@@ -195,7 +195,19 @@ Não persistir conversas ou dados sensíveis sem política de privacidade, final
 ## 5. Entidades propostas — consumidor e fidelidade
 
 ### ConsumerAccount
-Pode ser a própria UserAccount com perfis/roles adicionais; evitar criar identidade duplicada. Decidir antes de implementar.
+Conta global do consumidor, identificada por telefone verificado via SMS. Pode reutilizar UserAccount se isso não misturar credenciais/perfis de forma insegura; a decisão física deve evitar identidade duplicada.
+- id
+- full_name
+- phone_number (único, normalizado e verificado)
+- email (normalizado)
+- password_hash
+- phone_verified_at
+- consent_loyalty_at / consent_loyalty_terms_version
+- marketing_consent_at (opcional e separado)
+- status
+- timestamps
+
+Regras D-13/D-17: cadastro exige nome, telefone verificado, e-mail e senha; login por telefone + senha. SMS é exigido na verificação inicial e na recuperação/troca de telefone, não em todo login. Troca de número verifica o novo telefone e preserva carteiras/histórico. Uma sessão ativa por vez; novo login encerra a anterior. Cinco tentativas incorretas consecutivas bloqueiam por 15 minutos. Conta não expira por inatividade. Exclusão é solicitada pelo consumidor e deve anonimizar dados pessoais quando aplicável, preservando retenção legal/auditável.
 
 ### RestaurantLoyaltyProgram
 - id
@@ -211,6 +223,10 @@ Pode ser a própria UserAccount com perfis/roles adicionais; evitar criar identi
 - program_closure_redemption_deadline / minimum 60 days
 - starts_at / ends_at
 
+D-12: acúmulo proporcional ao valor efetivamente pago ou pontos fixos por compra. No modelo proporcional, taxa ou faixa; cálculo proporcional dentro da faixa e arredondamento final para baixo. Base após descontos/cupons, excluindo entrega, serviço e encargos. Estornos removem pontos disponíveis; pontos já usados geram pendência compensada pelos próximos créditos, sem saldo negativo.
+
+D-15: consumo FEFO (vence primeiro, consome primeiro); empate pelo crédito mais antigo. Expiração automática com lançamento vinculado ao crédito original. Avisos diários nos 14 dias anteriores ao vencimento por push e central interna, agrupando lotes e preservando restaurante/quantidade/data. Sem SMS alternativo. Regras versionadas e não retroativas; recompensas conquistadas são preservadas.
+
 **Decisões D-12, D-14 e D-15:** no MVP, cada restaurante terá seu próprio programa e será responsável pelas recompensas. A validade é configurada por restaurante. Alterações de regra só se aplicam a pontos acumulados após sua vigência; créditos anteriores preservam a regra aplicável quando foram gerados. O encerramento do programa garante no mínimo 60 dias para resgate. Não há transferência entre restaurantes nem Boraê Club compartilhado no MVP.
 
 ### LoyaltyAccount
@@ -222,13 +238,16 @@ Pode ser a própria UserAccount com perfis/roles adicionais; evitar criar identi
 ### LoyaltyLedgerEntry
 - id
 - loyalty_account_id
-- entry_type (CREDIT | DEBIT | REVERSAL | EXPIRATION | ADJUSTMENT)
+- entry_type (CREDIT | DEBIT | REVERSAL | EXPIRATION | ADJUSTMENT | COMPENSATION)
 - points_delta
 - source_reference
 - idempotency_key
 - created_at
 - created_by/system_actor
 - expires_at (para créditos sujeitos à validade)
+- source_purchase_id (identificador único da compra)
+- earning_rule_snapshot (parâmetros efetivos do cálculo)
+- compensation_pending_points (ou referência a entidade de pendência, quando estorno excede saldo disponível)
 - earning_rule_version (versão que originou o crédito)
 - earning_rule_snapshot (parâmetros aplicáveis ao crédito, se necessário para auditoria/reprodução)
 - reverses_entry_id / source_reference (quando aplicável)
@@ -316,9 +335,10 @@ A API externa é acessível a integrações autorizadas por chaves de API com pe
 
 ## 10. Decisões que precisam preceder o schema físico
 
-- Campos físicos finais e migrações do perfil, catálogo, conta de consumidor, assinatura e administração.
+As decisões de produto D-01 a D-20 estão aprovadas. Ainda precisam ser definidos antes da implementação:
+- Campos físicos finais e migrações incrementais do perfil, catálogo, conta do consumidor, assinatura e administração.
 - Preço nominal da assinatura e percentuais de desconto trimestral/anual.
-- Detalhes de provedores, contratos, chaves e políticas de retry para cobrança e webhooks.
+- Provedor de cobrança, emissão fiscal, contratos, chaves e política de retry de cobrança/webhooks.
 - Limites numéricos de upload e parâmetros técnicos de infraestrutura.
-- Regras financeiras/contratuais do Boraê Club, somente se a visão compartilhada for retomada.
 - Procedimento operacional de moderação de denúncias, já que não haverá painel dedicado no escopo atual.
+- Regras financeiras/contratuais do Boraê Club, somente se a visão compartilhada for retomada.
