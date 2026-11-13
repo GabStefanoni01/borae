@@ -273,6 +273,8 @@ O consumidor pode aderir voluntariamente ao Club e manter uma carteira compartil
 
 **Decisão D-12 parcialmente aprovada:** o Boraê Club mantém saldo independente da fidelidade local e usa regra uniforme de 1 ponto por R$ 1,00 gasto em compra elegível, em qualquer restaurante parceiro. A compra elegível e o momento de crédito ainda dependem de confirmação confiável e de decisões pendentes.
 
+**Decisão D-13 parcialmente aprovada:** a compra deverá estar concluída e ser confirmada manualmente no fluxo de fechamento por um garçom ou gerente autorizado. A confirmação deve manter vínculo com o restaurante e com o funcionário responsável, com trilha de auditoria. O consumidor não pode gerar créditos para si mesmo. Identificação do consumidor, idempotência detalhada, disponibilidade do crédito e estornos permanecem pendentes.
+
 ### ClubLedgerEntry
 - id
 - wallet_id
