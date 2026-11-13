@@ -106,8 +106,8 @@ Relacionamento: `Restaurant 1:N Menu`. Esta decisão de produto está aprovada; 
 - category_id
 - name
 - description
-- price
-- currency
+- price_in_cents (inteiro, centavos)
+- currency (BRL no MVP)
 - image_media_id opcional
 - ingredientes associados ao produto por uma coleção de itens individuais, com nome e ordem de exibição.
 - lifecycle_status (ACTIVE | ARCHIVED; não representa publicação pública)
@@ -131,7 +131,7 @@ Cada ingrediente é cadastrado livremente pelo restaurante e pertence a um únic
 - id
 - product_id
 - name
-- price_delta
+- price_delta_in_cents (inteiro, centavos)
 - active
 - display_order
 
@@ -295,7 +295,7 @@ Registrar resgate e obrigação do parceiro, custo, status, estorno e liquidaç�
 
 1. Não aceitar referência a categoria/produto/mídia de outro restaurante.
 2. Slugs públicos devem ser únicos.
-3. Preços de produtos e adicionais não podem ser negativos, salvo regra explícita aprovada.
+3. Preços de produtos e adicionais são armazenados como inteiros em centavos, não podem ser negativos e usam BRL no MVP. Cálculos monetários são feitos no backend, sem `float` ou `double`.
 4. Produto indisponível ou não publicado não pode ser recomendado como opção disponível.
 5. Convites expiram e são de uso único.
 6. Vínculos inativos não concedem acesso.
@@ -310,7 +310,7 @@ Registrar resgate e obrigação do parceiro, custo, status, estorno e liquidaç�
 - Um ou vários menus por restaurante.
 - Regras de variações e adicionais.
 - Regras de variações e adicionais.
-- Estratégia de moeda e precisão.
+- Demais decisões de modelagem ainda pendentes.
 - Identidade de consumidor e login social, se houver.
 - Política de retenção de sessões de IA.
 - Fórmulas de pontos e expiração.
