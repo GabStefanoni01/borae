@@ -25,7 +25,7 @@ Este documento é um guia de desenho para módulos futuros, não uma declaraçã
 - Persistir somente hash do token; nunca registrar o token em logs.
 - Validar papel de quem convida e membership ativo no restaurante em toda operação.
 
-O limite numérico de convites simultâneos e a política de entrega de e-mail ainda não foram definidos. Os endpoints e payloads finais serão especificados antes da implementação.
+Limites aprovados para envio: 10 convites por hora por usuário administrador e 30 por dia por restaurante. Convites pendentes duplicados para o mesmo e-mail são bloqueados; convites expiram em 7 dias e o reenvio renova o prazo, respeitando os limites. A implementação deve registrar o histórico de convites.
 
 ## 2. Recursos já existentes
 
@@ -201,7 +201,7 @@ Requisitos:
 - Cancelamento a qualquer momento, acesso até o fim do período pago; troca de ciclo na próxima renovação.
 - Falha de cobrança: tentativas e avisos, sete dias de tolerância e suspensão posterior.
 - Cartão e Pix; nota fiscal automática a cada cobrança.
-- Valor nominal e percentuais de desconto ainda não definidos.
+- Preços aprovados: R$ 49,90 mensal, R$ 134,73 trimestral (10% de desconto) e R$ 479,04 anual (20% de desconto); consultar DECISIONS_COMMERCIAL_AND_OPERATIONS.md.
 
 ### Administração global
 - Administrador principal e equipe de suporte limitada, com papéis separados dos papéis dos restaurantes.
@@ -215,8 +215,8 @@ Requisitos:
 ### Integrações por API Key
 - Cada integração recebe uma chave individual e identificável.
 - A autorização é definida por escopos/permissões associados à chave e aplicada no backend.
-- Aplicar rate limit por chave; auditar criação, uso relevante, rotação e revogação.
-- Permitir revogação imediata. Nunca retornar o segredo em consultas posteriores nem armazená-lo em texto puro.
+- Aplicar por chave: 60 requisições/minuto, 10.000/dia e burst de 10/segundo. Responder HTTP 429 com Retry-After quando excedidos. O administrador global pode ajustar limites individualmente sem nova chave; auditar criação, uso relevante, rotação e revogação.
+- Chaves não expiram automaticamente por padrão; administrador global pode definir expiração individual. Rotação pode manter a chave anterior válida por até 24 horas. Revogação manual é imediata. Avisar antes de expiração programada. Nunca retornar o segredo em consultas posteriores nem armazená-lo em texto puro.
 - Nenhuma chave concede acesso direto ao banco de dados.
 
 ### Pagamentos e assinaturas (Asaas)
@@ -229,3 +229,21 @@ Eventos recebidos devem ser autenticados, deduplicados e processados de forma id
 A aplicação administrativa separada consumirá endpoints administrativos internos, com autenticação/sessão própria e permissões globais específicas. Não expor endpoints administrativos ao escopo de API Keys de parceiros e não permitir acesso direto ao banco.
 
 Esses contratos são especificações futuras; não representam endpoints já implementados. Consulte [Decisões comerciais e operacionais](DECISIONS_COMMERCIAL_AND_OPERATIONS.md).
+
+
+## 14. Cotas e limites operacionais aprovados
+
+### Assistente de IA
+- Até 2.000 tokens de entrada e 500 tokens de saída por interação, controlados separadamente pelo backend.
+- Cotas diárias simultâneas: 20 interações por consumidor e 100 por restaurante.
+- Ao atingir uma cota, bloquear novas interações de IA até a renovação diária, informar o usuário e manter as demais funcionalidades disponíveis; sem cobrança extra.
+- Renovação à meia-noite no fuso America/Sao_Paulo, calculada no backend.
+- O backend reduz o contexto se ultrapassar o limite de entrada.
+
+### Retenção, backups e recuperação
+- Logs de aplicação: 30 dias; segurança/autenticação: 180 dias; auditoria administrativa/API Keys: 365 dias.
+- Backups completos automáticos diários, retenção de 30 dias, criptografia em repouso, armazenamento separado e teste de restauração trimestral.
+- PITR/backups incrementais quando suportados.
+- Objetivos operacionais: RPO de até 1 hora e RTO de até 4 horas; validar suporte do provedor antes da produção.
+
+Esses parâmetros são decisões aprovadas, mas não representam funcionalidades já implementadas. Consulte [Decisões comerciais e operacionais](DECISIONS_COMMERCIAL_AND_OPERATIONS.md) para a especificação completa.
