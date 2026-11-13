@@ -78,7 +78,7 @@ D-06 aprovada: o MVP utiliza BRL e representa valores monetários em centavos co
 - `POST /api/v1/restaurants/{restaurantId}/media/{mediaId}/complete`
 - `DELETE /api/v1/restaurants/{restaurantId}/media/{mediaId}`
 
-Preferir upload direto para object storage por URL assinada, quando suportado. Backend valida propriedade, MIME real, tamanho, checksum e estado do upload. Não aceitar URL arbitrária do cliente como mídia confiável.
+D-09 aprovada: usar serviço externo de object storage; PostgreSQL guarda somente metadados e referências. Cloudinary é candidato inicial para avaliação de imagens, não provedor definitivo até validação de custos, limites e suporte a GLB/glTF. Formatos aceitos: JPG/JPEG, PNG, WebP, GLB e glTF. Preferir upload direto por URL assinada quando suportado. Backend valida membership/permissão, MIME real (não confiar no Content-Type declarado), tamanho, checksum, status e vínculo da mídia ao restaurante. Não aceitar URL arbitrária do cliente como mídia confiável. Entrega deve permitir CDN, variantes otimizadas de imagem e carregamento sob demanda. Limites numéricos e provedor final permanecem pendentes.
 
 ## 6. IA — proposta
 
