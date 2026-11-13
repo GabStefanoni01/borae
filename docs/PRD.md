@@ -37,14 +37,14 @@ Essas hipóteses devem ser validadas com restaurantes e consumidores reais antes
 ### Consumidor
 Quer consultar o menu rapidamente, entender pratos, preços, ingredientes e opções, e futuramente receber sugestões relevantes. Pode acessar anonimamente por QR Code; conta será necessária apenas para recursos que exijam identidade, como histórico ou fidelidade.
 
-### Proprietário/gestor (OWNER)
-Quer cadastrar o restaurante, manter dados e cardápio, convidar equipe e controlar quem pode administrar o estabelecimento.
+### Proprietário (OWNER)
+Tem controle total do restaurante: perfil, cardápios, catálogo, publicação, disponibilidade, equipe, papéis, propriedade e cobrança. Também poderá operar pedidos quando esse módulo existir.
 
 ### Gerente (MANAGER)
-Precisa consultar e futuramente operar áreas delegadas pelo proprietário. O conjunto exato de permissões de escrita ainda deve ser aprovado.
+Administra perfil, cardápios, catálogo, publicação, disponibilidade, equipe e convites; também poderá operar pedidos quando esse módulo existir. Não altera papéis, propriedade ou cobrança.
 
 ### Colaborador (STAFF)
-Precisa executar tarefas operacionais autorizadas, sem acesso administrativo amplo. Permissões específicas ainda devem ser definidas por módulo.
+Tem acesso operacional ao painel, podendo alterar disponibilidade de produtos e, quando o módulo existir, visualizar pedidos e atualizar seus status. Não administra perfil, catálogo, publicação, equipe ou cobrança.
 
 ### Administrador Boraê
 Precisa moderar e dar suporte à plataforma, com acesso global estritamente auditado. Esse perfil não faz parte do escopo implementado atual.
@@ -94,6 +94,23 @@ Precisa moderar e dar suporte à plataforma, com acesso global estritamente audi
 - Cadastro, autenticação, encerramento de sessão e consulta da conta atual.
 - Dados de identidade e autorização definidos no servidor.
 - Não permitir acesso a rotas privadas sem sessão válida.
+
+### Matriz de permissões — D-07 aprovada
+
+| Ação | OWNER | MANAGER | STAFF |
+|---|---|---|---|
+| Visualizar painel | Sim | Sim | Sim |
+| Editar perfil do restaurante | Sim | Sim | Não |
+| Criar/editar cardápios, categorias, produtos e preços | Sim | Sim | Não |
+| Publicar/arquivar cardápios | Sim | Sim | Não |
+| Alterar disponibilidade de produtos | Sim | Sim | Sim |
+| Visualizar pedidos e atualizar status (quando o módulo existir) | Sim | Sim | Sim |
+| Gerenciar equipe e convites | Sim | Sim | Não |
+| Alterar papéis da equipe | Sim | Não | Não |
+| Excluir ou transferir restaurante | Sim | Não | Não |
+| Gerenciar assinatura e cobrança | Sim | Não | Não |
+
+Os papéis são atribuídos por vínculo com cada restaurante. O mesmo usuário pode ter papéis diferentes em restaurantes distintos. A autorização deve ser aplicada no backend em todas as operações privadas. As permissões de pedidos são uma definição para o módulo futuro e não incluem pedidos no MVP atual.
 
 ### RF-02 — Restaurante e equipe
 - Criar restaurante e vínculo OWNER atomicamente.
