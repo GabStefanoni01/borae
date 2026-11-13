@@ -205,7 +205,7 @@ Os papéis são atribuídos por vínculo com cada restaurante. O mesmo usuário 
 - Consultar saldo e histórico.
 - Proteger contra eventos duplicados e concorrência.
 
-**D-12 parcialmente aprovada:** a fórmula exata/parâmetros locais, o gatilho de crédito, a expiração e a política de estorno ainda precisam ser definidos.
+**D-12 parcialmente aprovada:** cada restaurante escolhe entre acúmulo proporcional ao valor gasto ou quantidade fixa de pontos por compra. Os parâmetros exatos de cada modelo e a ordem de consumo dos pontos ainda serão definidos.
 
 ### RF-10 — Fidelidade individual por restaurante
 - Cada restaurante poderá operar seu próprio programa de fidelidade, com contas, saldos, regras, recompensas e histórico independentes.
@@ -214,11 +214,13 @@ Os papéis são atribuídos por vínculo com cada restaurante. O mesmo usuário 
 - O restaurante poderá escolher entre acúmulo proporcional ao valor gasto ou quantidade fixa de pontos por compra, com parâmetros a definir.
 - Registrar créditos, débitos, expirações, estornos e ajustes auditáveis; proteger contra duplicidade e concorrência.
 
-**D-12 parcialmente aprovada:** estrutura e alternativas de acúmulo da fidelidade individual definidas; parâmetros, gatilho de crédito, expiração e estorno continuam pendentes.
+**D-12 parcialmente aprovada:** estrutura e alternativas de acúmulo da fidelidade individual definidas; parâmetros exatos e ordem de consumo dos pontos continuam pendentes.
 
-**D-13 parcialmente aprovada:** no fluxo inicial, a compra concluída será confirmada manualmente no fechamento da conta por garçom ou gerente. O registro deverá identificar funcionário e restaurante e ser auditável. O consumidor será localizado pelo telefone cadastrado. Verificação do telefone, estornos, idempotência detalhada e momento de disponibilidade dos pontos ainda serão definidos.
+**D-13 parcialmente aprovada:** no fluxo inicial, a compra concluída será confirmada manualmente no fechamento da conta por garçom ou gerente. O registro deverá identificar funcionário e restaurante e ser auditável. O consumidor será localizado pelo telefone cadastrado. Verificação do telefone, idempotência detalhada e momento de disponibilidade dos pontos ainda serão definidos.
 
 **D-14 aprovada:** o MVP contempla somente fidelidade individual por restaurante. O Boraê Club compartilhado fica para uma fase futura e não terá carteira, pontos ou resgates entre parceiros nesta etapa.
+
+**D-15 parcialmente aprovada:** cada restaurante define a validade dos pontos. Estornos são registrados automaticamente por funcionário autorizado; se os pontos já tiverem sido utilizados, registra-se uma pendência sem saldo negativo. A proteção antifraude usa auditoria e alertas ao gerente, sem confirmação extra do consumidor nem bloqueio automático no MVP. No encerramento do programa, clientes terão no mínimo 60 dias para resgate; o restaurante pode oferecer mais. Fechamento repentino exige comunicação assim que possível, sem transferência de custos ao Boraê ou resgate em outro restaurante. Mudanças de regras só se aplicam a pontos acumulados após sua vigência; pontos existentes e recompensas já conquistadas são preservados. A ordem de consumo dos pontos permanece pendente.
 
 ### RF-11 — Descoberta
 - Listar estabelecimentos publicados e ativos.
