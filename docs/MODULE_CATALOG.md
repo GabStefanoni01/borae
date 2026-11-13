@@ -44,16 +44,21 @@ Não misturar disponibilidade operacional com publicação: um produto pode esta
 
 **Decisão de produto D-04 aprovada em 13/11/2026:** ingredientes são cadastrados como uma lista livre de itens individuais associados ao produto. Não há catálogo padronizado de alergênicos nem declaração específica de contaminação cruzada neste escopo.
 
-### Variações e adicionais
-Um produto pode ter grupos de opções. Cada grupo define mínimo e máximo de seleções; cada opção pode ter acréscimo de preço. Backend valida seleção, limites e preço final. A interface deve mostrar claramente o preço base e acréscimos.
+### Adicionais e remoção de ingredientes
+- O restaurante pode cadastrar adicionais opcionais, como bacon, cheddar e ovo.
+- Cada adicional pode ter um acréscimo de preço definido pelo restaurante.
+- O restaurante pode disponibilizar ingredientes do produto para remoção, como cebola ou tomate.
+- Remover ingrediente não gera desconto nem acréscimo por padrão.
+- A personalização será selecionada pelo consumidor no momento do pedido, quando o fluxo de pedidos existir.
+- Não haverá cadastro de tamanhos, ponto da carne ou combos nesta etapa.
 
-**Pendente:** definir se haverá variação de tamanho, ponto de carne, acompanhamentos, adicionais e combos no primeiro lançamento; definir se opções podem ser obrigatórias e se uma opção pode ser selecionada mais de uma vez.
+**Decisão de produto D-05 aprovada em 13/11/2026.**
 
 ## 3. Regras de preço
 
 - Preço é mantido pelo restaurante e exibido como valor atual.
 - API não aceita preço calculado pelo frontend como autoridade.
-- Se opções alterarem o valor, backend calcula total a partir da configuração persistida.
+- Se adicionais alterarem o valor, backend calcula total a partir da configuração persistida. Remoções não alteram o preço por padrão.
 - Histórico de preço não é obrigatório no primeiro MVP, mas alterações administrativas devem ser auditáveis.
 - Não usar float/double para cálculo monetário.
 
