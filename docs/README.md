@@ -17,7 +17,7 @@ Esta documentação é a referência de produto e engenharia do Boraê. Ela sepa
 11. [Experiência 3D/AR](MODULE_3D_AR.md): mídia, modelos, calibração e fallback.
 12. [Descoberta](MODULE_DISCOVERY.md): diretório, busca e dados públicos.
 13. [Roadmap](ROADMAP.md): sequência de implementação e critérios de conclusão.
-14. [Decisões pendentes](OPEN_DECISIONS.md): questões que precisam de aprovação antes de codificar.
+14. [Registro de decisões e pendências restantes](OPEN_DECISIONS.md): questões que precisam de aprovação antes de codificar.
 15. [Contribuição](CONTRIBUTING.md): Git, testes, PRs e Definition of Done.
 
 ## Como interpretar o status
