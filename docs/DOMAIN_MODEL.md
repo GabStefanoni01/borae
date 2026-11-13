@@ -267,8 +267,22 @@ A fidelidade individual de cada restaurante permanece isolada: contas, pontos, r
 - RestaurantCategory / CuisineType: taxonomia de busca.
 - Favorite: relação consumidor-restaurante.
 - Review: somente após definir moderação, política de abuso e critérios de publicação.
-- SubscriptionPlan, RestaurantSubscription, BillingEvent: plano e cobrança B2B.
-- PlatformAdminRole / AuditEvent: administração global e trilha de auditoria.
+### SubscriptionPlan / RestaurantSubscription / BillingEvent
+Modelo SaaS B2B com um único plano e preço-base igual para todos os restaurantes; periodicidades mensal, trimestral e anual, com descontos progressivos. O plano não é comissionado por transação.
+- RestaurantSubscription: restaurant_id, plan_id, billing_period (MONTHLY | QUARTERLY | ANNUAL), status, trial_started_at, trial_ends_at, current_period_start/end, canceled_at, payment_method_reference.
+- BillingEvent: subscription_id, event_type, amount_in_cents, currency (BRL), status, due_at, paid_at, invoice_reference, provider_reference, idempotency_key.
+- ReferralCredit: restaurant_id, referred_restaurant_id, amount_in_cents, granted_at, expires_at (12 meses), status, applied_billing_event_id.
+Regras comerciais D-18: trial de 30 dias; assinatura só é ativada após cadastro de forma de pagamento e confirmação; cancelamento a qualquer momento com acesso até o fim do período pago; tolerância de sete dias para falha de cobrança, com novas tentativas e notificações; retenção de dados por 90 dias após suspensão por inadimplência, sujeita à lei; sem taxa de implantação, multa ou juros; reajuste na renovação com aviso de 30 dias; mudança de periodicidade na renovação; pagamentos por cartão e Pix; nota fiscal automática. Créditos de indicação não são sacáveis nem transferíveis, podem quitar mensalidade integralmente, expiram em 12 meses e ficam indisponíveis após cancelamento até reativação. Preço nominal e percentuais de desconto continuam pendentes de definição comercial.
+
+### PlatformAdminRole / AuditEvent
+Papéis globais separados dos papéis do restaurante:
+- PLATFORM_PRIMARY_ADMIN: administrador principal original.
+- PLATFORM_ADMIN: administradores criados pelo principal.
+- PLATFORM_SUPPORT: suporte com acesso técnico limitado.
+O principal pode criar administradores; somente o principal original pode excluí-los. Suporte não acessa dados pessoais de consumidores, histórico de compras nem dados financeiros. Suporte pode suspender restaurantes temporariamente. Todas as ações administrativas geram AuditEvent. O painel global agrega restaurantes, consumidores, compras e receita; métricas financeiras são restritas a administradores, não ao suporte. Administrador pode bloquear consumidores temporária ou permanentemente e excluir restaurantes com confirmação e justificativa; não pode editar informações dos restaurantes.
+
+### ApiCredential / WebhookEndpoint / WebhookDelivery
+A API externa é acessível a integrações autorizadas por chaves de API com permissões e rate limiting. Chaves devem ser armazenadas de forma segura (hash/segredo não recuperável quando aplicável), escopadas e revogáveis. WebhookEndpoint registra destino, eventos assinados e segredo; WebhookDelivery registra tentativas, status e próxima tentativa. Reenvio automático em caso de falha. Sandbox separa testes de dados reais.
 
 ## 8. Relacionamentos conceituais
 
@@ -302,13 +316,9 @@ A fidelidade individual de cada restaurante permanece isolada: contas, pontos, r
 
 ## 10. Decisões que precisam preceder o schema físico
 
-- Campos finais e estados do perfil do restaurante.
-- Um ou vários menus por restaurante.
-- Regras de variações e adicionais.
-- Regras de variações e adicionais.
-- Demais decisões de modelagem ainda pendentes.
-- Identidade de consumidor e login social, se houver.
-- Política de retenção de sessões de IA.
-- Gatilho de crédito, expiração e estorno dos programas de fidelidade; a estrutura e as fórmulas-base de acúmulo foram parcialmente aprovadas em D-12.
-- Modelo financeiro, contratos e liquidação do Boraê Club, caso o programa compartilhado seja retomado no futuro.
-- Política de reviews e moderação.
+- Campos físicos finais e migrações do perfil, catálogo, conta de consumidor, assinatura e administração.
+- Preço nominal da assinatura e percentuais de desconto trimestral/anual.
+- Detalhes de provedores, contratos, chaves e políticas de retry para cobrança e webhooks.
+- Limites numéricos de upload e parâmetros técnicos de infraestrutura.
+- Regras financeiras/contratuais do Boraê Club, somente se a visão compartilhada for retomada.
+- Procedimento operacional de moderação de denúncias, já que não haverá painel dedicado no escopo atual.
