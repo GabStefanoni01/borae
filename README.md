@@ -10,9 +10,9 @@ O projeto está em desenvolvimento incremental. Este repositório é a fonte de 
 
 Comece por **[docs/README.md](docs/README.md)**. Ele apresenta a ordem de leitura e direciona para:
 
-- [Visão do produto e regras de negócio](docs/PRODUCT.md)
+- [PRD — requisitos do produto](docs/PRD.md)\n- [Visão do produto e regras de negócio](docs/PRODUCT.md)\n- [Fluxos de tela](docs/SCREEN_FLOWS.md)\n- [Modelo de domínio e dados](docs/DOMAIN_MODEL.md)
 - [Arquitetura e decisões técnicas](docs/ARCHITECTURE.md)
-- [API e funcionalidades já implementadas](docs/API.md)
+- [API implementada](docs/API.md)\n- [Desenho dos contratos futuros da API](docs/API_DESIGN.md)\n- [Especificação do catálogo](docs/MODULE_CATALOG.md)\n- [Especificação do assistente IA](docs/MODULE_AI_ASSISTANT.md)\n- [Especificação de fidelidade e Boraê Club](docs/MODULE_LOYALTY_CLUB.md)\n- [Especificação 3D/AR](docs/MODULE_3D_AR.md)\n- [Especificação de descoberta](docs/MODULE_DISCOVERY.md)\n- [Decisões pendentes](docs/OPEN_DECISIONS.md)
 - [Roadmap e critérios de conclusão](docs/ROADMAP.md)
 - [Guia de contribuição e fluxo de trabalho](docs/CONTRIBUTING.md)
 
