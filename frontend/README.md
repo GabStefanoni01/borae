@@ -1,20 +1,29 @@
 # Boraê Frontend
 
-Aplicação web responsiva do Boraê, planejada em Angular e TypeScript.
+Aplicação web responsiva do Boraê, construída com Angular 20 e TypeScript.
 
-## Áreas previstas
-- Experiência pública de descoberta.
-- Cardápio digital do restaurante.
+## Executar localmente
+Requer Node.js 22 ou superior.
+```bash
+npm install
+npm start
+```
+A aplicação ficará em `http://localhost:4200`.
+
+## Executar com Docker
+Na raiz:
+```bash
+cp .env.example .env
+docker compose up --build
+```
+O frontend fica em `http://localhost:4200`, servido pelo Nginx. Node.js é usado somente na etapa de build; a imagem final contém Nginx e os arquivos estáticos.
+Para construir apenas a imagem: `docker build -t borae-frontend ./frontend`.
+
+## Próximas áreas
+- Descoberta e cardápio digital.
 - Visualização 3D/AR de pratos.
 - Assistente gastronômico.
-- Área autenticada do consumidor.
-- Painel administrativo do restaurante.
+- Área do consumidor e painel do restaurante.
 - Administração da plataforma.
 
-## Diretrizes
-- Priorizar experiência mobile-first, especialmente o acesso por QR Code.
-- Tratar acessibilidade e estados de carregamento/erro como parte do fluxo.
-- Não confiar no frontend para autorização ou validação de regras de negócio.
-- Consumir contratos documentados pela API.
-
-A aplicação Angular executável será criada na etapa de scaffold do frontend.
+A estrutura Angular inicial foi criada; os módulos funcionais serão implementados por etapas.

@@ -14,33 +14,40 @@ Boraê conecta restaurantes e consumidores em uma experiência gastronômica dig
 - Boraê Club: benefícios compartilhados entre estabelecimentos parceiros.
 - Descoberta de restaurantes e painel de gestão para estabelecimentos.
 
-## Estratégia técnica inicial
-| Camada | Tecnologia planejada |
+## Estratégia técnica
+| Camada | Tecnologia |
 | --- | --- |
-| Frontend | Angular + TypeScript + Tailwind CSS |
-| Backend | Java + Spring Boot |
+| Frontend | Angular 20 + TypeScript |
+| Servidor web | Nginx em container Docker |
+| Backend | Java 21 + Spring Boot |
+| Containerização | Docker multi-stage + Docker Compose |
 | Banco de dados | PostgreSQL |
-| Cache (quando necessário) | Redis |
-| IA (módulo evolutivo) | Python + FastAPI |
+| Cache futuro | Redis |
+| IA futura | Python + FastAPI |
 | 3D/AR | glTF/GLB + model-viewer |
-| API e testes | OpenAPI, JUnit, Mockito e Playwright |
 
-A primeira versão será uma aplicação web responsiva, com arquitetura de monólito modular e suporte multi-tenant desde o início.
+## Executar com Docker
+1. Instale Docker Engine e Docker Compose.
+2. Copie `.env.example` para `.env`.
+3. Defina DB_PASSWORD e um JWT_SECRET Base64 forte (mínimo 32 bytes).
+4. Na raiz, execute:
+
+```bash
+docker compose up --build
+```
+
+- Frontend: http://localhost:4200
+- Backend: http://localhost:8080
+- Swagger: http://localhost:8080/swagger-ui.html
+- PostgreSQL: localhost:5432
+
+O PostgreSQL usa volume persistente. Não versione o arquivo `.env`. Em produção, publique frontend e backend como serviços Docker separados e use PostgreSQL gerenciado, como Neon.
 
 ## Estrutura
 - docs/: visão, arquitetura e decisões do produto.
-- backend/: API Java/Spring Boot.
-- frontend/: aplicação Angular.
-
-## Princípios
-- Isolamento rigoroso dos dados de cada restaurante.
-- O backend é a fonte de verdade para preços, disponibilidade, pontos e resgates.
-- A IA não pode inventar produtos nem executar operações sem validação.
-- Pontos individuais e pontos Boraê Club terão saldos e regras separados.
-- Operações de fidelidade devem ser auditáveis e protegidas contra duplicidade.
-- Começar simples, validar com usuários reais e evoluir com segurança.
+- backend/: API Java/Spring Boot e Dockerfile.
+- frontend/: aplicação Angular e Dockerfile.
+- docker-compose.yml: ambiente integrado.
 
 ## Status
-**Sprint 0 — Fundação:** documentação inicial, estrutura do projeto e decisões arquiteturais.
-
-Consulte a [visão do produto](docs/product/vision.md), a [arquitetura inicial](docs/architecture/overview.md) e o [roadmap](docs/roadmap.md).
+**Sprint 0 — Fundação:** documentação, backend com autenticação inicial, scaffold Angular e configuração Docker.
