@@ -9,7 +9,7 @@ Este arquivo impede que decisões não tomadas sejam inventadas durante a implem
 | D-03 | Publicação | **APROVADA** — publicação por cardápio, alterações publicadas entram no ar ao salvar; ver decisão registrada abaixo | Concluído |
 | D-04 | Ingredientes | **APROVADA** — lista livre de ingredientes associados ao produto; ver decisão registrada abaixo | Concluído |
 | D-05 | Opções | **APROVADA** — adicionais pagos e remoção de ingredientes; sem tamanhos ou ponto da carne no cadastro | Concluído |
-| D-06 | Preço | Estratégia de armazenamento monetário, moeda e arredondamento | Catálogo |
+| D-06 | Preço | **APROVADA** — BRL, valores inteiros em centavos e cálculos no backend | Concluído |
 | D-07 | Permissões | Matriz completa de ações para OWNER, MANAGER e STAFF | Painel |
 | D-08 | Convites | Revogação, reenvio, envio por e-mail e limite de convites | Equipe |
 | D-09 | Mídia | Provedor de object storage, limites, formatos e CDN | Imagens/3D |
