@@ -194,6 +194,8 @@ Os papéis são atribuídos por vínculo com cada restaurante. O mesmo usuário 
 - Retornar recomendações vinculadas a IDs reais de produtos.
 - Basear explicações sobre a composição somente nos ingredientes cadastrados; não inferir ingredientes que não foram informados.
 
+
+**Decisão D-10 aprovada (13/11/2026):** Google Gemini será o provedor inicial, integrado exclusivamente pelo backend e isolado por uma abstração interna para permitir substituição futura. Credenciais ficam no servidor; o modelo não acessa diretamente o banco. Haverá controles de consumo/custo, rate limits por sessão/IP e fallback para busca/filtros convencionais. Modelo/versão e cotas numéricas permanecem pendentes; retenção do histórico é tratada em D-11.
 ### RF-09 — Fidelidade do restaurante
 - Configurar regras de ganho e recompensa.
 - Registrar eventos de crédito, débito, expiração e estorno.
