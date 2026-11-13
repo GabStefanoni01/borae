@@ -205,9 +205,12 @@ Pode ser a própria UserAccount com perfis/roles adicionais; evitar criar identi
 - earning_rule_parameters (parâmetros versionados da regra escolhida pelo restaurante)
 - earning_rule_version
 - terms_version
+- earning_rule_effective_at / version history
+- points_validity_period (configuração definida pelo restaurante)
+- program_closure_redemption_deadline / minimum 60 days
 - starts_at / ends_at
 
-**Decisões D-12 e D-14:** no MVP, cada restaurante terá seu próprio programa de fidelidade e será responsável pelas recompensas que oferecer. O programa poderá usar acúmulo proporcional ao valor gasto ou quantidade fixa por compra; parâmetros e regras operacionais permanecem pendentes. Não há transferência de pontos entre restaurantes. O Boraê Club compartilhado é futuro e não integra o modelo de dados necessário ao MVP.
+**Decisões D-12, D-14 e D-15:** no MVP, cada restaurante terá seu próprio programa e será responsável pelas recompensas. A validade é configurada por restaurante. Alterações de regra só se aplicam a pontos acumulados após sua vigência; créditos anteriores preservam a regra aplicável quando foram gerados. O encerramento do programa garante no mínimo 60 dias para resgate. Não há transferência entre restaurantes nem Boraê Club compartilhado no MVP.
 
 ### LoyaltyAccount
 - id
@@ -224,8 +227,10 @@ Pode ser a própria UserAccount com perfis/roles adicionais; evitar criar identi
 - idempotency_key
 - created_at
 - created_by/system_actor
+- expires_at (para créditos sujeitos à validade)
+- reverses_entry_id / source_reference (quando aplicável)
 
-Saldo deve ser derivado do ledger ou mantido como projeção reconciliável. Não editar saldo diretamente sem lançamento correspondente.
+Saldo deve ser derivado do ledger ou mantido como projeção reconciliável. Não editar saldo diretamente sem lançamento correspondente. Estornos devem gerar lançamentos compensatórios e preservar a referência ao crédito original; nunca apagar o histórico. Se os pontos já tiverem sido utilizados, registrar uma pendência de análise sem criar saldo negativo.
 
 ### LoyaltyReward
 - id
@@ -242,6 +247,7 @@ Saldo deve ser derivado do ledger ou mantido como projeção reconciliável. Nã
 - loyalty_account_id
 - points_spent
 - status
+- earned_rule_version (snapshot das condições aplicáveis, quando necessário)
 - idempotency_key
 - created_at
 - redeemed_at
@@ -287,6 +293,8 @@ A fidelidade individual de cada restaurante permanece isolada: contas, pontos, r
 7. Toda movimentação de pontos deve possuir referência, idempotência e trilha auditável.
 8. Resgate não pode gerar saldo negativo; validar atomicamente.
 9. Não excluir lançamentos de ledger; lançar reversão.
+10. Alterações de regra não podem alterar retroativamente os pontos já acumulados nem retirar recompensas já conquistadas.
+11. Estorno de compra com pontos já resgatados gera pendência para análise, sem saldo negativo.
 10. Dados pessoais e preferências precisam de política de acesso e retenção.
 
 ## 10. Decisões que precisam preceder o schema físico
