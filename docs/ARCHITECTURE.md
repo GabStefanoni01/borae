@@ -123,3 +123,13 @@ A IA será um consumidor de capacidades internas controladas, não uma camada co
 O processamento interno de eventos recebidos usa sete tentativas progressivas: imediata, 1 minuto, 5 minutos, 15 minutos, 1 hora, 6 horas e 24 horas. Após esgotar as tentativas, manter o evento para análise e reprocessamento manual autorizado. Implementar idempotência, deduplicação, autenticação e trilha de auditoria. Para webhooks recebidos de provedores, respeitar a política de entrega/reenvio do próprio provedor; a agenda acima controla o reprocessamento interno do Boraê.
 
 Detalhes e ressalvas constam em [Decisões comerciais e operacionais](DECISIONS_COMMERCIAL_AND_OPERATIONS.md).
+
+
+## 10. Operação, observabilidade e recuperação
+
+- A aplicação administrativa global será separada da aplicação principal, com autenticação, autorização e sessão próprias. Ela consumirá endpoints administrativos protegidos do backend e não terá acesso direto ao banco.
+- A ferramenta externa de observabilidade técnica ainda não foi escolhida. O painel administrativo próprio apresentará métricas de negócio/operação, mas não substitui captura de exceções, logs técnicos, métricas de infraestrutura e alertas.
+- Retenção aprovada: logs de aplicação por 30 dias; segurança/autenticação por 180 dias; auditoria administrativa e API Keys por 365 dias. Não registrar senhas, tokens, segredos ou conversas completas com IA.
+- Backups completos automáticos diários, retenção de 30 dias, criptografia em repouso, armazenamento separado e teste trimestral de restauração. PITR ou incrementais quando suportados.
+- Objetivos operacionais: RPO de até 1 hora e RTO de até 4 horas. Validar capacidade do provedor antes de produção e documentar qualquer limitação.
+- Detalhes de alertas, thresholds e ferramenta de observabilidade serão definidos durante o desenvolvimento, com base nas métricas reais.
