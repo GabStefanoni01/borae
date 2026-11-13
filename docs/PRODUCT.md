@@ -27,8 +27,8 @@ A autorização é definida por vínculo com cada restaurante e validada no back
 
 OWNER pode convidar MANAGER ou STAFF. Um usuário pode ter papéis diferentes em restaurantes diferentes. Permissões futuras de pedidos não significam que pedidos façam parte do MVP.
 
-### Administrador da plataforma
-Perfil futuro para operações globais: gestão de restaurantes, usuários, assinaturas, campanhas, transações, auditoria e suporte. Não confundir com OWNER de um restaurante.
+### Administração global da plataforma
+O Boraê terá um administrador principal e equipe de suporte com permissões limitadas. Esses papéis são independentes de OWNER/MANAGER/STAFF dos restaurantes. O suporte acessa apenas dados técnicos, pode suspender restaurantes temporariamente e não acessa dados pessoais, histórico de compras ou dados financeiros. Todas as ações administrativas são auditadas. O administrador principal pode criar outros administradores; somente ele, como administrador original, pode excluí-los.
 
 ## 3. Funcionalidades do produto
 
@@ -93,13 +93,19 @@ O Club poderá ser reavaliado depois da validação do produto e da adesão dos 
 ### 3.8 Pedidos e pagamentos — fora do MVP inicial
 Carrinho, checkout, integração com POS, pagamento, acompanhamento de pedido e notificações são possibilidades futuras. Não implementar antes de validar a necessidade e definir integrações, taxas, cancelamento, reembolso e responsabilidade operacional.
 
-## 4. Modelo de negócio (hipóteses a validar)
-- SaaS B2B com planos para restaurantes.
-- Possível evolução futura do Boraê Club e recursos premium para consumidores, fora do MVP e sujeitos a validação de modelo de negócio.
-- Campanhas patrocinadas e parcerias comerciais.
-- Possíveis taxas por transações ou resgates, apenas após validar operação e viabilidade.
+## 4. Modelo de negócio aprovado — D-18
 
-Preços, planos e taxas não estão definidos como regra definitiva. Validar disposição de pagamento com restaurantes e consumidores.
+- SaaS B2B por assinatura fixa; não há comissão por transação.
+- Um único plano, com mesmas funcionalidades e preço-base para todos os restaurantes.
+- Teste gratuito de 30 dias; a assinatura só começa após o restaurante cadastrar forma de pagamento e confirmar a contratação.
+- Periodicidades mensal, trimestral e anual, com descontos progressivos.
+- Cancelamento a qualquer momento, sem multa, mantendo acesso até o fim do período pago.
+- Cobrança não paga: novas tentativas e avisos, com tolerância de sete dias; depois, suspensão.
+- Sem taxa de implantação. Reajustes passam a valer na próxima renovação, com aviso mínimo de 30 dias.
+- Formas de pagamento: cartão de crédito e Pix; nota fiscal automática a cada cobrança.
+- Programa de indicação gera créditos para abater assinaturas. Créditos não são sacáveis nem transferíveis, expiram em 12 meses e, após cancelamento, só podem ser usados novamente se a assinatura for reativada.
+
+O preço nominal e os percentuais de desconto ainda dependem de definição comercial. O modelo de cobrança, por outro lado, está aprovado e não deve ser tratado como hipótese aberta.
 
 ## 5. Princípios de experiência
 - Mobile-first: QR Code será frequentemente aberto no celular.
@@ -119,3 +125,18 @@ Preços, planos e taxas não estão definidos como regra definitiva. Validar dis
 
 ## 7. Fora do escopo imediato
 Não antecipar microserviços, marketplace completo, integração com todos os POS, aplicativo nativo, pagamentos próprios ou programa de pontos compartilhados antes de concluir e validar os fundamentos do produto.
+
+
+## 8. Decisões aprovadas de descoberta, operação e canais (D-16 a D-20)
+
+### Descoberta
+A busca usa localização atual por padrão, com alternativa de busca manual de região. A relevância considera distância, avaliações, popularidade e completude. Filtros: categoria, distância, faixa de preço, avaliação, horário, benefícios de fidelidade e entrega/retirada. Avaliações exigem compra confirmada; incluem nota geral de 1 a 5, comentário opcional e critérios de atendimento, comida e ambiente. Restaurantes podem responder, mas não editar/apagar avaliações. Favoritos, listas personalizadas e compartilhamento por links são suportados. Redes têm página da marca e páginas por unidade, com avaliações próprias.
+
+### Consumidor
+Conta global com telefone verificado, senha, nome e e-mail. Login por telefone + senha; SMS para verificação inicial e recuperação/troca de telefone. Uma sessão ativa por vez, bloqueio de 15 minutos após cinco tentativas incorretas, notificações de segurança e exclusão sob solicitação com retenção legal/auditável.
+
+### Administração
+Painel global com indicadores de restaurantes, consumidores, compras e receita. Suporte não acessa dados pessoais, histórico de compras ou dados financeiros; pode suspender restaurantes temporariamente. Administradores não editam informações de restaurantes; podem excluí-los mediante confirmação e justificativa. Ações são auditadas. Manutenção programada deve ser comunicada previamente.
+
+### Pedidos e integrações
+Não haverá pedidos online nem integração PDV/ERP no lançamento. A API externa será pública para integrações autorizadas, protegida por chaves e permissões, rate limiting e documentação Swagger/OpenAPI. Webhooks terão reenvio automático e haverá Sandbox. Restaurantes e consumidores usarão web responsiva, sem aplicativos nativos no lançamento. Notificações por e-mail e chat de suporte com IA e encaminhamento humano serão oferecidos.
