@@ -131,7 +131,7 @@ Precisa moderar e dar suporte à plataforma, com acesso global estritamente audi
 - Impedir que produtos arquivados apareçam no menu público.
 - Manter preço em unidade monetária definida pelo sistema (BRL no lançamento inicial, sujeito à confirmação comercial).
 
-**Decisão de produto aprovada (D-03, 13/11/2026).**\n\n**Decisão de produto aprovada (D-05, 13/11/2026):** o catálogo permite adicionais pagos e remoção de ingredientes. Não haverá configuração de tamanhos, ponto da carne ou combos nesta etapa. A seleção pelo consumidor será utilizada quando o fluxo de pedidos for desenvolvido.
+**Decisão de produto aprovada (D-03, 13/11/2026).**\n\n**Decisão de produto aprovada (D-05, 13/11/2026):** o catálogo permite adicionais com preço visível. Remoções e ponto da carne, quando aplicável, são instruções informadas no momento do pedido e repassadas ao garçom; não são opções pré-cadastradas no produto. Não haverá tamanhos ou combos nesta etapa.
 
 **Decisão de produto aprovada (D-04, 13/11/2026):** ingredientes são itens individuais cadastrados livremente pelo restaurante e associados ao produto. Não haverá cadastro específico de alergênicos ou contaminação cruzada neste escopo.
 
