@@ -6,7 +6,7 @@ export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    loadComponent: () => import('./app').then(module => module.App)
+    loadComponent: () => import('./auth.page').then(module => module.AuthPage)
   },
   {
     path: 'app',
