@@ -42,7 +42,7 @@ Este roadmap organiza dependências. Não é autorização para implementar toda
 - [ ] Testes de autorização e de exposição pública apenas dos dados publicados.
 
 ## Fase 4 — Experiência 3D/AR
-- [ ] Definir armazenamento de mídia.
+- [x] Definir armazenamento de mídia: Cloudflare R2 (D-09 aprovada).
 - [ ] Upload e validação de GLB/glTF.
 - [ ] Associação do modelo a um produto.
 - [ ] Calibração de dimensões físicas.
