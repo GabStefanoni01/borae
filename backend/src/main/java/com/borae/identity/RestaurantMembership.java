@@ -37,6 +37,14 @@ public class RestaurantMembership {
     protected RestaurantMembership() {
     }
 
+    public RestaurantMembership(UserAccount user, Restaurant restaurant, RestaurantRole role) {
+        this.id = UUID.randomUUID();
+        this.user = user;
+        this.restaurant = restaurant;
+        this.role = role;
+        this.active = true;
+    }
+
     public UUID getId() { return id; }
     public UserAccount getUser() { return user; }
     public Restaurant getRestaurant() { return restaurant; }
