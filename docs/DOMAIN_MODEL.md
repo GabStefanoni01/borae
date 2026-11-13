@@ -153,6 +153,7 @@ Cada ingrediente é cadastrado livremente pelo restaurante e pertence a um únic
 ### MediaAsset
 - id
 - restaurant_id
+- storage_provider
 - storage_key
 - media_type
 - mime_type
@@ -162,7 +163,7 @@ Cada ingrediente é cadastrado livremente pelo restaurante e pertence a um únic
 - created_by
 - timestamps
 
-Arquivos ficam em object storage. Banco guarda metadados e referência, não conteúdo binário.
+**Decisão de produto D-09 aprovada:** arquivos ficam em serviço externo de object storage; PostgreSQL guarda metadados e referências, nunca conteúdo binário. Cloudinary é o primeiro candidato para avaliação de armazenamento/transformação/entrega de imagens, mas a escolha final depende de custos, limites e suporte a GLB/glTF. Formatos de imagem: JPG/JPEG, PNG e WebP. Formatos 3D: GLB e glTF. A arquitetura deve suportar CDN, variantes otimizadas e carregamento sob demanda. Backend valida autorização, MIME real, tamanho, checksum e vínculo com o restaurante. Limites numéricos e provedor definitivo permanecem pendentes.
 
 ## 4. Entidades propostas — IA e experiência
 
