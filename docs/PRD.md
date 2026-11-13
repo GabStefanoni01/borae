@@ -66,11 +66,13 @@ Precisa moderar e dar suporte à plataforma, com acesso global estritamente audi
 2. Criar restaurante e tornar-se OWNER.
 3. Completar perfil público.
 4. Configurar equipe e convites.
-5. Criar categorias e produtos.
+5. Criar um ou mais cardápios (ex.: Almoço, Jantar e Bebidas), cada um com suas categorias e produtos.
 6. Revisar prévia pública.
-7. Publicar o cardápio.
-8. Gerar QR Code e disponibilizá-lo no estabelecimento.
+7. Publicar os cardápios desejados; múltiplos podem ficar publicados simultaneamente.
+8. Gerar QR Code principal, que direciona à página pública do restaurante.
 9. Atualizar preços e disponibilidade conforme operação.
+
+**Decisão de produto D-02 aprovada (13/11/2026):** múltiplos cardápios por restaurante; a página pública permite ao consumidor escolher o cardápio. Não haverá alternância automática por horário no MVP.
 
 **Critério de sucesso:** um restaurante consegue publicar e manter um cardápio completo sem intervenção técnica do time Boraê.
 
