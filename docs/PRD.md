@@ -120,7 +120,9 @@ Precisa moderar e dar suporte à plataforma, com acesso global estritamente audi
 ### RF-04 — Catálogo
 - Criar e ordenar categorias dentro de um cardápio.
 - Criar, editar e arquivar produtos.
-- Informar nome, descrição, preço, ingredientes, imagem e disponibilidade.
+- Informar nome, descrição, preço, ingredientes individuais, imagem e disponibilidade.
+- Permitir cadastrar livremente vários ingredientes por produto, editar, remover e ordenar sua exibição.
+- Exibir os ingredientes informados pelo restaurante nos detalhes do produto.
 - Suportar variações e adicionais com regras de seleção.
 - Controlar publicação no nível do cardápio: novos cardápios começam como `DRAFT`; publicar torna públicos os produtos elegíveis e categorias ativas.
 - Não oferecer publicação individual por produto no MVP.
@@ -130,6 +132,8 @@ Precisa moderar e dar suporte à plataforma, com acesso global estritamente audi
 - Manter preço em unidade monetária definida pelo sistema (BRL no lançamento inicial, sujeito à confirmação comercial).
 
 **Decisão de produto aprovada (D-03, 13/11/2026).**
+
+**Decisão de produto aprovada (D-04, 13/11/2026):** ingredientes são itens individuais cadastrados livremente pelo restaurante e associados ao produto. Não haverá cadastro específico de alergênicos ou contaminação cruzada neste escopo.
 
 ### RF-05 — Cardápio público
 - Carregar dados publicados do restaurante.
@@ -154,7 +158,7 @@ Precisa moderar e dar suporte à plataforma, com acesso global estritamente audi
 - Receber intenção, orçamento, preferências e restrições.
 - Consultar apenas catálogo publicado e disponível no restaurante selecionado.
 - Retornar recomendações vinculadas a IDs reais de produtos.
-- Não afirmar segurança contra alergênicos/contaminação cruzada.
+- Basear explicações sobre a composição somente nos ingredientes cadastrados; não inferir ingredientes que não foram informados.
 
 ### RF-09 — Fidelidade do restaurante
 - Configurar regras de ganho e recompensa.
