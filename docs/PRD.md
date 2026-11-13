@@ -123,7 +123,7 @@ Precisa moderar e dar suporte à plataforma, com acesso global estritamente audi
 - Informar nome, descrição, preço, ingredientes individuais, imagem e disponibilidade.
 - Permitir cadastrar livremente vários ingredientes por produto, editar, remover e ordenar sua exibição.
 - Exibir os ingredientes informados pelo restaurante nos detalhes do produto.
-- Suportar variações e adicionais com regras de seleção.
+- Permitir cadastrar adicionais opcionais com acréscimo de preço (ex.: bacon, cheddar e ovo).\n- Permitir que o cliente selecione ingredientes do produto para remoção (ex.: sem cebola ou sem tomate), sem desconto ou acréscimo por padrão.\n- Não incluir tamanhos, ponto da carne ou combos nesta etapa; o ponto da carne poderá ser informado no momento do pedido quando houver fluxo de pedidos.
 - Controlar publicação no nível do cardápio: novos cardápios começam como `DRAFT`; publicar torna públicos os produtos elegíveis e categorias ativas.
 - Não oferecer publicação individual por produto no MVP.
 - Em cardápios publicados, alterações salvas entram em vigor imediatamente.
@@ -131,7 +131,7 @@ Precisa moderar e dar suporte à plataforma, com acesso global estritamente audi
 - Impedir que produtos arquivados apareçam no menu público.
 - Manter preço em unidade monetária definida pelo sistema (BRL no lançamento inicial, sujeito à confirmação comercial).
 
-**Decisão de produto aprovada (D-03, 13/11/2026).**
+**Decisão de produto aprovada (D-03, 13/11/2026).**\n\n**Decisão de produto aprovada (D-05, 13/11/2026):** o catálogo permite adicionais pagos e remoção de ingredientes. Não haverá configuração de tamanhos, ponto da carne ou combos nesta etapa. A seleção pelo consumidor será utilizada quando o fluxo de pedidos for desenvolvido.
 
 **Decisão de produto aprovada (D-04, 13/11/2026):** ingredientes são itens individuais cadastrados livremente pelo restaurante e associados ao produto. Não haverá cadastro específico de alergênicos ou contaminação cruzada neste escopo.
 
