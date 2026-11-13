@@ -182,9 +182,17 @@ A experiência inicial de fidelidade será vinculada ao restaurante onde a compr
 5. **Encerramento voluntário do programa:** os clientes devem ser comunicados e terão prazo para resgatar os pontos existentes. O Boraê define prazo mínimo obrigatório de **60 dias**; o restaurante pode oferecer prazo maior, nunca menor.
 6. **Fechamento definitivo planejado:** o restaurante deve comunicar os clientes e respeitar o período de transição, permitindo o resgate das recompensas durante o prazo aplicável.
 7. **Fechamento repentino/imprevisível:** se não houver possibilidade prática de cumprir o período de transição, a prioridade é comunicar os clientes assim que possível. O Boraê não assume automaticamente o custo das recompensas nem permite resgate em outros restaurantes.
-8. **Mudança das regras do programa:** o restaurante pode alterar regras para pontos acumulados após a entrada em vigor da mudança. Pontos já acumulados permanecem sob as regras anteriores, e recompensas já conquistadas não podem ser retiradas por alteração posterior.
+8. **Mudança das regras do programa (D-15.8):** aprovada. O restaurante pode alterar as regras, mas a nova versão só se aplica aos pontos acumulados a partir de sua data/hora de vigência. Pontos já acumulados permanecem vinculados à versão e aos parâmetros anteriores; recompensas já conquistadas não podem ser retiradas por alteração posterior. A mudança deve preservar histórico auditável, sem reescrever lançamentos anteriores.
 
-**Ainda pendente:** definir a ordem de consumo de pontos quando houver créditos de diferentes datas/validade (por exemplo, consumir primeiro os pontos que expiram antes).
+**D-15.8 — Alteração das regras do programa**
+
+**Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
+
+**Decisão:** o restaurante pode alterar as regras do programa. A nova versão passa a valer somente para pontos acumulados a partir da data/hora de sua entrada em vigor. Pontos já acumulados continuam vinculados à versão e aos parâmetros sob os quais foram creditados. Recompensas já conquistadas não podem ser retiradas por uma mudança posterior. Toda alteração deve manter histórico auditável e não pode reescrever lançamentos anteriores.
+
+**Impactos:** versionar as regras e registrar em cada crédito a versão, os parâmetros aplicáveis e a validade correspondente. A decisão não altera retroativamente o saldo ou as recompensas existentes.
+
+**Ainda pendente em D-15:** definir a ordem de consumo de pontos quando houver créditos de diferentes datas/validade (por exemplo, consumir primeiro os pontos que expiram antes).
 
 **Motivação:** dar autonomia operacional aos restaurantes, preservando transparência, histórico e previsibilidade para consumidores que já acumularam pontos.
 
@@ -205,7 +213,7 @@ Para cada ID:
 - **D-02 — Múltiplos cardápios:** aprovada e registrada nesta documentação.
 - **D-03 — Publicação por cardápio:** aprovada e registrada nesta documentação.
 - **D-14 — Escopo da fidelidade no MVP:** aprovada; somente programas individuais por restaurante. Boraê Club compartilhado fica para uma fase futura.
-- **D-15 — Regras operacionais da fidelidade:** parcialmente aprovada; validade, estornos, antifraude e encerramento definidos. Ordem de consumo dos pontos permanece pendente.
+- **D-15 — Regras operacionais da fidelidade:** parcialmente aprovada; validade, estornos, antifraude, encerramento e alteração não retroativa das regras (D-15.8) definidos. Ordem de consumo dos pontos permanece pendente.
 ### D-06 — Preços e valores monetários
 
 **Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
