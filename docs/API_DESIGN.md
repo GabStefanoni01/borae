@@ -54,7 +54,7 @@ Todos os IDs relacionados devem ser validados contra o mesmo restaurante. Opera�
 }
 ```
 
-O formato final de preço, ingredientes, alergênicos e opções depende das decisões listadas em OPEN_DECISIONS.md.
+O formato final de preço e os detalhes de validação ainda dependem das decisões listadas em OPEN_DECISIONS.md. D-04 e D-05 estão aprovadas: ingredientes são itens livres; grupos de opções usam `ADD_ON` (com acréscimo opcional) e `REMOVAL` (sem alteração de preço por padrão). Não há tamanhos, ponto da carne ou combos nesta etapa.
 
 ## 5. Mídia — proposta
 
