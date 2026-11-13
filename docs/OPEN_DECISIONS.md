@@ -16,7 +16,7 @@ Este arquivo impede que decisões não tomadas sejam inventadas durante a implem
 | D-10 | IA | **APROVADA** — Gemini API no plano gratuito inicialmente; integração desacoplada e controles de consumo | Concluído |
 | D-11 | IA | **APROVADA** — não persistir conversas; armazenar somente métricas agregadas por restaurante | Concluído |
 | D-12 | Fidelidade/Club | **PARCIALMENTE APROVADA** — programas separados; acúmulo local configurável e Club a 1 ponto/R$ 1. Gatilho e expiração ainda pendentes | Fidelidade/Club |
-| D-13 | Fidelidade | Prova de compra, estorno e papéis autorizados | Fidelidade |
+| D-13 | Fidelidade | **PARCIALMENTE APROVADA** — confirmação manual após compra concluída por garçom ou gerente; estornos e controles restantes pendentes | Fidelidade |
 | D-14 | Club | Financiamento, valor do ponto, compensação e liquidação | Boraê Club |
 | D-15 | Club | Termos, fraude, estorno, expiração e saída de parceiro | Boraê Club |
 | D-16 | Descoberta | Taxonomia, geolocalização, raio e ordenação | Descoberta |
@@ -135,6 +135,28 @@ As escolhas são destinadas à futura personalização do pedido; a aprovação 
 **Motivação:** permitir que cada restaurante mantenha relacionamento próprio com seus clientes e, ao mesmo tempo, criar um incentivo de circulação entre estabelecimentos da rede Boraê, com uma regra de acúmulo Club simples e consistente.
 
 **Impactos:** manter entidades, saldos e ledgers separados; atualizar PRD, modelo de domínio, módulo de fidelidade e contratos de API. A aprovação não significa que pedidos, pagamentos, integração POS, crédito automático ou liquidação financeira estejam implementados ou definidos.
+
+### D-13 — Confirmação da compra e autorização para conceder pontos
+
+**Status:** Parcialmente aprovada pelo responsável pelo produto em 13/11/2026.
+
+**Decisões aprovadas:**
+- Os pontos só poderão ser concedidos depois que a compra for efetivamente concluída e confirmada; abrir o cardápio, fazer um pedido ou iniciar o atendimento não gera pontos.
+- No fluxo inicial, a confirmação será manual por meio de uma ação no sistema durante o fechamento da conta, sem depender de integração com POS ou processamento de pagamento pelo Boraê.
+- Garçons e gerentes poderão confirmar a compra e registrar o valor efetivamente pago.
+- A confirmação deverá identificar o funcionário responsável e o restaurante, mantendo registro auditável.
+- O consumidor não poderá criar créditos de pontos para si mesmo.
+
+**Ainda pendente:**
+- Definir como identificar o consumidor e associar a compra à conta correta.
+- Definir o tratamento de cancelamentos, devoluções, estornos e correções após o crédito.
+- Definir limites e controles antifraude para confirmações e ajustes manuais.
+- Definir os detalhes da referência única/idempotência para impedir crédito duplicado.
+- Definir o momento exato em que o crédito ficará disponível após a confirmação.
+
+**Motivação:** vincular a pontuação a uma compra concluída, evitando créditos por simples pedidos ou consultas ao cardápio, sem exigir integração externa no primeiro fluxo.
+
+**Impactos:** prever confirmação manual autorizada e auditável no fluxo de fechamento. Esta decisão não aprova pedidos online, pagamentos pelo Boraê nem integração POS.
 
 ## Como resolver uma decisão
 
