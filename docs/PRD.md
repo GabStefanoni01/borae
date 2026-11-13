@@ -199,16 +199,23 @@ Os papéis são atribuídos por vínculo com cada restaurante. O mesmo usuário 
 
 **Decisão D-11 aprovada (13/11/2026):** não persistir histórico, prompts ou respostas completas do assistente. Armazenar somente métricas agregadas por restaurante: interações, produtos recomendados/frequência, cliques/taxa de clique, interações sem resultado, latência, erros/timeouts/respostas inválidas/fallback e chamadas/tokens quando disponíveis. Não registrar conteúdo textual nem identificadores pessoais nos eventos analíticos. Exibir métricas apenas a usuários autorizados do respectivo restaurante. Cliques não comprovam compras; métricas de vendas dependem de integração futura com pedidos.
 ### RF-09 — Fidelidade do restaurante
-- Configurar regras de ganho e recompensa.
+- Cada restaurante poderá manter um programa de fidelidade próprio, com saldo e recompensas independentes.
+- O restaurante poderá escolher entre acúmulo proporcional ao valor gasto ou quantidade fixa de pontos por compra.
 - Registrar eventos de crédito, débito, expiração e estorno.
 - Consultar saldo e histórico.
 - Proteger contra eventos duplicados e concorrência.
 
+**D-12 parcialmente aprovada:** a fórmula exata/parâmetros locais, o gatilho de crédito, a expiração e a política de estorno ainda precisam ser definidos.
+
 ### RF-10 — Boraê Club
-- Permitir adesão de restaurantes parceiros.
-- Manter saldo e ledger separados dos programas individuais.
-- Registrar origem, destino, custo, resgate e liquidação.
-- Exigir regras comerciais e financeiras aprovadas antes do desenvolvimento.
+- Permitir adesão voluntária de consumidores e participação de restaurantes parceiros.
+- Manter carteira, saldo e ledger compartilhados entre parceiros, separados dos programas individuais dos restaurantes.
+- Acumular 1 ponto por R$ 1,00 gasto em compra elegível, com a mesma regra para todos os parceiros.
+- Permitir consulta de saldo, parceiros e benefícios e, futuramente, resgate na rede.
+- Registrar origem, destino, custo, resgate e liquidação quando as regras comerciais forem aprovadas.
+- Exigir regras comerciais e financeiras aprovadas antes de movimentar pontos/resgates reais.
+
+**D-12 parcialmente aprovada:** estrutura independente e taxa de 1 ponto por R$ 1,00 definidas. Confirmação da compra, crédito, expiração, estorno, financiamento e liquidação continuam pendentes.
 
 ### RF-11 — Descoberta
 - Listar estabelecimentos publicados e ativos.
