@@ -54,7 +54,7 @@ Todos os IDs relacionados devem ser validados contra o mesmo restaurante. Opera�
 }
 ```
 
-O formato final de preço e os detalhes de validação ainda dependem das decisões listadas em OPEN_DECISIONS.md. D-04 e D-05 estão aprovadas: ingredientes são itens livres; grupos de opções usam `ADD_ON` (com acréscimo opcional) e `REMOVAL` (sem alteração de preço por padrão). Não há tamanhos, ponto da carne ou combos nesta etapa.
+O formato final de preço e os detalhes de validação ainda dependem das decisões listadas em OPEN_DECISIONS.md. D-04 e D-05 estão aprovadas: ingredientes são itens livres; adicionais são cadastrados com preço explícito e exibido ao consumidor. Remoções de ingredientes e ponto da carne, quando aplicável, são observações informadas no momento do pedido e apresentadas ao garçom, não opções pré-cadastradas no produto. Não há tamanhos ou combos nesta etapa.
 
 ## 5. Mídia — proposta
 
@@ -73,8 +73,7 @@ Entrada conceitual:
 {
   "message": "Quero algo leve até 40 reais",
   "filters": {
-    "maxPrice": 40,
-    "avoidIngredients": ["ingrediente informado pelo consumidor"]
+    "maxPrice": 40
   }
 }
 ```
