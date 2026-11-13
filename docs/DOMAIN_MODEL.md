@@ -109,8 +109,7 @@ Relacionamento: `Restaurant 1:N Menu`. Esta decisão de produto está aprovada; 
 - price
 - currency
 - image_media_id opcional
-- ingredients (estrutura a definir)
-- allergen_declarations (estrutura a definir)
+- ingredientes associados ao produto por uma coleção de itens individuais, com nome e ordem de exibição.
 - lifecycle_status (ACTIVE | ARCHIVED; não representa publicação pública)
 - availability_status (AVAILABLE | UNAVAILABLE)
 - display_order
@@ -119,6 +118,14 @@ Relacionamento: `Restaurant 1:N Menu`. Esta decisão de produto está aprovada; 
 **Decisão de produto D-03 aprovada:** o estado de publicação pertence ao `Menu` (`DRAFT | PUBLISHED | ARCHIVED`). Não há publicação individual de produto no MVP. Produtos elegíveis e categorias ativas ficam públicos quando o cardápio é publicado. Em cardápio publicado, alterações salvas entram no ar imediatamente. Disponibilidade operacional permanece separada da publicação.
 
 Produto deve pertencer a uma categoria do mesmo restaurante. Validar essa consistência no backend e, se viável, no banco.
+
+### ProductIngredient
+- id
+- product_id
+- name
+- display_order
+
+Cada ingrediente é cadastrado livremente pelo restaurante e pertence a um único produto. Exemplo: pão, carne, queijo, cebola e bacon em um hambúrguer. O restaurante pode adicionar, editar, remover e ordenar os ingredientes. Não há catálogo padronizado de alergênicos nem declaração específica de contaminação cruzada neste escopo.
 
 ### ProductOptionGroup
 - id
@@ -284,7 +291,7 @@ Registrar resgate e obrigação do parceiro, custo, status, estorno e liquidaç�
 - Restaurant 1:N Menu.
 - Menu 1:N MenuCategory.
 - MenuCategory 1:N Product.
-- Product 1:N ProductOptionGroup 1:N ProductOption.
+- Product 1:N ProductIngredient e Product 1:N ProductOptionGroup 1:N ProductOption.
 - Restaurant 1:N MediaAsset.
 - Product 0..1:N ProductModel3D conforme histórico/versionamento decidido.
 - Restaurant 1:N RestaurantLoyaltyProgram.
@@ -310,7 +317,7 @@ Registrar resgate e obrigação do parceiro, custo, status, estorno e liquidaç�
 
 - Campos finais e estados do perfil do restaurante.
 - Um ou vários menus por restaurante.
-- Estrutura de ingredientes e declaração de alergênicos.
+- Regras de variações e adicionais.
 - Regras de variações e adicionais.
 - Estratégia de moeda e precisão.
 - Identidade de consumidor e login social, se houver.
