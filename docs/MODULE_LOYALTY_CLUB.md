@@ -1,83 +1,105 @@
-# Especificação de módulos — Fidelidade e Boraê Club
+# Fidelidade individual e Boraê Club
 
-Os dois programas são produtos diferentes e precisam de saldos, regras, ledgers e relatórios independentes.
+**Status:** regras centrais do MVP aprovadas em D-12, D-13, D-14 e D-15. Implementação ainda planejada.
 
-## 1. Fidelidade individual do restaurante
+## 1. Fidelidade individual por restaurante
 
-### Objetivo
-Permitir que cada restaurante crie um programa próprio de relacionamento com consumidores.
+Cada restaurante terá um programa próprio, com:
+- Regras de acúmulo independentes.
+- Carteiras e saldos independentes por consumidor.
+- Recompensas e resgates próprios.
+- Histórico/ledger isolado.
+- Validade definida pelo restaurante.
 
-### Capacidades previstas
-- Ativar/desativar programa.
-- Definir regra de acúmulo.
-- Definir recompensas e custo em pontos.
-- Definir validade/expiração.
-- Consultar saldo e histórico.
-- Emitir e validar resgate.
-- Registrar estorno e ajuste administrativo auditado.
+Não existe transferência, conversão ou resgate de pontos entre restaurantes no MVP.
 
-### Regras invariantes
-- Saldo pertence a uma conta no programa de um restaurante específico.
-- Pontos não são transferíveis entre restaurantes.
-- Cada evento de crédito/débito deve possuir origem e chave de idempotência.
-- Consumidor não pode atribuir pontos a si mesmo.
-- Resgate deve reservar/debitar saldo atomicamente.
-- Estorno gera lançamento compensatório; não apaga o histórico.
-- Alteração de regra não deve reescrever retroativamente lançamentos existentes; cada crédito deve preservar a versão e os parâmetros da regra que o gerou, além da validade aplicável. Pontos já acumulados seguem essa regra histórica, e recompensas já conquistadas são preservadas mesmo após mudanças posteriores.
-- Cada restaurante define a validade dos pontos; a validade deve ser registrada por crédito/lote.
-- No encerramento do programa, o prazo de resgate será de no mínimo 60 dias; o restaurante pode oferecer prazo maior.
-- Estornos são lançamentos compensatórios auditáveis. Se os pontos já tiverem sido utilizados, registrar pendência sem saldo negativo.
-- Detecção de padrões suspeitos gera alertas para o gerente; sem confirmação adicional do consumidor e sem bloqueio automático no MVP.
-- Em fechamento repentino do restaurante, comunicar os clientes assim que possível; o Boraê não assume automaticamente o custo das recompensas e não há resgate cruzado.
+## 2. Modelos de acúmulo — D-12
 
-### Regra aprovada parcialmente — D-12
-Cada restaurante escolhe entre dois modelos: (1) pontos proporcionais ao valor gasto; ou (2) quantidade fixa de pontos por compra. O programa local mantém saldo, recompensas e ledger próprios, sem transferência para outros restaurantes ou para o Boraê Club.
+O restaurante escolhe uma das modalidades:
+1. **Proporcional ao valor gasto:** taxa por valor ou faixas configuradas pelo restaurante. O cálculo dentro da faixa é proporcional ao valor efetivamente pago.
+2. **Pontos fixos por compra:** quantidade definida pelo restaurante, respeitando o valor mínimo de compra já estabelecido na decisão de produto anterior.
 
-### Decisão parcialmente aprovada — D-13: confirmação da compra
-- Os pontos só podem ser gerados após a compra estar efetivamente concluída.
-- No fluxo inicial, a confirmação é manual durante o fechamento da conta, sem exigir integração POS ou pagamento processado pelo Boraê.
-- Garçons e gerentes podem confirmar a compra e registrar o valor efetivamente pago.
-- A operação deve registrar o funcionário responsável e o restaurante, com trilha de auditoria.
-- O consumidor não pode criar créditos para si mesmo; consulta ao cardápio ou simples pedido não gera pontos.
-- O consumidor será localizado pelo telefone cadastrado; o método de verificação desse telefone ainda será definido.
-- Permanecem pendentes o momento de disponibilidade dos pontos, a idempotência detalhada e o tratamento de cancelamentos/estornos.
+Regras de cálculo:
+- Base: valor efetivamente pago após descontos e cupons.
+- Excluir taxas de entrega, serviço e outros encargos.
+- Frações são calculadas e o total final é arredondado para baixo (ex.: 37,9 = 37 pontos).
+- Parâmetros e versões da regra devem ser preservados por crédito.
 
-### D-15.8 — Alteração das regras do programa
-**Status: Aprovada pelo responsável pelo produto em 13/11/2026.**
+## 3. Consumidor e adesão — D-13/D-17
 
-**Decisão:** o restaurante pode alterar as regras do programa, mas a nova regra só se aplica aos pontos acumulados a partir de sua data/hora de entrada em vigor.
-- Pontos já acumulados continuam vinculados à versão anterior da regra e às condições sob as quais foram creditados.
-- Novos pontos seguem a nova versão a partir de sua vigência.
-- Recompensas já conquistadas não podem ser retiradas por uma alteração posterior.
-- A alteração deve manter histórico auditável, sem reescrever lançamentos anteriores.
+- Uma conta global por consumidor, identificada por telefone verificado via SMS.
+- Cadastro exige nome, telefone verificado, e-mail e senha.
+- Login por telefone + senha; SMS não é exigido em todo login.
+- Consentimento explícito para participar da fidelidade.
+- Consentimento para ofertas e promoções é separado e opcional.
+- A mesma conta pode ter carteiras independentes em vários restaurantes.
+- Troca de telefone exige verificação por SMS do novo número e preserva conta, carteiras e histórico.
+- O consumidor não pode criar créditos para si próprio.
 
-**Impacto técnico:** versionar as regras e registrar em cada crédito a versão (e, quando necessário, um snapshot dos parâmetros) e a validade aplicáveis. A decisão não resolve a ordem de consumo de lotes com validades diferentes, que permanece pendente em D-15.
+## 4. Confirmação da compra e crédito — D-13
 
-### Decisões ainda pendentes
-- Parâmetros exatos de cada modelo de acúmulo (taxa por valor gasto ou quantidade fixa por compra).
-- Valor monetário equivalente dos pontos, se houver.
-- Momento exato de disponibilidade do crédito após a confirmação da compra.
-- Ordem de consumo dos pontos quando houver créditos com datas de expiração diferentes.
-- Verificação do telefone do consumidor, idempotência detalhada e limites de ajustes manuais.
-- Regras fiscais/contratuais aplicáveis.
+- Pontos só ficam disponíveis após confirmação efetiva do pagamento.
+- Quando houver integração confiável, a confirmação poderá ocorrer automaticamente; sem integração, funcionário autorizado confirma manualmente.
+- Garçons e gerentes autorizados podem confirmar a compra no fechamento e informar o valor efetivamente pago.
+- Cada confirmação registra restaurante, funcionário responsável e referência única da compra.
+- O identificador único da compra é a proteção principal contra duplicidade; dados como consumidor, valor, restaurante e horário podem apoiar a detecção complementar.
+- Não há integração com PDV/ERP no lançamento (D-20); a operação inicial usa confirmação manual.
 
-## 2. Boraê Club — evolução futura, fora do MVP
+## 5. Cancelamentos, estornos e compensação — D-12/D-15
 
-Conforme D-14, o Boraê Club compartilhado entre restaurantes parceiros não será implementado nesta primeira versão. O MVP terá somente programas individuais: cada restaurante define suas recompensas e assume o custo dos benefícios que oferece. Os pontos não circulam entre estabelecimentos.
+- Estorno/cancelamento remove pontos ainda disponíveis que tenham sido originados pela compra.
+- Se pontos já tiverem sido usados, registrar pendência de compensação, sem saldo negativo.
+- Próximos acúmulos compensam primeiro a pendência; o excedente passa a compor o saldo disponível.
+- Estorno pode ser automático quando recebido de integração confiável ou manual por funcionário autorizado.
+- Toda operação é idempotente, auditável e vinculada ao evento/crédito original.
+- Não apagar lançamentos; usar lançamentos compensatórios.
 
-O Club poderá ser reavaliado depois da validação do produto e da adesão dos restaurantes. Antes de qualquer implementação, será necessário definir um modelo sustentável de financiamento, valor dos pontos, compensação entre parceiros, liquidação, estornos, fraude, termos e responsabilidades legais/contábeis. Não criar carteira compartilhada, saldo Club, resgate cruzado ou obrigações financeiras entre parceiros no MVP.
+## 6. Validade, consumo e expiração — D-15
 
-As ideias anteriores de acúmulo uniforme e carteira compartilhada são apenas hipóteses históricas de produto, não requisitos aprovados para implementação.
+- Cada restaurante define o prazo de validade dos pontos.
+- Cada crédito/lote preserva sua data de expiração e a versão da regra aplicável.
+- Consumir pontos por FEFO (*first expired, first out*): vencimento mais próximo primeiro. Em empate, consumir o crédito mais antigo.
+- A expiração é automática, remove o saldo disponível e cria registro no histórico ligado ao crédito original, com quantidade e data.
 
-## 3. Modelo de transação recomendado
+## 7. Avisos de expiração — D-15
 
-Não usar apenas uma coluna `balance` editável como registro contábil. Usar ledger imutável com lançamentos de crédito, débito, reversão, expiração e ajuste. Uma projeção de saldo pode existir para leitura rápida, mas deve ser reconciliável com o ledger.
+- Enviar pelo menos uma notificação diária durante os 14 dias anteriores ao vencimento.
+- Canais: push e central interna do app.
+- Um aviso diário agrupa os lotes próximos do vencimento, mas preserva restaurante, quantidade e data de cada lote.
+- Horário inteligente conforme comportamento e fuso do consumidor; usar horário padrão seguro quando não houver dados suficientes e evitar períodos de descanso.
+- Avisos transacionais de expiração não podem ser desativados nas preferências de marketing.
+- Push desativado: manter o aviso na central interna; não usar SMS alternativo.
 
-## 4. Critérios de aceite antes do piloto
+## 8. Alterações de regra e encerramento
 
-- Simular acúmulo, resgate, estorno, expiração e concorrência.
-- Demonstrar que retries não duplicam lançamento.
+- Nova regra só afeta pontos acumulados após sua data/hora de vigência.
+- Pontos existentes permanecem vinculados à versão e aos parâmetros originais.
+- Recompensas já conquistadas não podem ser retiradas por alteração posterior.
+- Encerramento voluntário exige comunicação e prazo mínimo de 60 dias para resgate; o restaurante pode oferecer prazo maior.
+- Em fechamento repentino, comunicar consumidores assim que possível. O Boraê não assume automaticamente o custo das recompensas nem permite resgate em outro restaurante.
+
+## 9. Antifraude e auditoria
+
+- Não exigir confirmação adicional do consumidor a cada compra.
+- Manter trilha auditável das confirmações, créditos, débitos, estornos, expirações e ajustes.
+- Detectar padrões suspeitos e gerar alertas para análise do gerente; não haverá bloqueio automático no MVP.
+- Toda movimentação deve possuir referência e idempotência.
+- Saldo deve ser reconciliável com o ledger; não alterar saldo diretamente sem lançamento correspondente.
+
+## 10. Boraê Club — visão futura, fora do MVP
+
+O Boraê Club compartilhado entre restaurantes permanece como visão de longo prazo, mas não será implementado no MVP. Não criar carteira compartilhada, saldo Club, resgate cruzado, compensação ou liquidação entre restaurantes nesta etapa.
+
+Uma retomada futura exigirá nova decisão sobre financiamento, valor dos pontos, responsabilidades por recompensas, compensação, liquidação, estornos, fraude e obrigações legais/contábeis.
+
+## 11. Critérios de aceite antes do piloto
+
+- Simular acúmulo, resgate, estorno, compensação, expiração e concorrência.
+- Demonstrar que retries não duplicam lançamentos.
 - Demonstrar que dois resgates concorrentes não gastam o mesmo saldo.
+- Validar FEFO e desempate por crédito mais antigo.
 - Reconciliar saldo com soma do ledger.
-- Separar completamente fidelidade individual e Club.
-- Aprovar termos, contratos, responsabilidade financeira e suporte antes de transacionar valor real.
+- Garantir que alteração de regra não afete créditos anteriores.
+- Garantir que notificações diárias preservem os detalhes de cada lote.
+- Separar completamente fidelidade individual e Boraê Club.
+- Aprovar termos, contratos e responsabilidades antes de transacionar valor real.
