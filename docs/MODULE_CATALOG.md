@@ -44,13 +44,13 @@ Não misturar disponibilidade operacional com publicação: um produto pode esta
 
 **Decisão de produto D-04 aprovada em 13/11/2026:** ingredientes são cadastrados como uma lista livre de itens individuais associados ao produto. Não há catálogo padronizado de alergênicos nem declaração específica de contaminação cruzada neste escopo.
 
-### Adicionais e remoção de ingredientes
+### Adicionais e instruções no pedido
 - O restaurante pode cadastrar adicionais opcionais, como bacon, cheddar e ovo.
-- Cada adicional pode ter um acréscimo de preço definido pelo restaurante.
-- O restaurante pode disponibilizar ingredientes do produto para remoção, como cebola ou tomate.
-- Remover ingrediente não gera desconto nem acréscimo por padrão.
-- A personalização será selecionada pelo consumidor no momento do pedido, quando o fluxo de pedidos existir.
-- Não haverá cadastro de tamanhos, ponto da carne ou combos nesta etapa.
+- Cada adicional deve ter preço/acréscimo definido e visível ao consumidor no cardápio.
+- Remoção de ingredientes não é cadastrada como opção do produto.
+- No momento do pedido, o cliente pode informar instruções como “sem cebola” ou “sem tomate”; essas observações devem ser exibidas claramente ao garçom.
+- Ponto da carne, quando aplicável, também pode ser informado como instrução no pedido.
+- Não haverá tamanhos ou combos nesta etapa.
 
 **Decisão de produto D-05 aprovada em 13/11/2026.**
 
@@ -58,7 +58,8 @@ Não misturar disponibilidade operacional com publicação: um produto pode esta
 
 - Preço é mantido pelo restaurante e exibido como valor atual.
 - API não aceita preço calculado pelo frontend como autoridade.
-- Se adicionais alterarem o valor, backend calcula total a partir da configuração persistida. Remoções não alteram o preço por padrão.
+- O preço de cada adicional deve ser apresentado antes da seleção; backend calcula o valor considerando os adicionais escolhidos.
+- Observações de remoção de ingredientes não alteram o preço.
 - Histórico de preço não é obrigatório no primeiro MVP, mas alterações administrativas devem ser auditáveis.
 - Não usar float/double para cálculo monetário.
 
