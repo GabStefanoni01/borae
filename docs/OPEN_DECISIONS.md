@@ -100,18 +100,17 @@ Não haverá, neste escopo, catálogo padronizado de alergênicos, declaração 
 
 **Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
 
-**Decisão:** o cadastro de opções do produto terá somente dois tipos:
+**Decisão:** o cadastro do produto terá adicionais opcionais, como bacon, cheddar ou ovo. Cada adicional terá seu preço/acréscimo definido pelo restaurante e exibido claramente ao consumidor no cardápio, antes de fazer o pedido.
 
-- **Adicionais:** itens extras que o restaurante disponibiliza para o cliente incluir, como bacon, cheddar ou ovo. Cada adicional pode ter acréscimo de preço e o cliente poderá selecionar os adicionais desejados.
-- **Remoção de ingredientes:** permitir que o cliente peça para retirar ingredientes que já fazem parte do produto, como cebola ou tomate. A remoção não gera desconto nem acréscimo por padrão.
+A remoção de ingredientes não será cadastrada como opção comercial nem como configuração individual no produto. Quando fizer o pedido, o cliente poderá solicitar observações como “sem cebola” ou “sem tomate”; essa instrução deverá ser apresentada de forma clara para o garçom responsável pelo atendimento/preparo.
 
-Não haverá cadastro de ponto da carne nem de tamanhos/variações nesta etapa. O ponto da carne, quando aplicável, poderá ser informado pelo cliente no momento do pedido, quando o fluxo de pedidos existir. Combos e regras avançadas de seleção ficam fora desta decisão.
+Não haverá cadastro de ponto da carne nem de tamanhos/variações nesta etapa. O ponto da carne, quando aplicável, poderá ser informado como instrução no momento do pedido. Combos e regras avançadas de seleção ficam fora desta decisão.
 
 As escolhas são destinadas à futura personalização do pedido; a aprovação desta estrutura não significa que pedidos online façam parte do MVP atual.
 
 **Motivação:** oferecer personalização útil sem exigir que o restaurante configure combinações e variações desnecessárias.
 
-**Impactos:** modelar grupos simples de adicionais e de remoção, com preço aplicado somente aos adicionais; atualizar PRD, modelo de domínio, API, fluxo de telas e módulo de catálogo. Esta decisão não implica que a funcionalidade já esteja implementada.
+**Impactos:** modelar adicionais com seus preços e prever observações/instruções de pedido para comunicação ao garçom; atualizar PRD, modelo de domínio, API, fluxo de telas e módulo de catálogo. Esta decisão não implica que a funcionalidade já esteja implementada.
 
 ## Como resolver uma decisão
 
