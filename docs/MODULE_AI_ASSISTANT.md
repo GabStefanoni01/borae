@@ -4,7 +4,7 @@
 
 ## Provedor e arquitetura de integração — D-10
 
-- Google Gemini é o provedor inicial aprovado, utilizando a Gemini API no plano gratuito inicialmente; não habilitar faturamento para o projeto sem nova aprovação.
+- Google Gemini é o provedor aprovado. O único modelo escolhido nesta fase é Gemini Flash-Lite. A modalidade de faturamento e os limites efetivos devem ser validados antes de produção; esta decisão não aprova automaticamente plano gratuito ou pago.
 - Somente o backend Java/Spring Boot integra com a API do provedor; o frontend conversa exclusivamente com a API do Boraê.
 - Manter credenciais em segredos/variáveis de ambiente do servidor. Nunca incluir chaves no frontend, repositório, logs ou respostas.
 - Isolar a integração atrás de uma interface interna de provedor/serviço de IA, mantendo o domínio e os casos de uso independentes do SDK e dos tipos específicos do Gemini.
@@ -12,7 +12,7 @@
 - Aplicar rate limits por sessão/IP e controles de custo/consumo com visibilidade por restaurante.
 - Em falha, timeout ou saída inválida, manter a navegação disponível e recorrer à busca/filtros convencionais.
 
-Modelo/versão e cotas numéricas por modelo permanecem pendentes. O plano gratuito tem limites variáveis e está sujeito às políticas de uso de dados do Google; não enviar informações pessoais ou sensíveis. Evolução para plano pago exige nova aprovação. A decisão não implica integração implementada.
+Cotas aprovadas: até 20 interações por consumidor por dia e até 100 por restaurante por dia, aplicadas simultaneamente. Cada interação também terá limite de tokens, cujo valor será definido como parâmetro técnico antes de produção. Registrar tokens/consumo, latência, falhas e custo estimado por restaurante sem persistir conversas completas. Configurar a versão estável exata do Gemini Flash-Lite no momento da implementação. Revisar termos de uso de dados, faturamento e limites vigentes do Google antes de produção. A decisão não implica integração implementada.
 
 ## 1. Objetivo
 
@@ -101,3 +101,15 @@ Cliques indicam interesse, não comprovam compra ou conversão. Métricas de ped
 - Timeout/falha da IA não bloqueia cardápio.
 - Respostas sobre composição correspondem aos ingredientes cadastrados e não inventam componentes.
 - Testes incluem prompt injection, saída malformada e IDs inventados.
+
+
+## Parâmetros aprovados em 13/11/2026
+
+- Modelo único: Gemini Flash-Lite.
+- Cotas simultâneas: 20 interações por consumidor/dia e 100 por restaurante/dia.
+- Limite de tokens por interação: obrigatório, valor a parametrizar antes de produção.
+- Registrar consumo, tokens disponíveis, latência, erros e custo estimado por restaurante.
+- Não persistir conversas, prompts ou respostas completas; manter somente métricas/eventos agregados, conforme D-11.
+- O backend aplica as cotas e nunca expõe a chave do Gemini ao frontend.
+
+Consulte [Decisões comerciais e operacionais](DECISIONS_COMMERCIAL_AND_OPERATIONS.md) para as condições completas.
