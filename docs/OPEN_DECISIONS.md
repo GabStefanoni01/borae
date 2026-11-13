@@ -12,8 +12,8 @@ Este arquivo impede que decisões não tomadas sejam inventadas durante a implem
 | D-06 | Preço | **APROVADA** — BRL, valores inteiros em centavos e cálculos no backend | Concluído |
 | D-07 | Permissões | **APROVADA** — matriz de permissões para OWNER, MANAGER e STAFF | Concluído |
 | D-08 | Convites | **APROVADA** — convite por e-mail, expiração de 7 dias, revogação e reenvio | Concluído |
-| D-09 | Mídia | **APROVADA** — object storage, Cloudflare R2 como provedor definido, formatos e CDN | Concluído |
-| D-10 | IA | **APROVADA** — Gemini API no plano gratuito inicialmente; integração desacoplada e controles de consumo | Concluído |
+| D-09 | Mídia | **APROVADA** — Cloudflare R2, limites de mídia e otimização definidos; ver decisões comerciais e operacionais | Concluído |
+| D-10 | IA | **APROVADA** — Gemini Flash-Lite, cotas por consumidor/restaurante e controles de consumo; ver decisões comerciais e operacionais | Concluído |
 | D-11 | IA | **APROVADA** — não persistir conversas; armazenar somente métricas agregadas por restaurante | Concluído |
 | D-12 | Fidelidade | **APROVADA** — modelos, cálculo, base de pontuação e estornos definidos | Concluído |
 | D-13 | Consumidor/fidelidade | **APROVADA** — conta global, verificação, consentimento, confirmação e idempotência definidos | Concluído |
@@ -21,11 +21,11 @@ Este arquivo impede que decisões não tomadas sejam inventadas durante a implem
 | D-15 | Fidelidade | **APROVADA** — validade, FEFO, expiração, avisos e estornos definidos | Concluído |
 | D-16 | Descoberta | **APROVADA** — localização, busca, filtros, avaliações, favoritos e páginas de marca/unidade definidos | Concluído |
 | D-17 | Consumidor | **APROVADA** — cadastro, autenticação, segurança, perfil e notificações definidos | Concluído |
-| D-18 | Monetização | **APROVADA** — assinatura fixa, plano único, teste, cobrança, cancelamento e indicação definidos; preço e descontos aguardam definição comercial | Concluído |
+| D-18 | Monetização | **APROVADA** — assinatura fixa, preços, descontos, Asaas e emissão fiscal condicionada definidos; ver decisões comerciais e operacionais | Concluído |
 | D-19 | Administração | **APROVADA** — papéis globais, permissões, auditoria e manutenção definidos | Concluído |
 | D-20 | Pedidos/integrações | **APROVADA** — sem pedidos/POS no lançamento; API autenticada, webhooks e canais definidos | Concluído |
 
-## Decisões aprovadas
+## Decisões comerciais e operacionais complementares\n\nAs escolhas de preço, provedores, cotas, armazenamento, monitoramento e políticas operacionais aprovadas em 13/11/2026 estão detalhadas em [Decisões comerciais e operacionais](DECISIONS_COMMERCIAL_AND_OPERATIONS.md). Esses parâmetros complementam D-08, D-09, D-10, D-18 e D-20; não substituem as regras de domínio abaixo.\n\n## Decisões aprovadas
 
 ### D-01 — Perfil do restaurante
 
@@ -286,3 +286,4 @@ Para cada ID:
 - **Boraê Club:** visão futura preservada; fora do MVP.
 
 Uma decisão de produto aprovada define o comportamento esperado, mas não significa que a funcionalidade já esteja implementada. Itens técnicos e parâmetros comerciais explicitamente pendentes devem ser resolvidos antes da implementação correspondente.
+\n\n## Parâmetros aprovados e pendências restantes\n\nOs preços e descontos de D-18 foram definidos: R$ 49,90 mensal, 10% de desconto trimestral e 20% anual. Provedores e políticas operacionais aprovados estão em [DECISIONS_COMMERCIAL_AND_OPERATIONS.md](DECISIONS_COMMERCIAL_AND_OPERATIONS.md).\n\nPermanecem parametrizáveis antes da implementação/produção: limite de tokens por interação, limites numéricos de convites e API Keys, retenção operacional de logs/métricas, limiares de alertas, versão estável exata do Gemini Flash-Lite, parâmetros de otimização de mídia, configuração fiscal do Asaas e schema físico/migrações. Não tratar esses parâmetros como decisões de produto em aberto nem inventar valores.\n
