@@ -293,7 +293,7 @@ export class DashboardPage implements OnInit {
         this.acceptSuccess = 'Convite aceito! Você agora faz parte da equipe como ' + this.roleLabel(member.role) + '.';
         this.auth.getMyRestaurants().subscribe(restaurants => {
           this.restaurants = restaurants;
-          this.selectedRestaurantId = member.membershipId ? restaurants.find(item => item.membershipId === member.membershipId)?.restaurantId ?? this.selectedRestaurantId : this.selectedRestaurantId;
+          this.selectedRestaurantId = member.restaurantId;
           this.loadMembers();
         });
       },
