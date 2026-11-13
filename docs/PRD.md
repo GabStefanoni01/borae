@@ -195,7 +195,7 @@ Os papéis são atribuídos por vínculo com cada restaurante. O mesmo usuário 
 - Basear explicações sobre a composição somente nos ingredientes cadastrados; não inferir ingredientes que não foram informados.
 
 
-**Decisão D-10 aprovada (13/11/2026):** Google Gemini será o provedor inicial, integrado exclusivamente pelo backend e isolado por uma abstração interna para permitir substituição futura. Credenciais ficam no servidor; o modelo não acessa diretamente o banco. Haverá controles de consumo/custo, rate limits por sessão/IP e fallback para busca/filtros convencionais. Modelo/versão e cotas numéricas permanecem pendentes; a Gemini API será usada no plano gratuito inicialmente, sem habilitar faturamento sem nova aprovação. O plano gratuito tem limites variáveis e não deve receber informações pessoais ou sensíveis.
+**Decisão D-10 aprovada (13/11/2026):** Google Gemini será o provedor inicial, integrado exclusivamente pelo backend e isolado por uma abstração interna para permitir substituição futura. Credenciais ficam no servidor; o modelo não acessa diretamente o banco. Haverá cotas de 20 interações por consumidor/dia e 100 por restaurante/dia, aplicadas simultaneamente, limite de tokens por interação a parametrizar, monitoramento de consumo/custo e fallback para busca/filtros convencionais. O único modelo escolhido nesta fase é Gemini Flash-Lite; modalidade de faturamento, versão estável exata e termos de uso de dados devem ser validados antes de produção.
 
 **Decisão D-11 aprovada (13/11/2026):** não persistir histórico, prompts ou respostas completas do assistente. Armazenar somente métricas agregadas por restaurante: interações, produtos recomendados/frequência, cliques/taxa de clique, interações sem resultado, latência, erros/timeouts/respostas inválidas/fallback e chamadas/tokens quando disponíveis. Não registrar conteúdo textual nem identificadores pessoais nos eventos analíticos. Exibir métricas apenas a usuários autorizados do respectivo restaurante. Cliques não comprovam compras; métricas de vendas dependem de integração futura com pedidos.
 ### RF-09 — Fidelidade individual por restaurante
@@ -267,7 +267,7 @@ O Boraê Club compartilhado permanece como visão futura, fora do MVP. Não have
 - Mudança de periodicidade vale na próxima renovação.
 - Créditos de indicação podem abater mensalidades, não são sacáveis nem transferíveis, expiram em 12 meses e, após cancelamento, só voltam a ser utilizáveis se a assinatura for reativada.
 - Sem multa ou juros por atraso; pagamentos por cartão de crédito e Pix; nota fiscal automática por cobrança.
-- Preço nominal e percentuais de desconto ainda precisam de definição comercial.
+- Preços aprovados: R$ 49,90 mensal, R$ 134,73 trimestral (10% de desconto) e R$ 479,04 anual (20% de desconto). Pagamentos e assinaturas pelo Asaas; NFS-e pelo Asaas condicionada à validação fiscal da empresa.
 
 ### RF-15 — Integrações e API externa
 - API pública para integrações autorizadas, protegida por chaves e permissões.
