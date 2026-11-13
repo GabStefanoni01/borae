@@ -11,7 +11,7 @@ Este arquivo impede que decisões não tomadas sejam inventadas durante a implem
 | D-05 | Opções | **APROVADA** — adicionais pagos e remoção de ingredientes; sem tamanhos ou ponto da carne no cadastro | Concluído |
 | D-06 | Preço | **APROVADA** — BRL, valores inteiros em centavos e cálculos no backend | Concluído |
 | D-07 | Permissões | **APROVADA** — matriz de permissões para OWNER, MANAGER e STAFF | Concluído |
-| D-08 | Convites | Revogação, reenvio, envio por e-mail e limite de convites | Equipe |
+| D-08 | Convites | **APROVADA** — convite por e-mail, expiração de 7 dias, revogação e reenvio | Concluído |
 | D-09 | Mídia | Provedor de object storage, limites, formatos e CDN | Imagens/3D |
 | D-10 | IA | Provedor/modelo, orçamento, retenção, rate limits e fallback | Assistente |
 | D-11 | IA | Se e como persistir histórico e consentimento | Assistente |
@@ -158,6 +158,25 @@ As permissões são vinculadas ao membership de cada usuário em cada restaurant
 
 **Impactos:** atualizar modelo de domínio, PRD e contratos/regras de autorização da API. Esta decisão não implica que todas as funcionalidades estejam implementadas.
 
-- **D-08 a D-20:** permanecem pendentes; não presumir aprovação nem iniciar implementação de regras de negócio correspondentes sem alinhamento.
+### D-08 — Convites para equipe
+
+**Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
+
+**Decisão:**
+- OWNER pode convidar usuários como MANAGER ou STAFF.
+- MANAGER pode convidar usuários somente como STAFF.
+- Cada convite é vinculado a um endereço de e-mail específico.
+- O convidado precisa entrar ou criar uma conta usando o mesmo e-mail do convite.
+- O convite expira após 7 dias.
+- OWNER e MANAGER podem revogar convites pendentes.
+- Convites pendentes podem ser reenviados; o reenvio renova a validade por mais 7 dias.
+- Convites expirados podem ser reenviados, também com nova validade de 7 dias.
+- Convites aceitos são de uso único e não podem ser aceitos novamente.
+
+O limite numérico de convites simultâneos por restaurante não foi definido nesta decisão e permanece em aberto. A política de envio/entrega de e-mail e proteção contra abuso também deverá ser detalhada antes da implementação.
+
+**Impactos:** atualizar modelo de domínio, PRD e API para suportar status, expiração, revogação e reenvio. O token deve ser armazenado somente como hash, nunca registrado em logs. Esta decisão não implica que o fluxo esteja implementado.
+
+- **D-09 a D-20:** permanecem pendentes; não presumir aprovação nem iniciar implementação de regras de negócio correspondentes sem alinhamento.
 
 Ausência de decisão significa que o desenvolvimento do recurso correspondente deve aguardar alinhamento.
