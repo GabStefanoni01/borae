@@ -61,7 +61,7 @@ Não misturar disponibilidade operacional com publicação: um produto pode esta
 - O preço de cada adicional deve ser apresentado antes da seleção; backend calcula o valor considerando os adicionais escolhidos.
 - Observações de remoção de ingredientes não alteram o preço.
 - Histórico de preço não é obrigatório no primeiro MVP, mas alterações administrativas devem ser auditáveis.
-- Não usar float/double para cálculo monetário.
+- O MVP utiliza somente BRL.\n- Preços de produtos e adicionais são armazenados como inteiros em centavos.\n- A API utiliza campos como `priceInCents` e `priceDeltaInCents`; a interface formata os valores para exibição em reais.\n- O backend realiza os cálculos monetários, sem `float` ou `double`.\n- Preços não podem ser negativos.
 
 ## 4. Publicação
 
