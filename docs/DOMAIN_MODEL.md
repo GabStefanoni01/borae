@@ -6,7 +6,7 @@ Este documento descreve o modelo conceitual alvo. **Entidades marcadas como prop
 
 - Identificadores UUID.
 - Datas persistidas em UTC; API usa ISO-8601 com timezone.
-- Valores monetários: armazenar em decimal com precisão definida ou em unidades mínimas inteiras; escolher uma única estratégia e documentá-la antes do módulo de catálogo. Não usar ponto flutuante binário para dinheiro.
+- Valores monetários no MVP: armazenar em unidades mínimas inteiras (centavos de BRL). Não usar `float` ou `double` para dinheiro; cálculos monetários são feitos no backend.
 - Valores de enum persistidos com nomes estáveis.
 - Toda tabela pertencente a restaurante deve carregar referência explícita ao restaurante ou derivá-la por relação segura.
 - Constraints de banco devem reforçar invariantes críticas.
@@ -206,6 +206,7 @@ Pode ser a própria UserAccount com perfis/roles adicionais; evitar criar identi
 - earning_rule_version
 - terms_version
 - earning_rule_effective_at / version history
+- histórico imutável das versões, com parâmetros e período de vigência
 - points_validity_period (configuração definida pelo restaurante)
 - program_closure_redemption_deadline / minimum 60 days
 - starts_at / ends_at
@@ -228,6 +229,8 @@ Pode ser a própria UserAccount com perfis/roles adicionais; evitar criar identi
 - created_at
 - created_by/system_actor
 - expires_at (para créditos sujeitos à validade)
+- earning_rule_version (versão que originou o crédito)
+- earning_rule_snapshot (parâmetros aplicáveis ao crédito, se necessário para auditoria/reprodução)
 - reverses_entry_id / source_reference (quando aplicável)
 
 Saldo deve ser derivado do ledger ou mantido como projeção reconciliável. Não editar saldo diretamente sem lançamento correspondente. Estornos devem gerar lançamentos compensatórios e preservar a referência ao crédito original; nunca apagar o histórico. Se os pontos já tiverem sido utilizados, registrar uma pendência de análise sem criar saldo negativo.
@@ -293,9 +296,9 @@ A fidelidade individual de cada restaurante permanece isolada: contas, pontos, r
 7. Toda movimentação de pontos deve possuir referência, idempotência e trilha auditável.
 8. Resgate não pode gerar saldo negativo; validar atomicamente.
 9. Não excluir lançamentos de ledger; lançar reversão.
-10. Alterações de regra não podem alterar retroativamente os pontos já acumulados nem retirar recompensas já conquistadas.
+10. Alterações de regra não podem alterar retroativamente os pontos já acumulados nem retirar recompensas já conquistadas; cada crédito preserva a versão e os parâmetros aplicáveis.
 11. Estorno de compra com pontos já resgatados gera pendência para análise, sem saldo negativo.
-10. Dados pessoais e preferências precisam de política de acesso e retenção.
+12. Dados pessoais e preferências precisam de política de acesso e retenção.
 
 ## 10. Decisões que precisam preceder o schema físico
 
