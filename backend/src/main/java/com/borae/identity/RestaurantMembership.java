@@ -58,4 +58,9 @@ public class RestaurantMembership {
     public void deactivate() {
         this.active = false;
     }
+
+    public void reactivate(RestaurantRole role) {
+        this.active = true;
+        this.role = role;
+    }
 }
