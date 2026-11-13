@@ -342,3 +342,16 @@ As decisões de produto D-01 a D-20 estão aprovadas. Ainda precisam ser definid
 - Limites numéricos de upload e parâmetros técnicos de infraestrutura.
 - Procedimento operacional de moderação de denúncias, já que não haverá painel dedicado no escopo atual.
 - Regras financeiras/contratuais do Boraê Club, somente se a visão compartilhada for retomada.
+
+
+## 13. Conceitos adicionais para os módulos comerciais e administrativos
+
+As entidades abaixo representam conceitos a considerar quando os módulos correspondentes forem implementados; não afirmam que já existam no schema atual:
+
+- **RestaurantSubscription / BillingAccount:** vínculo de assinatura, periodicidade (mensal, trimestral, anual), preço contratado, desconto, status e referências externas do Asaas.
+- **PaymentEvent / WebhookEvent:** evento externo recebido, identificador do provedor, status de processamento, tentativas, timestamps, erro sanitizado e chave de idempotência.
+- **IntegrationCredential / ApiKey:** integração proprietária, hash/segredo protegido, escopos, status, limites, datas de rotação/revogação e trilha de auditoria.
+- **AdminIdentity / AdminSession:** identidade e sessão da aplicação administrativa global, separadas dos papéis de equipe do restaurante.
+- **AiUsageEvent:** métricas de uso/tokens/latência/custo estimado, sem persistir conversas completas, respeitando D-11 e as cotas aprovadas.
+
+Os valores comerciais, cotas, políticas de reprocessamento e provedores aprovados estão em [Decisões comerciais e operacionais](DECISIONS_COMMERCIAL_AND_OPERATIONS.md). O schema físico, índices, constraints e migrações serão definidos ao implementar cada módulo.
