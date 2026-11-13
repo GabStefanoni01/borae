@@ -1,6 +1,6 @@
 # Registro de decisões e pendências restantes
 
-Este arquivo impede que decisões não tomadas sejam inventadas durante a implementação. Cada item deve ser resolvido pelo responsável pelo produto antes do módulo correspondente começar.
+Este arquivo registra decisões aprovadas e impede que regras não decididas sejam inventadas durante a implementação. As decisões centrais de produto e negócio estão fechadas; parâmetros técnicos específicos podem ser detalhados durante o desenvolvimento, conforme a necessidade.
 
 | ID | Tema | Decisão necessária | Bloqueia |
 | --- | --- | --- | --- |
@@ -27,7 +27,7 @@ Este arquivo impede que decisões não tomadas sejam inventadas durante a implem
 
 ## Decisões comerciais e operacionais complementares
 
-As escolhas de preço, provedores, cotas, armazenamento, monitoramento e políticas operacionais aprovadas em 13/11/2026 estão detalhadas em [Decisões comerciais e operacionais](DECISIONS_COMMERCIAL_AND_OPERATIONS.md). Esses parâmetros complementam D-08, D-09, D-10, D-18 e D-20; não substituem as regras de domínio abaixo.
+As escolhas de preço, provedores, cotas, armazenamento, limites técnicos, retenção, backups, recuperação e políticas operacionais aprovadas em 13/11/2026 estão detalhadas em [Decisões comerciais e operacionais](DECISIONS_COMMERCIAL_AND_OPERATIONS.md). Esses parâmetros complementam D-08, D-09, D-10, D-18 e D-20; não substituem as regras de domínio abaixo.
 
 ## Decisões aprovadas
 
@@ -221,7 +221,7 @@ O MVP terá exclusivamente programas de fidelidade individuais, administrados e 
 
 ### D-18 — Monetização e cobrança dos restaurantes
 
-**Status:** Aprovada pelo responsável pelo produto em 13/11/2026. Valores numéricos de preço e percentuais de desconto ainda não foram definidos.
+**Status:** Aprovada pelo responsável pelo produto em 13/11/2026. Preços, percentuais de desconto e regras operacionais estão definidos em [DECISIONS_COMMERCIAL_AND_OPERATIONS.md](DECISIONS_COMMERCIAL_AND_OPERATIONS.md).
 
 - Modelo SaaS por assinatura fixa; não há comissão por compra/transação.
 - Haverá um único plano, com as mesmas funcionalidades e o mesmo preço-base para todos os restaurantes.
@@ -272,28 +272,23 @@ O MVP terá exclusivamente programas de fidelidade individuais, administrados e 
 - Notificações por e-mail serão suportadas.
 - Haverá chat de suporte dentro da plataforma, inicialmente com IA e possibilidade de encaminhamento para atendimento humano.
 
-## Como resolver uma decisão
-
-Para cada ID:
-1. Registrar a decisão escolhida e alternativas descartadas.
-2. Informar motivação e impacto no usuário/negócio.
-3. Atualizar PRD, modelo de dados, API e roadmap afetados.
-4. Definir data/responsável pela aprovação.
-5. Só então liberar implementação.
-
 ## Estado atual
 
-- **D-01 a D-11:** aprovadas e registradas nesta documentação.
-- **D-12 a D-17:** aprovadas e registradas nesta documentação.
-- **D-18:** modelo comercial, preços, descontos e regras operacionais aprovados; ver [decisões comerciais e operacionais](DECISIONS_COMMERCIAL_AND_OPERATIONS.md).
-- **D-19 e D-20:** aprovadas e registradas nesta documentação.
+- **D-01 a D-20:** decisões centrais de produto e negócio aprovadas e registradas.
+- **Decisões complementares de 13/11/2026:** limites de IA, convites e API Keys; retenção de logs; backups; RPO/RTO; validade e rotação de credenciais aprovados e registrados em [DECISIONS_COMMERCIAL_AND_OPERATIONS.md](DECISIONS_COMMERCIAL_AND_OPERATIONS.md).
 - **Boraê Club:** visão futura preservada; fora do MVP.
 
-Uma decisão de produto aprovada define o comportamento esperado, mas não significa que a funcionalidade já esteja implementada. Itens técnicos e parâmetros comerciais explicitamente pendentes devem ser resolvidos antes da implementação correspondente.
+Uma decisão aprovada define o comportamento esperado, mas não significa que a funcionalidade esteja implementada. A partir desta rodada, novas decisões específicas serão tomadas durante o desenvolvimento quando surgir uma necessidade concreta. Não reabrir decisões aprovadas sem justificativa e nova aprovação explícita.
 
+## Pendências que permanecem para validação durante o desenvolvimento/antes da produção
 
-## Parâmetros aprovados e pendências restantes
+- Validar a configuração fiscal do Asaas para emissão de NFS-e (empresa, município e enquadramento).
+- Confirmar a versão estável exata do Gemini Flash-Lite, os termos de uso de dados, limites e modalidade de faturamento antes da produção.
+- Definir limiares de alertas de latência, erros e disponibilidade quando houver métricas reais; a ferramenta externa de observabilidade não foi escolhida.
+- Calibrar dimensões, qualidade e parâmetros de otimização de imagens, respeitando os limites de arquivo já aprovados.
+- Detalhar os formatos e limites próprios de modelos 3D no módulo correspondente.
+- Definir schema físico, índices, constraints e migrações conforme os módulos forem implementados.
+- Homologar Sandbox, credenciais, conciliação e fluxos de cobrança do Asaas.
+- Validar a capacidade do provedor de banco/infraestrutura para atender RPO de 1 hora, RTO de 4 horas, PITR e retenção de backups; se não suportar, registrar a limitação e propor alternativa antes da produção.
 
-Os preços e descontos de D-18 foram definidos: R$ 49,90 mensal, 10% de desconto trimestral e 20% anual. Provedores e políticas operacionais aprovados estão em [DECISIONS_COMMERCIAL_AND_OPERATIONS.md](DECISIONS_COMMERCIAL_AND_OPERATIONS.md).
-
-Permanecem parametrizáveis antes da implementação/produção: limite de tokens por interação, limites numéricos de convites e API Keys, retenção operacional de logs/métricas, limiares de alertas, versão estável exata do Gemini Flash-Lite, parâmetros de otimização de mídia, configuração fiscal do Asaas e schema físico/migrações. Não tratar esses parâmetros como decisões de produto em aberto nem inventar valores.
+Esses itens não reabrem as decisões de produto aprovadas. São validações técnicas, operacionais ou legais a serem tratadas no momento adequado.
