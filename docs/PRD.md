@@ -118,12 +118,18 @@ Precisa moderar e dar suporte à plataforma, com acesso global estritamente audi
 **Decisão de produto aprovada (D-01, 13/11/2026).**
 
 ### RF-04 — Catálogo
-- Criar e ordenar categorias.
-- Criar, editar, arquivar e publicar produtos.
+- Criar e ordenar categorias dentro de um cardápio.
+- Criar, editar e arquivar produtos.
 - Informar nome, descrição, preço, ingredientes, imagem e disponibilidade.
 - Suportar variações e adicionais com regras de seleção.
-- Impedir que produto arquivado ou não publicado apareça no menu público.
+- Controlar publicação no nível do cardápio: novos cardápios começam como `DRAFT`; publicar torna públicos os produtos elegíveis e categorias ativas.
+- Não oferecer publicação individual por produto no MVP.
+- Em cardápios publicados, alterações salvas entram em vigor imediatamente.
+- Separar disponibilidade (`AVAILABLE` / `UNAVAILABLE`) do estado de publicação do cardápio.
+- Impedir que produtos arquivados apareçam no menu público.
 - Manter preço em unidade monetária definida pelo sistema (BRL no lançamento inicial, sujeito à confirmação comercial).
+
+**Decisão de produto aprovada (D-03, 13/11/2026).**
 
 ### RF-05 — Cardápio público
 - Carregar dados publicados do restaurante.
