@@ -2,6 +2,18 @@
 
 **Status:** planejado; depende do catálogo publicado e confiável.
 
+## Provedor e arquitetura de integração — D-10
+
+- Google Gemini é o provedor inicial aprovado.
+- Somente o backend Java/Spring Boot integra com a API do provedor; o frontend conversa exclusivamente com a API do Boraê.
+- Manter credenciais em segredos/variáveis de ambiente do servidor. Nunca incluir chaves no frontend, repositório, logs ou respostas.
+- Isolar a integração atrás de uma interface interna de provedor/serviço de IA, mantendo o domínio e os casos de uso independentes do SDK e dos tipos específicos do Gemini.
+- O backend seleciona o restaurante e monta o contexto mínimo a partir do catálogo publicado; o modelo não acessa banco, ferramentas administrativas nem dados de outros restaurantes.
+- Aplicar rate limits por sessão/IP e controles de custo/consumo com visibilidade por restaurante.
+- Em falha, timeout ou saída inválida, manter a navegação disponível e recorrer à busca/filtros convencionais.
+
+Modelo/versão, orçamento, cotas numéricas, limites de tokens/requisições e política detalhada de retry permanecem pendentes. Retenção do histórico é tratada em D-11. A decisão não implica integração implementada.
+
 ## 1. Objetivo
 
 Ajudar o consumidor a encontrar pratos adequados ao que deseja, usando somente os itens reais do cardápio do restaurante em contexto.
