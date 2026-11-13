@@ -32,8 +32,8 @@ Permitir que o restaurante associe representação tridimensional aos produtos, 
 - Guardar arquivo em serviço externo de object storage; PostgreSQL guarda somente metadados e referência.
 - Formatos aceitos: GLB e glTF; validar MIME real, integridade e dependências.
 - Usar CDN/URLs assinadas conforme política de acesso.
-- Cloudinary é candidato para avaliação de imagens, mas o provedor definitivo precisa comprovar suporte e adequação a arquivos 3D, além de custos e limites compatíveis.
-- Limites numéricos de tamanho, polígonos e texturas precisam ser definidos antes de habilitar upload em produção.
+- Cloudflare R2 é o provedor definido para armazenar imagens e modelos 3D no MVP, utilizando a modalidade gratuita dentro das cotas disponíveis. A entrega poderá usar domínio/CDN da Cloudflare conforme configuração.
+- Limites numéricos de tamanho, polígonos e texturas precisam ser definidos antes de habilitar upload em produção; monitorar consumo para evitar cobranças.
 - Não permitir que um restaurante associe mídia de outro.
 - Implementar carregamento sob demanda e poster/imagem fallback.
 - Medir tamanho e latência do asset.
