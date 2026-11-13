@@ -198,29 +198,25 @@ Os papéis são atribuídos por vínculo com cada restaurante. O mesmo usuário 
 **Decisão D-10 aprovada (13/11/2026):** Google Gemini será o provedor inicial, integrado exclusivamente pelo backend e isolado por uma abstração interna para permitir substituição futura. Credenciais ficam no servidor; o modelo não acessa diretamente o banco. Haverá controles de consumo/custo, rate limits por sessão/IP e fallback para busca/filtros convencionais. Modelo/versão e cotas numéricas permanecem pendentes; a Gemini API será usada no plano gratuito inicialmente, sem habilitar faturamento sem nova aprovação. O plano gratuito tem limites variáveis e não deve receber informações pessoais ou sensíveis.
 
 **Decisão D-11 aprovada (13/11/2026):** não persistir histórico, prompts ou respostas completas do assistente. Armazenar somente métricas agregadas por restaurante: interações, produtos recomendados/frequência, cliques/taxa de clique, interações sem resultado, latência, erros/timeouts/respostas inválidas/fallback e chamadas/tokens quando disponíveis. Não registrar conteúdo textual nem identificadores pessoais nos eventos analíticos. Exibir métricas apenas a usuários autorizados do respectivo restaurante. Cliques não comprovam compras; métricas de vendas dependem de integração futura com pedidos.
-### RF-09 — Fidelidade do restaurante
-- Cada restaurante poderá manter um programa de fidelidade próprio, com saldo e recompensas independentes.
-- O restaurante poderá escolher entre acúmulo proporcional ao valor gasto ou quantidade fixa de pontos por compra.
-- Registrar eventos de crédito, débito, expiração e estorno.
-- Consultar saldo e histórico.
-- Proteger contra eventos duplicados e concorrência.
+### RF-09 — Fidelidade individual por restaurante
+- Cada restaurante mantém programa, carteira, saldo, regras, recompensas e histórico independentes.
+- O restaurante escolhe acúmulo proporcional ao valor gasto ou pontos fixos por compra.
+- No modelo proporcional, pode configurar taxa ou faixas; o cálculo é proporcional ao valor pago e arredondado para baixo.
+- Base de cálculo: valor efetivamente pago após descontos/cupons; excluir entrega, serviço e outros encargos.
+- Pontos só ficam disponíveis após confirmação efetiva do pagamento. Confirmação automática quando houver integração confiável; caso contrário, manual por garçom/gerente autorizado.
+- Compra deve ter identificador único; confirmação registra restaurante e funcionário. Consumidor não pode gerar créditos para si mesmo.
+- Estornos removem pontos disponíveis; se já utilizados, geram pendência compensada nos próximos acúmulos, sem saldo negativo.
+- Validade é configurada por restaurante e controlada por lote. Consumo FEFO; empate por crédito mais antigo.
+- Expiração automática com histórico vinculado ao crédito original.
+- Avisar diariamente nos 14 dias anteriores ao vencimento por push e central interna; agrupar lotes sem perder restaurante, quantidade e data. Sem SMS alternativo.
+- Alterações de regra não são retroativas; recompensas conquistadas são preservadas.
+- Encerramento voluntário garante ao menos 60 dias para resgate; fechamento repentino exige comunicação assim que possível.
+- Auditoria e idempotência em todas as movimentações; padrões suspeitos geram alertas ao gerente, sem bloqueio automático no MVP.
 
-**D-12 parcialmente aprovada:** cada restaurante escolhe entre acúmulo proporcional ao valor gasto ou quantidade fixa de pontos por compra. Os parâmetros exatos de cada modelo e a ordem de consumo dos pontos ainda serão definidos.
+**D-12 a D-15 aprovadas:** consultar [MODULE_LOYALTY_CLUB.md](MODULE_LOYALTY_CLUB.md) e [OPEN_DECISIONS.md](OPEN_DECISIONS.md) para as regras completas.
 
-### RF-10 — Fidelidade individual por restaurante
-- Cada restaurante poderá operar seu próprio programa de fidelidade, com contas, saldos, regras, recompensas e histórico independentes.
-- O restaurante define as recompensas oferecidas e assume o custo dos benefícios do próprio programa.
-- Os pontos só podem ser acumulados e utilizados no programa do mesmo restaurante; não há transferência, conversão ou resgate em outro estabelecimento.
-- O restaurante poderá escolher entre acúmulo proporcional ao valor gasto ou quantidade fixa de pontos por compra, com parâmetros a definir.
-- Registrar créditos, débitos, expirações, estornos e ajustes auditáveis; proteger contra duplicidade e concorrência.
-
-**D-12 parcialmente aprovada:** estrutura e alternativas de acúmulo da fidelidade individual definidas; parâmetros exatos e ordem de consumo dos pontos continuam pendentes.
-
-**D-13 parcialmente aprovada:** no fluxo inicial, a compra concluída será confirmada manualmente no fechamento da conta por garçom ou gerente. O registro deverá identificar funcionário e restaurante e ser auditável. O consumidor será localizado pelo telefone cadastrado. Verificação do telefone, idempotência detalhada e momento de disponibilidade dos pontos ainda serão definidos.
-
-**D-14 aprovada:** o MVP contempla somente fidelidade individual por restaurante. O Boraê Club compartilhado fica para uma fase futura e não terá carteira, pontos ou resgates entre parceiros nesta etapa.
-
-**D-15 parcialmente aprovada:** cada restaurante define a validade dos pontos. Estornos são registrados automaticamente por funcionário autorizado; se os pontos já tiverem sido utilizados, registra-se uma pendência sem saldo negativo. A proteção antifraude usa auditoria e alertas ao gerente, sem confirmação extra do consumidor nem bloqueio automático no MVP. No encerramento do programa, clientes terão no mínimo 60 dias para resgate; o restaurante pode oferecer mais. Fechamento repentino exige comunicação assim que possível, sem transferência de custos ao Boraê ou resgate em outro restaurante. A alteração de regras (D-15.8) só se aplica a pontos acumulados após sua data/hora de vigência; pontos existentes continuam vinculados à versão e aos parâmetros anteriores, e recompensas já conquistadas não podem ser retiradas. A ordem de consumo dos pontos permanece pendente.
+### RF-10 — Boraê Club
+O Boraê Club compartilhado permanece como visão futura, fora do MVP. Não haverá carteira compartilhada, transferência de pontos, resgate cruzado, compensação ou liquidação entre restaurantes nesta etapa.
 
 ### RF-11 — Descoberta de restaurantes
 - Usar localização atual por padrão, com busca/seleção manual de outra região.
