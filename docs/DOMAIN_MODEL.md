@@ -87,7 +87,9 @@ Status de publicação do restaurante: `DRAFT | PUBLISHED | SUSPENDED`. Campos o
 - published_at
 - timestamps
 
-Permitir múltiplos menus apenas se houver caso de uso validado (ex.: almoço/jantar); não assumir isso no primeiro schema.
+**Decisão de produto D-02 aprovada:** cada restaurante pode ter múltiplos cardápios simultaneamente (ex.: Almoço, Jantar e Bebidas). Cada cardápio possui categorias e produtos próprios, e mais de um pode estar publicado ao mesmo tempo. A página pública do restaurante lista os cardápios para escolha do consumidor. No MVP, não haverá alternância automática por horário; o QR Code principal abre a página do restaurante.
+
+Relacionamento: `Restaurant 1:N Menu`. Esta decisão de produto está aprovada; detalhes de schema físico e contratos devem seguir as convenções técnicas do projeto.
 
 ### MenuCategory
 - id
