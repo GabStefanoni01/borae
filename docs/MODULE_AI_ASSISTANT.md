@@ -4,7 +4,7 @@
 
 ## Provedor e arquitetura de integração — D-10
 
-- Google Gemini é o provedor inicial aprovado.
+- Google Gemini é o provedor inicial aprovado, utilizando a Gemini API no plano gratuito inicialmente; não habilitar faturamento para o projeto sem nova aprovação.
 - Somente o backend Java/Spring Boot integra com a API do provedor; o frontend conversa exclusivamente com a API do Boraê.
 - Manter credenciais em segredos/variáveis de ambiente do servidor. Nunca incluir chaves no frontend, repositório, logs ou respostas.
 - Isolar a integração atrás de uma interface interna de provedor/serviço de IA, mantendo o domínio e os casos de uso independentes do SDK e dos tipos específicos do Gemini.
@@ -12,7 +12,7 @@
 - Aplicar rate limits por sessão/IP e controles de custo/consumo com visibilidade por restaurante.
 - Em falha, timeout ou saída inválida, manter a navegação disponível e recorrer à busca/filtros convencionais.
 
-Modelo/versão, orçamento, cotas numéricas, limites de tokens/requisições e política detalhada de retry permanecem pendentes. Retenção do histórico é tratada em D-11. A decisão não implica integração implementada.
+Modelo/versão e cotas numéricas por modelo permanecem pendentes. O plano gratuito tem limites variáveis e está sujeito às políticas de uso de dados do Google; não enviar informações pessoais ou sensíveis. Evolução para plano pago exige nova aprovação. A decisão não implica integração implementada.
 
 ## 1. Objetivo
 
@@ -77,12 +77,22 @@ O texto gerado pelo modelo não é fonte de verdade para preço, ingredientes ou
 - Se nenhum item atender, informar claramente; não preencher com itens inventados.
 - O consumidor deve poder continuar navegando sem usar IA.
 
-## 8. Métricas
-- Latência e custo por sessão.
-- Percentual de recomendações que correspondem a produtos válidos.
-- Taxa de clique nos produtos sugeridos.
-- Feedback útil/não útil.
-- Falhas de validação e fallback.
+## 8. Métricas e privacidade — D-11
+
+Não persistir conversas, prompts ou respostas completas. Armazenar somente eventos analíticos e métricas agregadas vinculados ao restaurante, sem conteúdo textual das mensagens ou identificadores pessoais.
+
+Métricas por restaurante:
+- Quantidade de interações com o assistente.
+- Produtos recomendados e frequência de recomendação por produto.
+- Cliques nas recomendações e taxa de clique.
+- Interações sem recomendação adequada/sem resultado.
+- Latência/tempo de resposta.
+- Erros, timeouts, respostas inválidas e acionamentos de fallback.
+- Quantidade de chamadas e consumo de tokens, quando disponibilizados pelo provedor.
+
+Exibir somente para usuários autorizados daquele restaurante, respeitando o isolamento multi-tenant. Definir retenção mínima necessária para os agregados na implementação. Logs técnicos não devem conter mensagens completas.
+
+Cliques indicam interesse, não comprovam compra ou conversão. Métricas de pedidos/vendas dependem de integração confiável com pedidos, fora deste recorte.
 
 ## 9. Critérios de aceite
 - Nenhum produto fora do restaurante pode ser retornado.
