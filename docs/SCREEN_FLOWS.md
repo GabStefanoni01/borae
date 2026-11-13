@@ -74,14 +74,16 @@ Futura e separada da área do restaurante, com autorização global própria.
 ## 5. Perfil do restaurante (futuro)
 
 Tela de edição com seções:
-- Informações básicas.
-- Endereço/localização.
-- Contato e links.
-- Logo e capa.
-- Identificador público.
-- Publicação/visibilidade.
+- Informações básicas: nome do restaurante, nome público/fantasia e descrição opcional.
+- Endereço/localização: endereço obrigatório para estabelecimentos físicos e localização no mapa.
+- Contato e links: telefone/WhatsApp, Instagram e site opcionais.
+- Identidade visual: logo e capa opcionais.
+- Categoria gastronômica: obrigatória.
+- Horário de funcionamento: configuração por dia da semana.
+- Identificador público: slug gerado automaticamente e editável se único e válido.
+- Publicação/visibilidade: `DRAFT`, `PUBLISHED` ou `SUSPENDED`.
 
-Mostrar prévia pública e avisar quais campos estão incompletos. Campos obrigatórios e publicação final ainda devem ser definidos.
+O proprietário pode começar a montar o cardápio sem preencher os campos opcionais. A tela deve mostrar prévia pública e indicar campos obrigatórios pendentes antes da publicação. D-01 aprovada em 13/11/2026.
 
 ## 6. Gestão de cardápio (futuro)
 
