@@ -26,6 +26,7 @@ export interface CreateRestaurantPayload {
 }
 export interface RestaurantMember {
   membershipId: string;
+  restaurantId: string;
   userId: string;
   fullName: string;
   email: string;
