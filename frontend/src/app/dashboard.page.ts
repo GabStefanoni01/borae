@@ -1,4 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService, AuthUser, RestaurantAccess } from './auth.service';
 import { forkJoin } from 'rxjs';
@@ -6,6 +7,7 @@ import { forkJoin } from 'rxjs';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
+  imports: [FormsModule],
   template: `
     <main class="dashboard">
       <header class="topbar">
@@ -20,15 +22,15 @@ import { forkJoin } from 'rxjs';
           <p class="description">Estamos confirmando sua sessão com segurança.</p>
         } @else if (user) {
           <h1>Olá, {{ user.fullName.split(' ')[0] }}.</h1>
-          <p class="description">Você está conectado ao Boraê. Em breve, este será o seu espaço para descobrir restaurantes, pratos e benefícios.</p>
+          <p class="description">Você está conectado ao Boraê. Este é o início do seu espaço para descobrir restaurantes, pratos e benefícios.</p>
           <div class="profile">
             <span class="avatar">{{ user.fullName.charAt(0).toUpperCase() }}</span>
             <span><strong>{{ user.fullName }}</strong><small>{{ user.email }}</small></span>
           </div>
           <section class="access">
-            <h2>Seus acessos</h2>
+            <h2>Seus restaurantes</h2>
             @if (restaurants.length === 0) {
-              <p class="empty">Você ainda não possui vínculo com nenhum restaurante. Quando receber um convite, ele aparecerá aqui.</p>
+              <p class="empty">Você ainda não possui vínculo com nenhum restaurante. Cadastre o primeiro estabelecimento para começar.</p>
             } @else {
               @for (access of restaurants; track access.membershipId) {
                 <article class="restaurant">
@@ -37,6 +39,17 @@ import { forkJoin } from 'rxjs';
                 </article>
               }
             }
+            <form class="create-form" (ngSubmit)="createRestaurant()">
+              <h3>Cadastrar restaurante</h3>
+              <label for="restaurant-name">Nome do estabelecimento</label>
+              <input id="restaurant-name" name="restaurantName" [(ngModel)]="restaurantName" required maxlength="180" placeholder="Ex.: Café da Praça">
+              <label for="restaurant-description">Descrição <span>(opcional)</span></label>
+              <textarea id="restaurant-description" name="restaurantDescription" [(ngModel)]="restaurantDescription" maxlength="1000" rows="3" placeholder="Conte um pouco sobre o estabelecimento"></textarea>
+              @if (creationError) { <p class="error" role="alert">{{ creationError }}</p> }
+              <button class="create-button" type="submit" [disabled]="creating || !restaurantName.trim()">
+                {{ creating ? 'Cadastrando...' : 'Cadastrar restaurante' }}
+              </button>
+            </form>
           </section>
           <p class="status">Sessão autenticada e perfil carregado pela API.</p>
         } @else {
@@ -67,6 +80,14 @@ import { forkJoin } from 'rxjs';
     .restaurant{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;margin-top:8px;background:#20221c;border:1px solid #35382e;border-radius:12px}
     .restaurant strong,.restaurant small{display:block}.restaurant small{color:#929588;margin-top:4px}
     .role{font-size:11px;font-weight:700;color:#d6f36a;background:#343a25;border-radius:20px;padding:6px 9px}
+    .create-form{display:grid;gap:9px;margin-top:20px;padding:20px;background:#20221c;border:1px solid #35382e;border-radius:14px}
+    .create-form h3{margin:0 0 6px;font-size:17px}.create-form label{font-size:12px;font-weight:700;color:#d8dccd}
+    .create-form label span{font-weight:400;color:#858a7b}
+    .create-form input,.create-form textarea{width:100%;box-sizing:border-box;border:1px solid #454a3c;border-radius:8px;background:#191b16;color:#f5f0e8;padding:12px;font:inherit;resize:vertical}
+    .create-form input:focus,.create-form textarea:focus{outline:1px solid #b6d75c;border-color:#b6d75c}
+    .create-button{margin-top:6px;border:0;border-radius:9px;background:#d6f36a;color:#1b1d16;padding:13px 16px;font-weight:800;cursor:pointer}
+    .create-button:disabled{opacity:.55;cursor:not-allowed}
+    .error{margin:0;color:#ff9b8f;font-size:13px}
     footer{padding:24px 0;border-top:1px solid #34362f;color:#777a70;font-size:12px}
     @media(max-width:600px){.dashboard{width:calc(100% - 32px)}h1{letter-spacing:-2px}}
   `]
@@ -78,6 +99,10 @@ export class DashboardPage implements OnInit {
   user: AuthUser | null = null;
   restaurants: RestaurantAccess[] = [];
   loading = true;
+  creating = false;
+  restaurantName = '';
+  restaurantDescription = '';
+  creationError = '';
 
   ngOnInit(): void {
     forkJoin({
@@ -91,6 +116,33 @@ export class DashboardPage implements OnInit {
       },
       error: () => {
         this.loading = false;
+      }
+    });
+  }
+
+  createRestaurant(): void {
+    const name = this.restaurantName.trim();
+    if (!name || this.creating) return;
+
+    this.creating = true;
+    this.creationError = '';
+    this.auth.createRestaurant({
+      name,
+      description: this.restaurantDescription.trim() || undefined
+    }).subscribe({
+      next: restaurant => {
+        this.restaurants = [...this.restaurants, restaurant];
+        this.restaurantName = '';
+        this.restaurantDescription = '';
+        this.creating = false;
+      },
+      error: error => {
+        this.creationError = error?.status === 400
+          ? 'Confira o nome e a descrição do restaurante.'
+          : error?.status === 401
+            ? 'Sua sessão expirou. Entre novamente.'
+            : 'Não foi possível cadastrar o restaurante. Tente novamente.';
+        this.creating = false;
       }
     });
   }
