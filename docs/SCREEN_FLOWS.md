@@ -87,6 +87,16 @@ O proprietário pode começar a montar o cardápio sem preencher os campos opcio
 
 ## 6. Gestão de cardápio (futuro)
 
+### Seleção e gestão de cardápios
+- Um restaurante pode criar múltiplos cardápios, como Almoço, Jantar e Bebidas.
+- Cada cardápio possui categorias e produtos próprios.
+- Mais de um cardápio pode ficar publicado simultaneamente.
+- A área autenticada permite listar, criar, editar, arquivar e abrir cada cardápio.
+- No MVP, não alternar automaticamente o cardápio conforme horário.
+- O QR Code principal abre a página pública do restaurante; nela, o consumidor escolhe qual cardápio consultar.
+
+D-02 aprovada em 13/11/2026.
+
 ### Categorias
 - Listar, criar, renomear, ordenar, ativar/desativar.
 - Não apagar categoria com produtos sem regra de realocação/arquivamento definida.
