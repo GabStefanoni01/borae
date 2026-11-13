@@ -201,9 +201,13 @@ Pode ser a própria UserAccount com perfis/roles adicionais; evitar criar identi
 - id
 - restaurant_id
 - status
+- earning_rule_type (PROPORTIONAL_TO_SPEND | FIXED_PER_PURCHASE)
+- earning_rule_parameters (parâmetros versionados da regra escolhida pelo restaurante)
 - earning_rule_version
 - terms_version
 - starts_at / ends_at
+
+**Decisão D-12 parcialmente aprovada:** cada restaurante poderá escolher entre acúmulo proporcional ao valor gasto ou quantidade fixa de pontos por compra. A fórmula exata e os parâmetros de cada modalidade serão configurados pelo restaurante; gatilho de crédito, expiração e estornos permanecem pendentes.
 
 ### LoyaltyAccount
 - id
@@ -244,6 +248,8 @@ Saldo deve ser derivado do ledger ou mantido como projeção reconciliável. Nã
 
 ## 6. Entidades propostas — Boraê Club
 
+O consumidor pode aderir voluntariamente ao Club e manter uma carteira compartilhada entre os parceiros. A carteira não substitui nem agrega as contas de fidelidade individuais dos restaurantes.
+
 ### ClubMembership
 - id
 - consumer_id
@@ -262,8 +268,10 @@ Saldo deve ser derivado do ledger ou mantido como projeção reconciliável. Nã
 ### ClubWallet
 - id
 - consumer_id
-- currency/points unit
+- points_unit (pontos inteiros)
 - status
+
+**Decisão D-12 parcialmente aprovada:** o Boraê Club mantém saldo independente da fidelidade local e usa regra uniforme de 1 ponto por R$ 1,00 gasto em compra elegível, em qualquer restaurante parceiro. A compra elegível e o momento de crédito ainda dependem de confirmação confiável e de decisões pendentes.
 
 ### ClubLedgerEntry
 - id
@@ -327,6 +335,6 @@ Registrar resgate e obrigação do parceiro, custo, status, estorno e liquidaç�
 - Demais decisões de modelagem ainda pendentes.
 - Identidade de consumidor e login social, se houver.
 - Política de retenção de sessões de IA.
-- Fórmulas de pontos e expiração.
+- Gatilho de crédito, expiração e estorno dos programas de fidelidade; a estrutura e as fórmulas-base de acúmulo foram parcialmente aprovadas em D-12.
 - Regras contábeis, contratos e liquidação do Club.
 - Política de reviews e moderação.
