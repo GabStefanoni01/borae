@@ -23,4 +23,4 @@ Se o código e a documentação divergirem, não presuma. Confira a implementaç
 
 ## Estado de referência
 
-Esta documentação foi alinhada à estrutura do repositório e aos recursos presentes na branch `main) na revisão de 13/11/2026. O roadmap deve ser atualizado a cada PR relevante.
+Esta documentação foi alinhada à estrutura do repositório e aos recursos presentes na branch `main` na revisão de 13/11/2026. O roadmap deve ser atualizado a cada PR relevante.
