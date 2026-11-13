@@ -7,7 +7,7 @@ Este arquivo impede que decisões não tomadas sejam inventadas durante a implem
 | D-01 | Perfil restaurante | **APROVADA** — estrutura de perfil definida; ver decisão registrada abaixo | Concluído |
 | D-02 | Menus | **APROVADA** — múltiplos cardápios simultâneos por restaurante; ver decisão registrada abaixo | Concluído |
 | D-03 | Publicação | **APROVADA** — publicação por cardápio, alterações publicadas entram no ar ao salvar; ver decisão registrada abaixo | Concluído |
-| D-04 | Ingredientes | Estrutura de ingredientes, observações e alergênicos | Catálogo/IA |
+| D-04 | Ingredientes | **APROVADA** — lista livre de ingredientes associados ao produto; ver decisão registrada abaixo | Concluído |
 | D-05 | Opções | Variações, adicionais, combos, limites e acréscimos | Catálogo |
 | D-06 | Preço | Estratégia de armazenamento monetário, moeda e arredondamento | Catálogo |
 | D-07 | Permissões | Matriz completa de ações para OWNER, MANAGER e STAFF | Painel |
@@ -82,6 +82,20 @@ A página pública do restaurante apresentará os cardápios disponíveis para e
 
 **Impactos:** estado de publicação pertence a `Menu`; produtos não precisam de estado próprio de publicação no MVP. Atualizar PRD, modelo de domínio, API, fluxo de telas e módulo de catálogo. Esta decisão não implica que a funcionalidade já esteja implementada.
 
+### D-04 — Ingredientes dos produtos
+
+**Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
+
+**Decisão:** cada produto poderá ter uma lista de ingredientes cadastrados livremente pelo restaurante. Cada ingrediente será um item individual associado ao produto e poderá ser incluído, editado, removido e ordenado para exibição.
+
+Exemplo para um hambúrguer: pão, carne, queijo, cebola, bacon, alface e tomate.
+
+Não haverá, neste escopo, catálogo padronizado de alergênicos, declaração específica de contaminação cruzada ou campos técnicos de segurança alimentar. O objetivo é apresentar de forma simples a composição informada pelo estabelecimento.
+
+**Motivação:** facilitar o cadastro e ajudar o consumidor a entender o que compõe cada prato, sem impor ao restaurante um formulário técnico ou complexo.
+
+**Impactos:** representar ingredientes como itens associados ao produto; atualizar modelo de domínio, PRD, módulo de catálogo, fluxo de telas e contexto do assistente gastronômico. Esta decisão não implica que a funcionalidade já esteja implementada.
+
 ## Como resolver uma decisão
 
 Para cada ID:
@@ -96,6 +110,6 @@ Para cada ID:
 - **D-01 — Perfil do restaurante:** aprovada e registrada nesta documentação.
 - **D-02 — Múltiplos cardápios:** aprovada e registrada nesta documentação.
 - **D-03 — Publicação por cardápio:** aprovada e registrada nesta documentação.
-- **D-04 a D-20:** permanecem pendentes; não presumir aprovação nem iniciar implementação de regras de negócio correspondentes sem alinhamento.
+- **D-05 a D-20:** permanecem pendentes; não presumir aprovação nem iniciar implementação de regras de negócio correspondentes sem alinhamento.
 
 Ausência de decisão significa que o desenvolvimento do recurso correspondente deve aguardar alinhamento.
