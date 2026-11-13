@@ -127,22 +127,15 @@ Produto deve pertencer a uma categoria do mesmo restaurante. Validar essa consis
 
 Cada ingrediente é cadastrado livremente pelo restaurante e pertence a um único produto. Exemplo: pão, carne, queijo, cebola e bacon em um hambúrguer. O restaurante pode adicionar, editar, remover e ordenar os ingredientes. Não há catálogo padronizado de alergênicos nem declaração específica de contaminação cruzada neste escopo.
 
-### ProductOptionGroup
+### ProductAddon
 - id
 - product_id
-- type: ADD_ON | REMOVAL
 - name
-- display_order
-
-### ProductOption
-- id
-- option_group_id
-- name
-- price_delta (aplicável somente a ADD_ON; REMOVAL usa zero)
+- price_delta
 - active
 - display_order
 
-**Decisão de produto D-05 aprovada:** grupos `ADD_ON` representam itens extras escolhidos pelo cliente e podem acrescentar valor ao produto. Grupos `REMOVAL` representam ingredientes existentes que o cliente pode pedir para retirar, sem desconto ou acréscimo por padrão. As seleções são opcionais; não há tamanhos, ponto da carne ou combos nesta etapa. A personalização será utilizada quando houver fluxo de pedidos.
+**Decisão de produto D-05 aprovada:** adicionais são cadastrados pelo restaurante com preço/acréscimo explícito e exibidos ao consumidor no cardápio. Remoção de ingredientes não é uma opção cadastrada no produto: é uma instrução/observação informada pelo cliente no momento do pedido e apresentada ao garçom. Ponto da carne também poderá ser informado como instrução no pedido, quando aplicável. Não há tamanhos ou combos nesta etapa.
 
 ### MediaAsset
 - id
@@ -289,7 +282,7 @@ Registrar resgate e obrigação do parceiro, custo, status, estorno e liquidaç�
 - Restaurant 1:N Menu.
 - Menu 1:N MenuCategory.
 - MenuCategory 1:N Product.
-- Product 1:N ProductIngredient e Product 1:N ProductOptionGroup 1:N ProductOption.
+- Product 1:N ProductIngredient e Product 1:N ProductAddon.
 - Restaurant 1:N MediaAsset.
 - Product 0..1:N ProductModel3D conforme histórico/versionamento decidido.
 - Restaurant 1:N RestaurantLoyaltyProgram.
@@ -302,7 +295,7 @@ Registrar resgate e obrigação do parceiro, custo, status, estorno e liquidaç�
 
 1. Não aceitar referência a categoria/produto/mídia de outro restaurante.
 2. Slugs públicos devem ser únicos.
-3. Preços e deltas não podem ser negativos, salvo regra explícita aprovada.
+3. Preços de produtos e adicionais não podem ser negativos, salvo regra explícita aprovada.
 4. Produto indisponível ou não publicado não pode ser recomendado como opção disponível.
 5. Convites expiram e são de uso único.
 6. Vínculos inativos não concedem acesso.
