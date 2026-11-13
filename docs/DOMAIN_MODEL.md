@@ -163,7 +163,7 @@ Cada ingrediente é cadastrado livremente pelo restaurante e pertence a um únic
 - created_by
 - timestamps
 
-**Decisão de produto D-09 aprovada:** arquivos ficam em serviço externo de object storage; PostgreSQL guarda metadados e referências, nunca conteúdo binário. Cloudinary é o primeiro candidato para avaliação de armazenamento/transformação/entrega de imagens, mas a escolha final depende de custos, limites e suporte a GLB/glTF. Formatos de imagem: JPG/JPEG, PNG e WebP. Formatos 3D: GLB e glTF. A arquitetura deve suportar CDN, variantes otimizadas e carregamento sob demanda. Backend valida autorização, MIME real, tamanho, checksum e vínculo com o restaurante. Limites numéricos e provedor definitivo permanecem pendentes.
+**Decisão de produto D-09 aprovada:** arquivos ficam em serviço externo de object storage; PostgreSQL guarda metadados e referências, nunca conteúdo binário. Cloudflare R2 é o provedor definido para armazenar imagens e modelos 3D no MVP, utilizando a modalidade gratuita dentro das cotas disponíveis. A entrega poderá usar domínio/CDN da Cloudflare conforme configuração. Formatos de imagem: JPG/JPEG, PNG e WebP. Formatos 3D: GLB e glTF. A arquitetura deve suportar CDN, variantes otimizadas e carregamento sob demanda. Backend valida autorização, MIME real, tamanho, checksum e vínculo com o restaurante. Limites numéricos de upload permanecem pendentes e o consumo deve ser monitorado para evitar cobranças.
 
 ## 4. Entidades propostas — IA e experiência
 
