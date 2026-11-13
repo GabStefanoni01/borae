@@ -112,3 +112,20 @@ Uma etapa só é considerada concluída quando:
 
 ## Ordem de prioridade atual
 Após a fase de equipe, priorizar perfil/configurações do restaurante e, em seguida, catálogo/cardápio. Não começar IA, fidelidade, Club ou 3D/AR antes de existir catálogo confiável e fluxo básico de gestão.
+
+
+## Preparação transversal aprovada em 13/11/2026
+
+Antes de liberar os módulos comerciais/operacionais em produção, planejar e validar:
+- Integração Asaas para assinaturas/cobranças e validação fiscal da emissão de NFS-e.
+- Resend com domínio autenticado e tratamento de falhas de entrega.
+- Cloudflare R2 com limites, validação de MIME/tamanho e otimização de imagens.
+- Cotas e monitoramento do Gemini Flash-Lite.
+- Fila durável de eventos, idempotência e reprocessamento interno de webhooks.
+- Triagem assistida por IA com moderação humana.
+- Política LGPD por categoria e fluxo de direitos dos titulares.
+- Aplicação administrativa global separada e endpoints privilegiados.
+- Gestão segura de API Keys, escopos, rate limits e revogação.
+- Instrumentação de erros via Sentry e métricas do painel operacional próprio.
+
+A lista de parâmetros ainda a calibrar está em [Decisões comerciais e operacionais](DECISIONS_COMMERCIAL_AND_OPERATIONS.md). Não marcar esses itens como implementados até haver código, testes e validação operacional.
