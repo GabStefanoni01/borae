@@ -35,13 +35,14 @@ Campos mínimos propostos:
 - Moeda.
 - Categoria.
 - Imagem opcional.
-- Ingredientes declarados.
-- Declaração de alergênicos, se fornecida pelo restaurante.
+- Lista de ingredientes: itens individuais cadastrados livremente pelo restaurante, cada um associado ao produto e com ordem de exibição.
+- O restaurante pode adicionar, editar e remover ingredientes. Exemplo: pão, carne, queijo, cebola e bacon.
 - Disponibilidade: AVAILABLE / UNAVAILABLE.
-- Publicação: DRAFT / PUBLISHED / ARCHIVED.
 - Ordem de exibição.
 
 Não misturar disponibilidade operacional com publicação: um produto pode estar publicado e temporariamente indisponível.
+
+**Decisão de produto D-04 aprovada em 13/11/2026:** ingredientes são cadastrados como uma lista livre de itens individuais associados ao produto. Não há catálogo padronizado de alergênicos nem declaração específica de contaminação cruzada neste escopo.
 
 ### Variações e adicionais
 Um produto pode ter grupos de opções. Cada grupo define mínimo e máximo de seleções; cada opção pode ter acréscimo de preço. Backend valida seleção, limites e preço final. A interface deve mostrar claramente o preço base e acréscimos.
