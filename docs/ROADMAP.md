@@ -126,6 +126,17 @@ Antes de liberar os módulos comerciais/operacionais em produção, planejar e v
 - Política LGPD por categoria e fluxo de direitos dos titulares.
 - Aplicação administrativa global separada e endpoints privilegiados.
 - Gestão segura de API Keys, escopos, rate limits e revogação.
-- Instrumentação de erros via Sentry e métricas do painel operacional próprio.
+- Instrumentação de erros, logs, métricas e alertas; a ferramenta externa de observabilidade permanece pendente de escolha. O painel administrativo global será uma aplicação separada.
 
 A lista de parâmetros ainda a calibrar está em [Decisões comerciais e operacionais](DECISIONS_COMMERCIAL_AND_OPERATIONS.md). Não marcar esses itens como implementados até haver código, testes e validação operacional.
+
+
+## Parâmetros operacionais aprovados — 13/11/2026
+
+- [x] Limites de IA: 2.000 tokens de entrada/500 de saída, cotas diárias, bloqueio ao esgotar e renovação à meia-noite em America/Sao_Paulo.
+- [x] Convites: 10 por hora por administrador, 30 por dia por restaurante e validade de 7 dias.
+- [x] API Keys: 60/minuto, 10.000/dia, burst 10/segundo; rotação com transição máxima de 24 horas e revogação imediata.
+- [x] Retenção de logs: 30 dias (aplicação), 180 dias (segurança/autenticação) e 365 dias (auditoria administrativa/API Keys).
+- [x] Backups diários, retenção de 30 dias, teste trimestral de restauração, RPO de 1 hora e RTO de 4 horas.
+
+Os itens acima estão decididos, mas só poderão ser marcados como implementados após código, testes e validação operacional.
