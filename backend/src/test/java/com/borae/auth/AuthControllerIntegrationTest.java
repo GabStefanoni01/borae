@@ -1,5 +1,6 @@
 package com.borae.auth;
 
+import com.borae.identity.RestaurantInvitationRepository;
 import com.borae.identity.RestaurantMembershipRepository;
 import com.borae.identity.RestaurantRepository;
 import com.borae.identity.UserAccountRepository;
@@ -16,7 +17,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -41,8 +44,12 @@ class AuthControllerIntegrationTest {
     @Autowired
     private RestaurantMembershipRepository membershipRepository;
 
+    @Autowired
+    private RestaurantInvitationRepository invitationRepository;
+
     @BeforeEach
     void cleanDatabase() {
+        invitationRepository.deleteAll();
         membershipRepository.deleteAll();
         restaurantRepository.deleteAll();
         userRepository.deleteAll();
@@ -201,4 +208,99 @@ class AuthControllerIntegrationTest {
         mockMvc.perform(get("/api/v1/users/me/restaurants"))
                 .andExpect(status().isUnauthorized());
     }
+
+    @Test
+    void shouldInviteAcceptManageAndRemoveRestaurantMember() throws Exception {
+        String ownerEmail = "owner-" + UUID.randomUUID() + "@example.com";
+        String ownerToken = registerAndGetToken("Pessoa Proprietária", ownerEmail);
+
+        String restaurantResponse = mockMvc.perform(post("/api/v1/restaurants")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("name", "Restaurante da Equipe"))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.role").value("OWNER"))
+                .andReturn().getResponse().getContentAsString();
+        String restaurantId = objectMapper.readTree(restaurantResponse).get("restaurantId").asText();
+
+        String memberEmail = "staff-" + UUID.randomUUID() + "@example.com";
+        String invitationResponse = mockMvc.perform(post("/api/v1/restaurants/" + restaurantId + "/invitations")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("email", memberEmail, "role", "STAFF"))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.email").value(memberEmail))
+                .andExpect(jsonPath("$.role").value("STAFF"))
+                .andExpect(jsonPath("$.token").isNotEmpty())
+                .andReturn().getResponse().getContentAsString();
+        String invitationToken = objectMapper.readTree(invitationResponse).get("token").asText();
+
+        String memberToken = registerAndGetToken("Pessoa da Equipe", memberEmail);
+        String acceptedResponse = mockMvc.perform(post("/api/v1/restaurant-invitations/accept")
+                        .header("Authorization", "Bearer " + memberToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("token", invitationToken))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.role").value("STAFF"))
+                .andReturn().getResponse().getContentAsString();
+        String membershipId = objectMapper.readTree(acceptedResponse).get("membershipId").asText();
+
+        mockMvc.perform(get("/api/v1/restaurants/" + restaurantId + "/members")
+                        .header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2));
+
+        mockMvc.perform(patch("/api/v1/restaurants/" + restaurantId + "/members/" + membershipId)
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("role", "MANAGER"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.role").value("MANAGER"));
+
+        mockMvc.perform(delete("/api/v1/restaurants/" + restaurantId + "/members/" + membershipId)
+                        .header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/v1/restaurants/" + restaurantId + "/members")
+                        .header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    void shouldNotAllowInvitingOwnerRole() throws Exception {
+        String ownerEmail = "owner-role-" + UUID.randomUUID() + "@example.com";
+        String ownerToken = registerAndGetToken("Pessoa Proprietária", ownerEmail);
+        String restaurantResponse = mockMvc.perform(post("/api/v1/restaurants")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("name", "Restaurante Seguro"))))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String restaurantId = objectMapper.readTree(restaurantResponse).get("restaurantId").asText();
+
+        mockMvc.perform(post("/api/v1/restaurants/" + restaurantId + "/invitations")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "email", "another-" + UUID.randomUUID() + "@example.com",
+                                "role", "OWNER"
+                        ))))
+                .andExpect(status().isBadRequest());
+    }
+
+    private String registerAndGetToken(String fullName, String email) throws Exception {
+        String body = objectMapper.writeValueAsString(Map.of(
+                "fullName", fullName,
+                "email", email,
+                "password", "senha-segura-123"
+        ));
+        String response = mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return objectMapper.readTree(response).get("accessToken").asText();
+    }
+
 }

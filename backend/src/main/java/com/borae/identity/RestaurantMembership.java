@@ -50,4 +50,17 @@ public class RestaurantMembership {
     public Restaurant getRestaurant() { return restaurant; }
     public RestaurantRole getRole() { return role; }
     public boolean isActive() { return active; }
+
+    public void changeRole(RestaurantRole role) {
+        this.role = role;
+    }
+
+    public void deactivate() {
+        this.active = false;
+    }
+
+    public void reactivate(RestaurantRole role) {
+        this.active = true;
+        this.role = role;
+    }
 }

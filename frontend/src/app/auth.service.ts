@@ -24,6 +24,21 @@ export interface CreateRestaurantPayload {
   name: string;
   description?: string;
 }
+export interface RestaurantMember {
+  membershipId: string;
+  restaurantId: string;
+  userId: string;
+  fullName: string;
+  email: string;
+  role: 'OWNER' | 'MANAGER' | 'STAFF';
+}
+export interface RestaurantInvitation {
+  invitationId: string;
+  email: string;
+  role: 'MANAGER' | 'STAFF';
+  expiresAt: string;
+  token: string;
+}
 export interface LoginPayload { email: string; password: string; }
 export interface RegisterPayload extends LoginPayload { fullName: string; }
 
@@ -71,6 +86,32 @@ export class AuthService {
 
   createRestaurant(payload: CreateRestaurantPayload): Observable<RestaurantAccess> {
     return this.http.post<RestaurantAccess>(`${API_URL}/api/v1/restaurants`, payload);
+  }
+
+  getRestaurantMembers(restaurantId: string): Observable<RestaurantMember[]> {
+    return this.http.get<RestaurantMember[]>(`${API_URL}/api/v1/restaurants/${restaurantId}/members`);
+  }
+
+  inviteRestaurantMember(restaurantId: string, email: string, role: 'MANAGER' | 'STAFF'): Observable<RestaurantInvitation> {
+    return this.http.post<RestaurantInvitation>(
+      `${API_URL}/api/v1/restaurants/${restaurantId}/invitations`, { email, role }
+    );
+  }
+
+  acceptRestaurantInvitation(token: string): Observable<RestaurantMember> {
+    return this.http.post<RestaurantMember>(`${API_URL}/api/v1/restaurant-invitations/accept`, { token });
+  }
+
+  updateRestaurantMemberRole(restaurantId: string, membershipId: string, role: 'MANAGER' | 'STAFF'): Observable<RestaurantMember> {
+    return this.http.patch<RestaurantMember>(
+      `${API_URL}/api/v1/restaurants/${restaurantId}/members/${membershipId}`, { role }
+    );
+  }
+
+  removeRestaurantMember(restaurantId: string, membershipId: string): Observable<void> {
+    return this.http.delete<void>(
+      `${API_URL}/api/v1/restaurants/${restaurantId}/members/${membershipId}`
+    );
   }
 
   logout(): void {
