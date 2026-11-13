@@ -8,7 +8,7 @@ Este arquivo impede que decisões não tomadas sejam inventadas durante a implem
 | D-02 | Menus | **APROVADA** — múltiplos cardápios simultâneos por restaurante; ver decisão registrada abaixo | Concluído |
 | D-03 | Publicação | **APROVADA** — publicação por cardápio, alterações publicadas entram no ar ao salvar; ver decisão registrada abaixo | Concluído |
 | D-04 | Ingredientes | **APROVADA** — lista livre de ingredientes associados ao produto; ver decisão registrada abaixo | Concluído |
-| D-05 | Opções | Variações, adicionais, combos, limites e acréscimos | Catálogo |
+| D-05 | Opções | **APROVADA** — adicionais pagos e remoção de ingredientes; sem tamanhos ou ponto da carne no cadastro | Concluído |
 | D-06 | Preço | Estratégia de armazenamento monetário, moeda e arredondamento | Catálogo |
 | D-07 | Permissões | Matriz completa de ações para OWNER, MANAGER e STAFF | Painel |
 | D-08 | Convites | Revogação, reenvio, envio por e-mail e limite de convites | Equipe |
@@ -96,6 +96,23 @@ Não haverá, neste escopo, catálogo padronizado de alergênicos, declaração 
 
 **Impactos:** representar ingredientes como itens associados ao produto; atualizar modelo de domínio, PRD, módulo de catálogo, fluxo de telas e contexto do assistente gastronômico. Esta decisão não implica que a funcionalidade já esteja implementada.
 
+### D-05 — Adicionais e remoção de ingredientes
+
+**Status:** Aprovada pelo responsável pelo produto em 13/11/2026.
+
+**Decisão:** o cadastro de opções do produto terá somente dois tipos:
+
+- **Adicionais:** itens extras que o restaurante disponibiliza para o cliente incluir, como bacon, cheddar ou ovo. Cada adicional pode ter acréscimo de preço e o cliente poderá selecionar os adicionais desejados.
+- **Remoção de ingredientes:** permitir que o cliente peça para retirar ingredientes que já fazem parte do produto, como cebola ou tomate. A remoção não gera desconto nem acréscimo por padrão.
+
+Não haverá cadastro de ponto da carne nem de tamanhos/variações nesta etapa. O ponto da carne, quando aplicável, poderá ser informado pelo cliente no momento do pedido, quando o fluxo de pedidos existir. Combos e regras avançadas de seleção ficam fora desta decisão.
+
+As escolhas são destinadas à futura personalização do pedido; a aprovação desta estrutura não significa que pedidos online façam parte do MVP atual.
+
+**Motivação:** oferecer personalização útil sem exigir que o restaurante configure combinações e variações desnecessárias.
+
+**Impactos:** modelar grupos simples de adicionais e de remoção, com preço aplicado somente aos adicionais; atualizar PRD, modelo de domínio, API, fluxo de telas e módulo de catálogo. Esta decisão não implica que a funcionalidade já esteja implementada.
+
 ## Como resolver uma decisão
 
 Para cada ID:
@@ -110,6 +127,6 @@ Para cada ID:
 - **D-01 — Perfil do restaurante:** aprovada e registrada nesta documentação.
 - **D-02 — Múltiplos cardápios:** aprovada e registrada nesta documentação.
 - **D-03 — Publicação por cardápio:** aprovada e registrada nesta documentação.
-- **D-05 a D-20:** permanecem pendentes; não presumir aprovação nem iniciar implementação de regras de negócio correspondentes sem alinhamento.
+- **D-06 a D-20:** permanecem pendentes; não presumir aprovação nem iniciar implementação de regras de negócio correspondentes sem alinhamento.
 
 Ausência de decisão significa que o desenvolvimento do recurso correspondente deve aguardar alinhamento.
