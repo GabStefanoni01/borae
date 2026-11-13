@@ -12,7 +12,7 @@ Este documento é um guia de desenho para módulos futuros, não uma declaraçã
 - Erros padronizados (preferencialmente Problem Details/RFC 9457): type, title, status, detail e campos de validação.
 - Não retornar entidades JPA.
 - Não confiar em restaurantId, userId, role ou ownerId como prova de autorização.
-- Toda operação privada deriva usuário do JWT e valida membership ativo e papel.
+- Toda operação privada deriva usuário do JWT, valida membership ativo no restaurante solicitado e aplica a matriz D-07 no backend. OWNER tem controle total; MANAGER administra perfil, catálogo, publicação, disponibilidade, equipe e convites, sem alterar papéis, propriedade ou cobrança; STAFF tem acesso operacional ao painel e à disponibilidade de produtos, além de pedidos quando o módulo existir. O mesmo usuário pode ter papéis diferentes por restaurante. Autorização não pode depender apenas de controles visuais no frontend.
 
 ## 2. Recursos já existentes
 
@@ -24,7 +24,7 @@ Consultar [API.md](API.md) para a lista de endpoints confirmados. Não alterar c
 - `PATCH /api/v1/restaurants/{restaurantId}`
 - `GET /api/v1/public/restaurants/{slug}`
 
-O GET público deve retornar somente campos publicados e seguros. O PATCH exige papel de escrita que será definido na matriz de permissões.
+O GET público deve retornar somente campos publicados e seguros. O PATCH exige o papel autorizado pela matriz D-07: OWNER ou MANAGER para edição de perfil.
 
 ## 4. Catálogo — proposta
 
