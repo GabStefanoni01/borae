@@ -208,3 +208,24 @@ Requisitos:
 - Suporte acessa dados técnicos, pode suspender temporariamente restaurantes e não acessa dados pessoais, histórico de compras ou dados financeiros.
 - Todas as ações administrativas são auditadas.
 - Operações de administração global exigem autorização específica e justificativa/confirmacão em exclusões.
+
+
+## 12. Contratos adicionais aprovados para implementação
+
+### Integrações por API Key
+- Cada integração recebe uma chave individual e identificável.
+- A autorização é definida por escopos/permissões associados à chave e aplicada no backend.
+- Aplicar rate limit por chave; auditar criação, uso relevante, rotação e revogação.
+- Permitir revogação imediata. Nunca retornar o segredo em consultas posteriores nem armazená-lo em texto puro.
+- Nenhuma chave concede acesso direto ao banco de dados.
+
+### Pagamentos e assinaturas (Asaas)
+Prever endpoints internos para criar/consultar/cancelar a assinatura do restaurante e receber eventos do Asaas. A confirmação de estado deve ser baseada em eventos autenticados e reconciliação, com idempotência. Não assumir que redirecionamento do checkout comprova pagamento.
+
+### Webhooks e eventos
+Eventos recebidos devem ser autenticados, deduplicados e processados de forma idempotente. Falhas de processamento entram em fila com sete tentativas internas progressivas (imediata, 1 min, 5 min, 15 min, 1 h, 6 h e 24 h), mantendo registro e reprocessamento manual após esgotamento. A retentativa de entrega externa do Asaas continua sob controle do provedor.
+
+### Administração global
+A aplicação administrativa separada consumirá endpoints administrativos internos, com autenticação/sessão própria e permissões globais específicas. Não expor endpoints administrativos ao escopo de API Keys de parceiros e não permitir acesso direto ao banco.
+
+Esses contratos são especificações futuras; não representam endpoints já implementados. Consulte [Decisões comerciais e operacionais](DECISIONS_COMMERCIAL_AND_OPERATIONS.md).
