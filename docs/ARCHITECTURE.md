@@ -23,7 +23,7 @@ Separar módulos por responsabilidade e manter contratos claros. Extrair um serv
 | Cache | Redis | Planejado, não obrigatório no MVP inicial |
 | IA | Python + FastAPI | Planejado; integrar via backend |
 | 3D/AR | GLB/glTF + model-viewer | Planejado |
-| Arquivos | Object storage | Definir provedor antes de implementar upload |
+| Arquivos | Cloudflare R2 (object storage) | Provedor definido para imagens e modelos 3D; PostgreSQL armazena somente metadados e referências |
 
 ## 3. Organização por domínio
 
@@ -33,7 +33,7 @@ A estrutura atual inclui o domínio de identidade/autenticação e os recursos i
 - **restaurant:** estabelecimento, perfil, membros e configurações.
 - **catalog:** categorias, produtos, adicionais, preços e disponibilidade.
 - **loyalty:** fidelidade individual do restaurante.
-- **club:** benefícios compartilhados do Boraê Club.
+- **club:** possível domínio futuro do Boraê Club; fora do MVP e não deve ser implementado nesta fase.
 - **discovery:** diretório e busca de estabelecimentos.
 - **recommendation:** integração com o assistente gastronômico.
 - **media:** imagens e modelos 3D.
