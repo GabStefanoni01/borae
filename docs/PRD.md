@@ -222,16 +222,76 @@ Os papéis são atribuídos por vínculo com cada restaurante. O mesmo usuário 
 
 **D-15 parcialmente aprovada:** cada restaurante define a validade dos pontos. Estornos são registrados automaticamente por funcionário autorizado; se os pontos já tiverem sido utilizados, registra-se uma pendência sem saldo negativo. A proteção antifraude usa auditoria e alertas ao gerente, sem confirmação extra do consumidor nem bloqueio automático no MVP. No encerramento do programa, clientes terão no mínimo 60 dias para resgate; o restaurante pode oferecer mais. Fechamento repentino exige comunicação assim que possível, sem transferência de custos ao Boraê ou resgate em outro restaurante. A alteração de regras (D-15.8) só se aplica a pontos acumulados após sua data/hora de vigência; pontos existentes continuam vinculados à versão e aos parâmetros anteriores, e recompensas já conquistadas não podem ser retiradas. A ordem de consumo dos pontos permanece pendente.
 
-### RF-11 — Descoberta
-- Listar estabelecimentos publicados e ativos.
-- Filtrar por localização e categoria.
-- Abrir perfil e cardápio público.
-- Favoritos, avaliações e ranking ficam fora do primeiro recorte.
+### RF-11 — Descoberta de restaurantes
+- Usar localização atual por padrão, com busca/seleção manual de outra região.
+- Ordenar por relevância considerando distância, avaliações, popularidade e completude das informações.
+- Filtrar por categoria, distância, faixa de preço, avaliação, horário, benefícios de fidelidade e entrega/retirada.
+- Exibir página completa do restaurante com fotos, descrição, endereço/mapa, horários, cardápios/preços, avaliações, fidelidade e modalidades de atendimento.
+- Modelos 3D dos pratos são opcionais e só aparecem quando disponíveis.
+- Somente consumidores com compra confirmada podem avaliar (nota geral 1–5, comentário opcional e critérios de atendimento, comida e ambiente).
+- Restaurante pode responder publicamente, mas não editar/apagar avaliações. Moderação de denúncias é responsabilidade do Boraê.
+- Favoritos e listas personalizadas; compartilhamento por links, sem mensagens internas, rede social própria ou listas colaborativas.
+- Restaurantes fechados aparecem abaixo dos abertos, com próxima abertura quando conhecida.
+- Redes têm página principal da marca e páginas por unidade; marca e unidades têm avaliações/notas próprias.
+- Cadastros incompletos podem aparecer com dados disponíveis, sem inventar conteúdo.
 
-### RF-12 — Administração da plataforma
-- Gerir contas, restaurantes, planos, campanhas e incidentes.
-- Exigir papéis administrativos próprios e auditoria.
-- Nunca reutilizar OWNER como administrador global.
+### RF-12 — Administração global da plataforma
+- Separar papéis globais de OWNER/MANAGER/STAFF dos restaurantes.
+- Ter administrador principal e equipe de suporte limitada.
+- Suporte acessa somente dados técnicos; não acessa dados pessoais, histórico de compras ou dados financeiros dos restaurantes.
+- Suporte pode suspender restaurantes temporariamente.
+- Todas as ações administrativas geram auditoria.
+- Painel global de indicadores: restaurantes, consumidores, compras e receita; dados financeiros não ficam disponíveis ao suporte.
+- Administrador pode bloquear consumidores temporária ou permanentemente.
+- Administrador não edita informações de restaurantes, mas pode excluí-los com confirmação e justificativa obrigatórias.
+- Não haverá painel dedicado de denúncias/moderação neste escopo.
+- Manutenções programadas devem ser avisadas previamente; administradores e equipe técnica autorizada podem ativar o modo de manutenção.
+
+### RF-13 — Conta e segurança do consumidor
+- Cadastro com nome, telefone verificado por SMS, e-mail e senha.
+- Login por telefone + senha; SMS não é exigido a cada login.
+- Sem foto de perfil; identidade visual padrão.
+- Nome/e-mail editáveis; alterações de telefone e senha exigem validação de segurança.
+- Recuperação por SMS ou link de e-mail, com validade limitada e uso único.
+- Uma sessão/dispositivo ativo por vez; novo login encerra a sessão anterior.
+- Bloquear por 15 minutos após cinco tentativas consecutivas incorretas.
+- Não expirar contas por inatividade.
+- Alertar sobre novos logins, alterações de credenciais/contato e atividade suspeita.
+- Exclusão sob solicitação, com anonimização quando aplicável e retenção legal/auditável.
+
+### RF-14 — Monetização e assinatura
+- SaaS por assinatura fixa, sem comissão por transação.
+- Plano único com mesmas funcionalidades e preço-base para todos os restaurantes.
+- Teste gratuito de 30 dias; após o teste, exigir cadastro de forma de pagamento e confirmação expressa da assinatura.
+- Períodos mensal, trimestral e anual, com descontos progressivos.
+- Cancelamento a qualquer momento, sem multa, com acesso até o fim do período pago.
+- Cobrança falha: tentativas adicionais e avisos; tolerância de sete dias antes de suspender acesso.
+- Manter dados por 90 dias após suspensão por inadimplência; exclusão posterior sujeita a obrigações legais.
+- Sem taxa de implantação; reajustes aplicados na próxima renovação, com aviso de 30 dias.
+- Mudança de periodicidade vale na próxima renovação.
+- Créditos de indicação podem abater mensalidades, não são sacáveis nem transferíveis, expiram em 12 meses e, após cancelamento, só voltam a ser utilizáveis se a assinatura for reativada.
+- Sem multa ou juros por atraso; pagamentos por cartão de crédito e Pix; nota fiscal automática por cobrança.
+- Preço nominal e percentuais de desconto ainda precisam de definição comercial.
+
+### RF-15 — Integrações e API externa
+- API pública para integrações autorizadas, protegida por chaves e permissões.
+- Rate limiting obrigatório.
+- Documentação pública Swagger/OpenAPI.
+- Webhooks para eventos, com reenvio automático em caso de falha.
+- Ambiente Sandbox para testes.
+- Não oferecer endpoints anônimos para operações privadas nem confundir API pública com API sem autenticação.
+
+### RF-16 — Canais e suporte
+- Painel do restaurante web responsivo; sem aplicativo nativo para restaurantes no lançamento.
+- Experiência do consumidor web responsiva; sem apps nativos Android/iOS no lançamento.
+- Notificações por e-mail.
+- Chat de suporte dentro da plataforma, com IA e encaminhamento para atendimento humano.
+
+### RF-17 — Limites do lançamento: pedidos e POS
+- Não haverá pedidos online no lançamento.
+- Não haverá integração com PDV/ERP no lançamento.
+- Operações iniciais serão próprias e registros poderão ser manuais.
+- Estruturas de catálogo e adicionais não devem ser interpretadas como autorização para processar pedidos ou pagamentos.
 
 ## 9. Requisitos não funcionais
 
