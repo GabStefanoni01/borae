@@ -77,11 +77,11 @@ public class RestaurantTeamService {
 
         String token = generateToken();
         Instant expiresAt = Instant.now().plus(7, ChronoUnit.DAYS);
-        invitationRepository.save(new RestaurantInvitation(
+        RestaurantInvitation invitation = invitationRepository.save(new RestaurantInvitation(
                 restaurant, email, request.role(), hashToken(token), expiresAt, actor
         ));
 
-        return new RestaurantInvitationResponse(null, email, request.role(), expiresAt, token);
+        return new RestaurantInvitationResponse(invitation.getId(), email, request.role(), expiresAt, token);
     }
 
     @Transactional
@@ -99,13 +99,16 @@ public class RestaurantTeamService {
         }
 
         UUID restaurantId = invitation.getRestaurant().getId();
-        if (membershipRepository.existsByUser_IdAndRestaurant_IdAndActiveTrue(actor.getId(), restaurantId)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Você já faz parte deste restaurante.");
-        }
-
-        RestaurantMembership membership = membershipRepository.save(
-                new RestaurantMembership(actor, invitation.getRestaurant(), invitation.getRole())
-        );
+        RestaurantMembership membership = membershipRepository.findByUser_IdAndRestaurant_Id(actor.getId(), restaurantId)
+                .map(existing -> {
+                    if (existing.isActive()) {
+                        throw new ResponseStatusException(HttpStatus.CONFLICT, "Você já faz parte deste restaurante.");
+                    }
+                    existing.reactivate(invitation.getRole());
+                    return existing;
+                })
+                .orElseGet(() -> new RestaurantMembership(actor, invitation.getRestaurant(), invitation.getRole()));
+        membershipRepository.save(membership);
         invitation.markAccepted(now);
         return RestaurantMemberResponse.from(membership);
     }
