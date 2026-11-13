@@ -125,9 +125,13 @@ Recursos candidatos:
 - `POST /api/v1/restaurants/{restaurantId}/loyalty/transactions`
 - `POST /api/v1/me/reward-redemptions`
 
-Crédito/resgate deve exigir chave de idempotência e autorização específica. O consumidor não pode criar créditos para si mesmo. O evento que gera pontos precisa ser validado por origem confiável (ex.: integração aprovada ou ação autorizada do restaurante).
+D-12 parcialmente aprovada: cada programa local escolhe entre acúmulo proporcional ao valor gasto ou quantidade fixa de pontos por compra. A API de configuração deverá representar o tipo e os parâmetros versionados da regra, sem reescrever lançamentos anteriores.
+
+Crédito/resgate deve exigir chave de idempotência e autorização específica. O consumidor não pode criar créditos para si mesmo. O evento que gera pontos precisa ser validado por origem confiável (ex.: integração aprovada ou ação autorizada do restaurante). O gatilho exato, a confirmação de compra, a expiração e a política de estorno permanecem pendentes.
 
 ## 8. Boraê Club — proposta, bloqueada por decisões comerciais
+
+D-12 parcialmente aprovada: carteira e ledger do Club são independentes da fidelidade local. Regra uniforme de acúmulo: 1 ponto por R$ 1,00 gasto em compra elegível, em qualquer parceiro. O contrato da API deverá manter a origem da compra e a referência do parceiro, sem permitir que o cliente crie créditos diretamente. A definição de compra elegível, gatilho de crédito, estorno e liquidação permanece bloqueada por decisões comerciais/operacionais.
 
 Recursos candidatos:
 - adesão e saída do programa;
