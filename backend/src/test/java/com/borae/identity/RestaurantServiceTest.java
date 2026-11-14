@@ -9,11 +9,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
+import java.time.LocalTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -24,6 +30,9 @@ class RestaurantServiceTest {
 
     @Mock
     private RestaurantMembershipRepository membershipRepository;
+
+    @Mock
+    private RestaurantBusinessHoursRepository businessHoursRepository;
 
     @InjectMocks
     private RestaurantService restaurantService;
@@ -121,6 +130,80 @@ class RestaurantServiceTest {
         assertThrows(ResponseStatusException.class, () -> restaurantService.updateProfile(
                 restaurantId, request(null, null, null, null, null, null, null, null, "-23.5", null, null), owner
         ));
+    }
+
+    @Test
+    void managerCanReplaceWeeklyScheduleWithMultipleIntervals() {
+        grantRole(RestaurantRole.MANAGER);
+        when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(restaurant));
+        ReplaceBusinessHoursRequest request = new ReplaceBusinessHoursRequest(List.of(
+                new BusinessHoursDayRequest(DayOfWeek.MONDAY, List.of(
+                        new BusinessHoursIntervalRequest(LocalTime.of(14, 0), LocalTime.of(18, 0)),
+                        new BusinessHoursIntervalRequest(LocalTime.of(9, 0), LocalTime.of(12, 0))
+                )),
+                new BusinessHoursDayRequest(DayOfWeek.TUESDAY, List.of(
+                        new BusinessHoursIntervalRequest(LocalTime.of(10, 0), LocalTime.of(16, 0))
+                ))
+        ));
+
+        List<BusinessHoursDayResponse> response =
+                restaurantService.replaceBusinessHours(restaurantId, request, owner);
+
+        assertEquals(2, response.size());
+        assertEquals(DayOfWeek.MONDAY, response.get(0).dayOfWeek());
+        assertEquals(LocalTime.of(9, 0), response.get(0).intervals().get(0).opensAt());
+        assertEquals(LocalTime.of(14, 0), response.get(0).intervals().get(1).opensAt());
+        verify(businessHoursRepository).deleteAllByRestaurant_Id(restaurantId);
+        verify(businessHoursRepository).saveAll(anyList());
+    }
+
+    @Test
+    void overlappingBusinessHoursAreRejectedWithoutReplacingExistingSchedule() {
+        grantRole(RestaurantRole.OWNER);
+        when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(restaurant));
+        ReplaceBusinessHoursRequest request = new ReplaceBusinessHoursRequest(List.of(
+                new BusinessHoursDayRequest(DayOfWeek.MONDAY, List.of(
+                        new BusinessHoursIntervalRequest(LocalTime.of(9, 0), LocalTime.of(13, 0)),
+                        new BusinessHoursIntervalRequest(LocalTime.of(12, 0), LocalTime.of(17, 0))
+                ))
+        ));
+
+        assertThrows(ResponseStatusException.class,
+                () -> restaurantService.replaceBusinessHours(restaurantId, request, owner));
+        verify(businessHoursRepository, never()).deleteAllByRestaurant_Id(restaurantId);
+    }
+
+    @Test
+    void duplicateDayInWeeklyScheduleIsRejected() {
+        grantRole(RestaurantRole.OWNER);
+        when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(restaurant));
+        ReplaceBusinessHoursRequest request = new ReplaceBusinessHoursRequest(List.of(
+                new BusinessHoursDayRequest(DayOfWeek.SUNDAY, List.of(
+                        new BusinessHoursIntervalRequest(LocalTime.of(9, 0), LocalTime.of(12, 0))
+                )),
+                new BusinessHoursDayRequest(DayOfWeek.SUNDAY, List.of(
+                        new BusinessHoursIntervalRequest(LocalTime.of(14, 0), LocalTime.of(18, 0))
+                ))
+        ));
+
+        assertThrows(ResponseStatusException.class,
+                () -> restaurantService.replaceBusinessHours(restaurantId, request, owner));
+        verify(businessHoursRepository, never()).deleteAllByRestaurant_Id(restaurantId);
+    }
+
+    @Test
+    void closingTimeMustBeAfterOpeningTime() {
+        grantRole(RestaurantRole.OWNER);
+        when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(restaurant));
+        ReplaceBusinessHoursRequest request = new ReplaceBusinessHoursRequest(List.of(
+                new BusinessHoursDayRequest(DayOfWeek.FRIDAY, List.of(
+                        new BusinessHoursIntervalRequest(LocalTime.of(18, 0), LocalTime.of(9, 0))
+                ))
+        ));
+
+        assertThrows(ResponseStatusException.class,
+                () -> restaurantService.replaceBusinessHours(restaurantId, request, owner));
+        verify(businessHoursRepository, never()).deleteAllByRestaurant_Id(restaurantId);
     }
 
     private UpdateRestaurantProfileRequest request(
