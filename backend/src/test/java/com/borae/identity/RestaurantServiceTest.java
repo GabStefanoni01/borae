@@ -8,12 +8,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -48,23 +48,31 @@ class RestaurantServiceTest {
 
         assertEquals("Boraê", response.name());
         assertEquals("borae-12345678", response.slug());
+        assertEquals(RestaurantPublicationStatus.DRAFT, response.publicationStatus());
     }
 
     @Test
-    void managerCanUpdateRestaurantProfile() {
+    void managerCanUpdateRestaurantProfileAndLocation() {
         grantRole(RestaurantRole.MANAGER);
         when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(restaurant));
-        when(restaurantRepository.existsBySlugAndIdNot("borae-centro", restaurantId)).thenReturn(false);
 
         RestaurantProfileResponse response = restaurantService.updateProfile(
                 restaurantId,
-                new UpdateRestaurantProfileRequest("Boraê Centro", "Nova descrição", "borae-centro"),
+                request("Boraê Centro", "Nova descrição", "borae-centro",
+                        "11999990000", null, "@borae", "https://borae.example",
+                        "Rua Central, 100", " -23.5505200 ", "-46.6333080", "Brasileira"),
                 owner
         );
 
         assertEquals("Boraê Centro", response.name());
         assertEquals("borae-centro", response.slug());
         assertEquals("Nova descrição", response.description());
+        assertEquals("11999990000", response.phone());
+        assertEquals("@borae", response.instagram());
+        assertEquals("Rua Central, 100", response.address());
+        assertEquals(new BigDecimal("-23.5505200"), response.latitude());
+        assertEquals(new BigDecimal("-46.6333080"), response.longitude());
+        assertEquals("Brasileira", response.category());
     }
 
     @Test
@@ -72,9 +80,7 @@ class RestaurantServiceTest {
         grantRole(RestaurantRole.STAFF);
 
         assertThrows(ResponseStatusException.class, () -> restaurantService.updateProfile(
-                restaurantId,
-                new UpdateRestaurantProfileRequest("Nome", null, null),
-                owner
+                restaurantId, request("Nome", null, null, null, null, null, null, null, null, null, null), owner
         ));
     }
 
@@ -93,10 +99,40 @@ class RestaurantServiceTest {
         when(restaurantRepository.existsBySlugAndIdNot("existing-slug", restaurantId)).thenReturn(true);
 
         assertThrows(ResponseStatusException.class, () -> restaurantService.updateProfile(
-                restaurantId,
-                new UpdateRestaurantProfileRequest(null, null, "existing-slug"),
-                owner
+                restaurantId, request(null, null, "existing-slug", null, null, null, null, null, null, null, null), owner
         ));
+    }
+
+    @Test
+    void blankNameIsRejectedAfterTrimming() {
+        grantRole(RestaurantRole.OWNER);
+        when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(restaurant));
+
+        assertThrows(ResponseStatusException.class, () -> restaurantService.updateProfile(
+                restaurantId, request("   ", null, null, null, null, null, null, null, null, null, null), owner
+        ));
+    }
+
+    @Test
+    void coordinatesMustBeProvidedAsAPair() {
+        grantRole(RestaurantRole.OWNER);
+        when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(restaurant));
+
+        assertThrows(ResponseStatusException.class, () -> restaurantService.updateProfile(
+                restaurantId, request(null, null, null, null, null, null, null, null, new BigDecimal("-23.5"), null, null), owner
+        ));
+    }
+
+    private UpdateRestaurantProfileRequest request(
+            String name, String description, String slug, String phone, String whatsapp,
+            String instagram, String website, String address, String latitude, String longitude, String category
+    ) {
+        return new UpdateRestaurantProfileRequest(
+                name, description, slug, phone, whatsapp, instagram, website, address,
+                latitude == null ? null : new BigDecimal(latitude.trim()),
+                longitude == null ? null : new BigDecimal(longitude.trim()),
+                category
+        );
     }
 
     private void grantRole(RestaurantRole role) {
