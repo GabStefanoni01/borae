@@ -1,0 +1,12 @@
+# Boraê — Diretrizes de rastreamento para mecanismos de busca
+User-agent: *
+Allow: /
+Allow: /blog
+Allow: /assets/
+Disallow: /app
+Disallow: /app/
+Disallow: /auth
+Disallow: /login
+Disallow: /cadastro
+
+Sitemap: https://borae1.onrender.com/sitemap.xml
