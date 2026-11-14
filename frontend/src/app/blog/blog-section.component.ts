@@ -240,7 +240,7 @@ import { BlogArticle, BlogCategorySlug } from './blog.models';
       margin: 0;
       aspect-ratio: 16 / 9;
       overflow: hidden;
-      background: #EFEAE4;
+      background: var(--color-white);
     }
     .featured-figure img, .card-figure img {
       width: 100%;
@@ -408,7 +408,14 @@ export class BlogSectionComponent {
 
   readonly gridArticles = computed<BlogArticle[]>(() => {
     const featured = this.featuredArticle();
-    return this.allArticles.filter(a => a.id !== featured.id);
+    const current = this.selectedCategory();
+    const remaining = this.allArticles.filter(a => a.id !== featured.id);
+    if (current !== 'all') {
+      const sameCategory = remaining.filter(a => a.category === current);
+      const others = remaining.filter(a => a.category !== current);
+      return [...sameCategory, ...others].slice(0, 8);
+    }
+    return remaining.slice(0, 8);
   });
 
   selectCategory(slug: 'all' | BlogCategorySlug): void {

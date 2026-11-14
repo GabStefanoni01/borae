@@ -120,8 +120,8 @@ import { BlogSeoService } from './blog-seo.service';
                 </h2>
                 <p class="catalog-count">
                   {{ filteredArticles().length }}
-                  {{ filteredArticles().length === 1 ? 'artigo encontrado' : 'artigos encontrados' }}
-                  — ordenados do mais recente para o mais antigo.
+                  {{ filteredArticles().length === 1 ? 'artigo encontrado' : 'artigos encontrados' }},
+                  ordenados do mais recente para o mais antigo.
                 </p>
               </div>
             </div>

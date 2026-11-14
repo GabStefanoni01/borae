@@ -1,4 +1,4 @@
-# Boraê — Diretrizes de rastreamento para mecanismos de busca
+# Boraê: Diretrizes de rastreamento para mecanismos de busca
 User-agent: *
 Allow: /
 Allow: /blog
