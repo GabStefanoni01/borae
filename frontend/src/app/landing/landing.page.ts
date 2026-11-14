@@ -12,6 +12,7 @@ import { PurposeComponent } from './purpose.component';
 import { FaqComponent } from './faq.component';
 import { CtaComponent } from './cta.component';
 import { FooterComponent } from './footer.component';
+import { warmUpApi } from '../shared/api-warmup';
 
 @Component({
   selector: 'app-landing-page',
@@ -94,6 +95,8 @@ export class LandingPage implements OnInit {
   private readonly metaService = inject(Meta);
 
   ngOnInit(): void {
+    // Começa a reativar a API (plano gratuito do Render) antes de a pessoa ir para o login.
+    warmUpApi();
     this.titleService.setTitle('Boraê | Experiências gastronômicas mais inteligentes');
     this.metaService.updateTag({
       name: 'description',

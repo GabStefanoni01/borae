@@ -55,7 +55,30 @@ export const BORAE_ICONS = {
   'log-out': ['M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4', 'm16 17 5-5-5-5', 'M21 12H9'],
   'shield-check': ['M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z', 'm9 12 2 2 4-4'],
   loader: ['M21 12a9 9 0 1 1-6.2-8.6'],
-  'map-pin': ['M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z', circle(12, 10, 3)]
+  'map-pin': ['M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z', circle(12, 10, 3)],
+  // Ícones do painel do restaurante
+  home: ['M3 10.5 12 3l9 7.5', 'M5 9.5V21h14V9.5', 'M10 21v-6h4v6'],
+  tag: ['M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z', circle(7.5, 7.5, 1.5)],
+  'credit-card': [rect(2, 5, 20, 14, 2), 'M2 10h20', 'M6 15h4'],
+  plug: ['M9 2v6', 'M15 2v6', 'M6 8h12v3a6 6 0 0 1-12 0z', 'M12 17v5'],
+  sliders: ['M4 21v-7', 'M4 10V3', 'M12 21v-9', 'M12 8V3', 'M20 21v-5', 'M20 12V3', 'M1 14h6', 'M9 8h6', 'M17 16h6'],
+  award: [circle(12, 8, 6), 'M8.2 13.2 7 22l5-3 5 3-1.2-8.8'],
+  image: [rect(3, 3, 18, 18, 2), circle(9, 9, 2), 'm21 15-5-5L5 21'],
+  globe: [circle(12, 12, 10), 'M2 12h20', 'M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20'],
+  'chevron-right': ['m9 18 6-6-6-6'],
+  'chevron-down': ['m6 9 6 6 6-6'],
+  'chevrons-up-down': ['m7 15 5 5 5-5', 'm7 9 5-5 5 5'],
+  copy: [rect(9, 9, 13, 13, 2), 'M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'],
+  trash: ['M3 6h18', 'M8 6V4h8v2', 'M19 6l-1 14H6L5 6', 'M10 11v6', 'M14 11v6'],
+  refresh: ['M21 12a9 9 0 0 1-15.5 6.3L3 16', 'M3 21v-5h5', 'M3 12a9 9 0 0 1 15.5-6.3L21 8', 'M21 3v5h-5'],
+  'user-plus': [circle(9, 7, 4), 'M2 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2', 'M19 8v6', 'M22 11h-6'],
+  ticket: ['M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3a2 2 0 0 0 0-4z', 'M13 5v2', 'M13 11v2', 'M13 17v2'],
+  clock: [circle(12, 12, 10), 'M12 6v6l4 2'],
+  'panel-left': [rect(3, 3, 18, 18, 2), 'M9 3v18'],
+  compass: [circle(12, 12, 10), 'm16.2 7.8-2.1 6.3-6.3 2.1 2.1-6.3z'],
+  sun: [circle(12, 12, 4), 'M12 2v2', 'M12 20v2', 'm4.9 4.9 1.4 1.4', 'm17.7 17.7 1.4 1.4', 'M2 12h2', 'M20 12h2', 'm6.3 17.7-1.4 1.4', 'm19.1 4.9-1.4 1.4'],
+  moon: ['M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z'],
+  monitor: [rect(2, 3, 20, 14, 2), 'M8 21h8', 'M12 17v4']
 } as const satisfies Record<string, readonly string[]>;
 
 export type BoraeIconName = keyof typeof BORAE_ICONS;

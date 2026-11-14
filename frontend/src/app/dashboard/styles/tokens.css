@@ -1,0 +1,39 @@
+/* Painel do restaurante — tokens de cor claro/escuro (html[data-theme]) */
+.dash{
+  /* Paleta da marca (especificação do painel) */
+  --d-primary:#FF7200;--d-primary-hover:#F06400;--d-primary-soft:#FFF0E3;--d-primary-text:#B34E00;--d-cream:#FFF9F2;
+  /* Superfícies e texto */
+  --d-bg:#F7F7F5;--d-surface:#FFFFFF;--d-hover:#F4F4F2;--d-head:#FBFBFA;
+  --d-ink:#191919;--d-ink-2:#3D3D3D;--d-muted:#707070;--d-faint:#9A9A9A;
+  --d-border:#EAEAEA;--d-border-soft:#F1F1EF;--d-border-strong:#DCDCDA;
+  /* Estados */
+  --d-success:#16834A;--d-success-soft:#EAF6EF;--d-success-line:#CBE8D7;--d-success-ink:#105C34;
+  --d-error:#D92D20;--d-error-soft:#FDECEA;--d-error-line:#F8CFCB;--d-error-ink:#9F1F16;
+  --d-warning:#B7791F;--d-warning-soft:#FDF5E7;--d-warning-line:#F3E1BD;--d-warning-ink:#7A5014;
+  --d-info:#1F5FA8;--d-info-soft:#EDF4FC;--d-info-line:#D3E3F6;
+  --d-neutral-soft:#F3F3F1;--d-neutral-ink:#5E5E5E;
+  --d-strong-bg:#191919;--d-strong-ink:#FFFFFF;
+  --d-shadow:0 1px 2px rgba(25,25,25,.04),0 4px 16px rgba(25,25,25,.04);
+  --d-shadow-pop:0 12px 32px rgba(25,25,25,.12);
+  --d-backdrop:rgba(25,25,25,.45);
+  /* Alternador de tema */
+  --tt-bg:var(--d-hover);--tt-border:var(--d-border);--tt-color:var(--d-muted);--tt-active-bg:var(--d-surface);--tt-active-color:var(--d-ink);
+
+  --d-radius:12px;--d-radius-lg:16px;--d-sidebar:288px;--d-topbar:64px;--d-ease:cubic-bezier(.16,1,.3,1);
+  min-height:100vh;display:flex;background:var(--d-bg);color:var(--d-ink);
+  font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:14px;line-height:1.5;
+  transition:background-color .2s,color .2s;
+}
+[data-theme=dark] .dash{
+  --d-primary-soft:rgba(255,114,0,.16);--d-primary-text:#FF9A4D;--d-cream:#1E1915;
+  --d-bg:#0E0E0E;--d-surface:#171717;--d-hover:#212121;--d-head:#1B1B1B;
+  --d-ink:#F2F1EE;--d-ink-2:#D3D2CE;--d-muted:#A3A29E;--d-faint:#76756F;
+  --d-border:#2A2A2A;--d-border-soft:#222222;--d-border-strong:#3A3A3A;
+  --d-success:#4CC38A;--d-success-soft:rgba(22,131,74,.18);--d-success-line:rgba(76,195,138,.35);--d-success-ink:#8EE0B5;
+  --d-error:#FF6B5E;--d-error-soft:rgba(217,45,32,.18);--d-error-line:rgba(255,107,94,.4);--d-error-ink:#FFADA5;
+  --d-warning:#E3A84F;--d-warning-soft:rgba(183,121,31,.18);--d-warning-line:rgba(227,168,79,.4);--d-warning-ink:#F2CB8C;
+  --d-info:#8BB8F0;--d-info-soft:rgba(59,130,246,.16);--d-info-line:rgba(139,184,240,.35);
+  --d-neutral-soft:#242424;--d-neutral-ink:#B5B4B0;
+  --d-strong-bg:#F2F1EE;--d-strong-ink:#191919;
+  --d-shadow:0 1px 2px rgba(0,0,0,.4);--d-shadow-pop:0 16px 40px rgba(0,0,0,.55);--d-backdrop:rgba(0,0,0,.6);
+}

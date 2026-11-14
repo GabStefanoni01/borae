@@ -1,20 +1,23 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { environment } from '../environments/environment';
 import { AuthService, AuthUser } from './auth.service';
 import { BrandLogoComponent } from './shared/brand-logo.component';
 import { IconComponent } from './shared/icon.component';
+import { ThemeToggleComponent } from './shared/theme-toggle.component';
+import { SLOW_REQUEST_MS, SLOW_SERVER_MESSAGE, warmUpApi } from './shared/api-warmup';
 
 @Component({
   selector: 'app-auth-page',
   standalone: true,
-  imports: [FormsModule, RouterLink, BrandLogoComponent, IconComponent],
+  imports: [FormsModule, RouterLink, BrandLogoComponent, IconComponent, ThemeToggleComponent],
   template: `
     <main class="auth">
       <!-- Painel de marca -->
       <aside class="showcase">
         <div class="showcase-top">
-          <a routerLink="/" aria-label="Boraê — voltar ao início"><bo-brand-logo tone="dark" [size]="32" /></a>
+          <a routerLink="/" aria-label="Boraê — voltar ao início"><bo-brand-logo tone="dark" [size]="34" /></a>
           <a routerLink="/" class="back"><bo-icon name="arrow-left" [size]="16" /> Voltar ao site</a>
         </div>
 
@@ -34,6 +37,10 @@ import { IconComponent } from './shared/icon.component';
 
       <!-- Painel de acesso -->
       <section class="panel" aria-label="Acesso à plataforma">
+        <div class="panel-tools">
+          @if (demo) { <span class="demo-flag" title="Dados fictícios locais; nada é enviado à API real">Modo demonstração</span> }
+          <bo-theme-toggle />
+        </div>
         <div class="card">
           @if (user; as signedUser) {
             <div class="welcome"><bo-icon name="check" [size]="26" [strokeWidth]="2.5" /></div>
@@ -52,6 +59,9 @@ import { IconComponent } from './shared/icon.component';
             <p class="eyebrow">{{ mode === 'login' ? 'Bem-vindo de volta' : 'Vamos começar' }}</p>
             <h2>{{ mode === 'login' ? 'Entre na sua conta.' : 'Crie sua conta.' }}</h2>
             <p class="copy">{{ mode === 'login' ? 'Acesse sua experiência Boraê.' : 'É rápido e gratuito. Sua próxima descoberta está mais perto.' }}</p>
+            @if (sessionExpired) {
+              <div class="error session" role="status"><bo-icon name="clock" [size]="18" /> <span>Sua sessão expirou. Entre novamente para continuar.</span></div>
+            }
 
             <div class="tabs" [class.is-register]="mode === 'register'" role="tablist" aria-label="Tipo de acesso">
               <button type="button" role="tab" [attr.aria-selected]="mode === 'login'" [class.active]="mode === 'login'" (click)="setMode('login')">Entrar</button>
@@ -93,12 +103,15 @@ import { IconComponent } from './shared/icon.component';
               }
               <button class="btn btn-primary full" type="submit" [disabled]="loading || !authForm.valid" [attr.aria-busy]="loading">
                 @if (loading) {
-                  <bo-icon name="loader" [size]="18" [spin]="true" /> Aguarde...
+                  <bo-icon name="loader" [size]="18" [spin]="true" /> {{ mode === 'login' ? 'Entrando...' : 'Criando sua conta...' }}
                 } @else {
                   {{ mode === 'login' ? 'Entrar na minha conta' : 'Criar minha conta' }}
                   <bo-icon class="btn-arrow" name="arrow-right" [size]="18" />
                 }
               </button>
+              @if (slow) {
+                <p class="slow" role="status"><bo-icon name="clock" [size]="16" /> <span>{{ slowMessage }}</span></p>
+              }
             </form>
             <p class="legal">Ao continuar, você concorda com os termos de uso e a política de privacidade do Boraê.</p>
           }
@@ -106,9 +119,9 @@ import { IconComponent } from './shared/icon.component';
       </section>
     </main>
   `,
-  styleUrl: './auth.page.css'
+  styleUrls: ['./auth.tokens.css', './auth.showcase.css', './auth.page.css']
 })
-export class AuthPage implements OnInit {
+export class AuthPage implements OnInit, OnDestroy {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   mode: 'login' | 'register' = 'login';
@@ -116,12 +129,23 @@ export class AuthPage implements OnInit {
   email = '';
   password = '';
   showPassword = false;
+  protected readonly demo = environment.demo;
   loading = false;
+  slow = false;
+  protected readonly slowMessage = SLOW_SERVER_MESSAGE;
+  private slowTimer?: ReturnType<typeof setTimeout>;
   errorMessage = '';
   user: AuthUser | null = this.auth.currentUser;
 
+  sessionExpired = inject(ActivatedRoute).snapshot.queryParamMap.get('sessao') === 'expirada';
+
   ngOnInit(): void {
     if (this.auth.hasSession) void this.router.navigateByUrl('/app');
+    warmUpApi();
+  }
+
+  ngOnDestroy(): void {
+    clearTimeout(this.slowTimer);
   }
 
   setMode(mode: 'login' | 'register'): void {
@@ -134,7 +158,10 @@ export class AuthPage implements OnInit {
   submit(): void {
     if (this.loading) return;
     this.loading = true;
+    this.slow = false;
+    this.slowTimer = setTimeout(() => (this.slow = true), SLOW_REQUEST_MS);
     this.errorMessage = '';
+    const isRegister = this.mode === 'register';
     const request = this.mode === 'login'
       ? this.auth.login({ email: this.email.trim(), password: this.password })
       : this.auth.register({ fullName: this.fullName.trim(), email: this.email.trim(), password: this.password });
@@ -142,16 +169,23 @@ export class AuthPage implements OnInit {
     request.subscribe({
       next: (response) => {
         this.user = response.user;
-        this.loading = false;
+        this.stopLoading();
         this.fullName = '';
         this.password = '';
-        void this.router.navigateByUrl('/app');
+        // Conta nova segue direto para o cadastro do primeiro restaurante.
+        void this.router.navigate(isRegister ? ['/app/novo-restaurante'] : ['/app'], isRegister ? { queryParams: { 'boas-vindas': 1 } } : {});
       },
       error: (error: unknown) => {
-        this.loading = false;
+        this.stopLoading();
         this.errorMessage = this.auth.getErrorMessage(error, this.mode);
       }
     });
+  }
+
+  private stopLoading(): void {
+    clearTimeout(this.slowTimer);
+    this.loading = false;
+    this.slow = false;
   }
 
   logout(): void {
