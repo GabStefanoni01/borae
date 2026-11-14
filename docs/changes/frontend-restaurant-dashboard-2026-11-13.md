@@ -142,3 +142,27 @@ Abre `http://localhost:4200` com a API **simulada localmente** (nenhuma requisi�
 ## Branch e commits
 - Branch: `feat/restaurant-dashboard`
 - Commits: `docs(frontend): record Render static site URL and pending CORS/rewrite steps` (trazido da branch anterior) e `feat(frontend): establish Boraê restaurant dashboard`
+
+---
+
+## Atualização de 14/11/2026 — Cadastro de restaurante e lentidão da API
+
+**Modificações feitas por Renan Cristiano**
+
+### Problemas relatados
+1. A tela de cadastro de restaurante (painel antigo, tema verde-limão) não seguia o branding.
+2. Depois de cadastrar o restaurante, não havia como entrar no painel dele.
+3. Cadastro e login demoravam muito.
+
+### Diagnóstico da lentidão
+O backend roda no plano gratuito do Render, que desliga o serviço após ~15 min sem uso. A primeira requisição seguinte espera o Spring Boot iniciar (30–60 s). Com a API ativa, a resposta medida foi de ~0,25 s. A solução definitiva é do lado da infraestrutura (instância paga ou serviço sempre ativo); o frontend passou a reduzir e explicar a espera.
+
+### O que mudou
+- **Aquecimento da API** (`shared/api-warmup.ts`): ao abrir a landing ou o login, um `GET` simples em `/actuator/health` (rota pública, `mode: no-cors`) começa a reativar o servidor enquanto a pessoa ainda navega. Uma vez por carregamento; desligado no modo demonstração.
+- **Aviso de servidor iniciando**: se login, criação de conta, carregamento do painel ou cadastro de restaurante passar de 5 s, aparece "O servidor do Boraê está sendo iniciado e a primeira resposta pode levar até 1 minuto. Não feche esta página." O botão de login também mostra "Entrando..." / "Criando sua conta...".
+- **Fluxo de conta nova**: após criar a conta, a pessoa vai direto para "Cadastrar restaurante", com mensagem de boas-vindas.
+- **Cadastro de restaurante** no branding do painel, com etapas (Conta Boraê → Dados do restaurante → Painel do restaurante), botão "Cadastrar e abrir o painel" e link para aceitar convite.
+- **Entrar no painel do restaurante**: ao concluir o cadastro, o restaurante criado é selecionado e a visão geral abre com a confirmação "Restaurante cadastrado!". A visão geral ganhou a seção **"Seus restaurantes"**, com o restaurante em gestão destacado e o botão **"Abrir painel"** nos demais.
+
+### Testes
+Fluxo completo no modo demonstração: criar conta → cadastro com boas-vindas → cadastrar restaurante → visão geral com confirmação → cadastrar segundo restaurante → "Abrir painel" alterna o restaurante em gestão. Builds de produção e demonstração sem avisos. O aviso de lentidão não pôde ser reproduzido no modo demonstração (latência simulada de 350 ms).

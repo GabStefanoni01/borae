@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { AuthService, AuthUser, RestaurantAccess } from '../auth.service';
+import { SLOW_REQUEST_MS } from '../shared/api-warmup';
 
 export type RestaurantRole = RestaurantAccess['role'];
 
@@ -31,6 +32,11 @@ export class RestaurantContext {
   readonly selectedId = signal<string | null>(null);
   readonly status = signal<'loading' | 'ready' | 'error'>('loading');
   readonly errorMessage = signal('');
+  /** Verdadeiro quando o carregamento passa de alguns segundos (API reiniciando no Render). */
+  readonly slow = signal(false);
+  /** Nome do restaurante recém-cadastrado, para a visão geral confirmar o cadastro. */
+  readonly justCreated = signal<string | null>(null);
+  private slowTimer?: ReturnType<typeof setTimeout>;
 
   readonly selected = computed(() => this.restaurants().find(r => r.restaurantId === this.selectedId()) ?? null);
   readonly role = computed<RestaurantRole | null>(() => this.selected()?.role ?? null);
@@ -44,14 +50,19 @@ export class RestaurantContext {
   load(): void {
     this.status.set('loading');
     this.errorMessage.set('');
+    this.slow.set(false);
+    clearTimeout(this.slowTimer);
+    this.slowTimer = setTimeout(() => this.slow.set(true), SLOW_REQUEST_MS);
     forkJoin({ user: this.auth.getCurrentUser(), restaurants: this.auth.getMyRestaurants() }).subscribe({
       next: ({ user, restaurants }) => {
         this.user.set(user);
         this.setRestaurants(restaurants, this.readStoredSelection());
         this.status.set('ready');
+        clearTimeout(this.slowTimer);
       },
       error: (error: unknown) => {
         this.status.set('error');
+        clearTimeout(this.slowTimer);
         this.errorMessage.set(describeHttpError(error, 'carregar seus dados'));
       }
     });
@@ -74,9 +85,11 @@ export class RestaurantContext {
   addRestaurant(access: RestaurantAccess): void {
     this.restaurants.update(list => [...list.filter(r => r.restaurantId !== access.restaurantId), access]);
     this.select(access.restaurantId);
+    this.justCreated.set(access.restaurantName);
   }
 
   clear(): void {
+    this.justCreated.set(null);
     this.user.set(null);
     this.restaurants.set([]);
     this.selectedId.set(null);

@@ -22,6 +22,13 @@ import { PageHeaderComponent, RoleBadgeComponent, StateComponent, StatusBadgeCom
         <a routerLink="/app/convite" class="d-btn d-btn-secondary"><bo-icon name="ticket" [size]="16" /> Tenho um convite</a>
       </bo-state>
     } @else if (ctx.selected(); as r) {
+      @if (ctx.justCreated(); as created) {
+        <div class="d-alert d-alert-success ov-created" role="status">
+          <bo-icon name="check-circle" [size]="18" />
+          <p><strong>Restaurante cadastrado!</strong> Você está no painel de {{ created }} como proprietário.</p>
+          <button type="button" class="d-btn d-btn-ghost d-btn-sm" (click)="ctx.justCreated.set(null)" aria-label="Fechar aviso"><bo-icon name="x" [size]="14" /></button>
+        </div>
+      }
       <section class="ov-hero">
         <div>
           <p class="ov-eyebrow">Olá, {{ firstName() }}</p>
@@ -68,6 +75,27 @@ import { PageHeaderComponent, RoleBadgeComponent, StateComponent, StatusBadgeCom
       </div>
 
       <section class="d-section">
+        <div class="ov-head">
+          <h2 class="d-section-title">Seus restaurantes</h2>
+          <a routerLink="/app/novo-restaurante" class="d-btn d-btn-secondary d-btn-sm"><bo-icon name="plus" [size]="14" /> Novo restaurante</a>
+        </div>
+        <ul class="ov-restaurants">
+          @for (item of ctx.restaurants(); track item.restaurantId) {
+            <li [class.current]="item.restaurantId === ctx.selectedId()">
+              <span class="d-avatar d-avatar-restaurant" aria-hidden="true">{{ initials(item.restaurantName) }}</span>
+              <span class="ov-r-text"><strong>{{ item.restaurantName }}</strong><small class="d-mono">{{ item.restaurantSlug }}</small></span>
+              <bo-role-badge [role]="item.role" />
+              @if (item.restaurantId === ctx.selectedId()) {
+                <span class="ov-current"><bo-icon name="check" [size]="14" /> Em gestão</span>
+              } @else {
+                <button type="button" class="d-btn d-btn-primary d-btn-sm" (click)="open(item.restaurantId)">Abrir painel <bo-icon name="arrow-right" [size]="14" /></button>
+              }
+            </li>
+          }
+        </ul>
+      </section>
+
+      <section class="d-section">
         <h2 class="d-section-title">Ações rápidas</h2>
         <div class="ov-actions">
           @if (ctx.canViewTeam()) {
@@ -98,6 +126,16 @@ import { PageHeaderComponent, RoleBadgeComponent, StateComponent, StatusBadgeCom
     }
   `,
   styles: [`
+    .ov-created{margin-bottom:16px;align-items:center}
+    .ov-created p{flex:1}
+    .ov-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+    .ov-head .d-section-title{margin:0}
+    .ov-restaurants{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+    .ov-restaurants li{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--d-border);border-radius:14px;background:var(--d-surface)}
+    .ov-restaurants li.current{border-color:var(--d-primary);box-shadow:0 0 0 3px var(--d-primary-soft)}
+    .ov-r-text{flex:1;min-width:160px;display:flex;flex-direction:column}
+    .ov-r-text small{color:var(--d-muted);font-size:12px}
+    .ov-current{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--d-primary-text)}
     .ov-hero{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px;padding:28px;border-radius:16px;background:linear-gradient(120deg,var(--d-cream) 0%,var(--d-primary-soft) 100%);border:1px solid var(--d-border)}
     .ov-hero h2{margin:4px 0 8px;font-size:22px;font-weight:700;max-width:560px}
     .ov-hero p{margin:0;color:var(--d-ink-2);max-width:620px}
@@ -125,6 +163,16 @@ export class OverviewPage {
   protected readonly modules = DASHBOARD_MODULES.filter(m => m.id !== 'inicio');
   protected readonly teamCount = signal<number | null>(null);
   protected readonly teamError = signal(false);
+  protected open(restaurantId: string): void {
+    this.ctx.justCreated.set(null);
+    this.ctx.select(restaurantId);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  protected initials(name: string): string {
+    return name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase();
+  }
+
   protected readonly firstName = computed(() => this.ctx.user()?.fullName.split(' ')[0] ?? '');
 
   constructor() {

@@ -15,3 +15,5 @@
 .showcase-foot{font-size:12px;color:rgba(255,255,255,.55)}
 .panel-tools{display:flex;align-items:center;gap:10px}
 .demo-flag{padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--a-warn-bg);border:1px solid var(--a-warn-line);color:var(--a-warn)}
+.slow{display:flex;gap:8px;align-items:flex-start;margin:0;padding:10px 12px;border-radius:12px;background:var(--a-soft);color:var(--a-ink);font-size:12.5px;line-height:1.5;animation:fade .25s ease both}
+.slow bo-icon{color:var(--color-primary);margin-top:1px;flex-shrink:0}

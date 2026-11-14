@@ -6,6 +6,7 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } fro
 import { filter, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../auth.service';
+import { SLOW_SERVER_MESSAGE } from '../../shared/api-warmup';
 import { IconComponent } from '../../shared/icon.component';
 import { BrandLogoComponent } from '../../shared/brand-logo.component';
 import { ThemeToggleComponent } from '../../shared/theme-toggle.component';
@@ -49,6 +50,7 @@ export class DashboardShellComponent implements OnInit {
   protected readonly navOpen = signal(false);
   protected readonly accountOpen = signal(false);
   protected readonly demo = environment.demo;
+  protected readonly slowMessage = SLOW_SERVER_MESSAGE;
 
   private readonly url = toSignal(
     this.router.events.pipe(filter(e => e instanceof NavigationEnd), map(() => this.router.url)),

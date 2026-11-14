@@ -94,7 +94,7 @@
     <main class="d-content" id="d-main" tabindex="-1">
       @switch (ctx.status()) {
         @case ('loading') {
-          <bo-state kind="loading" title="Carregando seu painel" text="Estamos confirmando sua sessão e seus restaurantes." />
+          <bo-state kind="loading" title="Carregando seu painel" [text]="ctx.slow() ? slowMessage : 'Estamos confirmando sua sessão e seus restaurantes.'" />
         }
         @case ('error') {
           <bo-state kind="error" title="Não foi possível carregar o painel" [text]="ctx.errorMessage()">
