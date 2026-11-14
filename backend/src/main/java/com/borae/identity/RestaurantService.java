@@ -7,7 +7,15 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.text.Normalizer;
+import java.time.DayOfWeek;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -15,13 +23,16 @@ public class RestaurantService {
 
     private final RestaurantRepository restaurantRepository;
     private final RestaurantMembershipRepository membershipRepository;
+    private final RestaurantBusinessHoursRepository businessHoursRepository;
 
     public RestaurantService(
             RestaurantRepository restaurantRepository,
-            RestaurantMembershipRepository membershipRepository
+            RestaurantMembershipRepository membershipRepository,
+            RestaurantBusinessHoursRepository businessHoursRepository
     ) {
         this.restaurantRepository = restaurantRepository;
         this.membershipRepository = membershipRepository;
+        this.businessHoursRepository = businessHoursRepository;
     }
 
     @Transactional
@@ -89,6 +100,105 @@ public class RestaurantService {
                 request.category() == null ? restaurant.getCategory() : optionalText(request.category())
         );
         return RestaurantProfileResponse.from(restaurant);
+    }
+
+    @Transactional(readOnly = true)
+    public List<BusinessHoursDayResponse> getBusinessHours(UUID restaurantId, UserAccount actor) {
+        requireProfilePermission(restaurantId, actor);
+        findActiveRestaurant(restaurantId);
+
+        Map<DayOfWeek, List<BusinessHoursIntervalResponse>> schedule = new EnumMap<>(DayOfWeek.class);
+        for (RestaurantBusinessHours entry :
+                businessHoursRepository.findAllByRestaurant_IdOrderByDayOfWeekAscPositionAsc(restaurantId)) {
+            schedule.computeIfAbsent(entry.getDayOfWeek(), ignored -> new ArrayList<>())
+                    .add(new BusinessHoursIntervalResponse(entry.getOpeningTime(), entry.getClosingTime()));
+        }
+
+        return schedule.entrySet().stream()
+                .map(entry -> new BusinessHoursDayResponse(entry.getKey(), List.copyOf(entry.getValue())))
+                .toList();
+    }
+
+    @Transactional
+    public List<BusinessHoursDayResponse> replaceBusinessHours(
+            UUID restaurantId,
+            ReplaceBusinessHoursRequest request,
+            UserAccount actor
+    ) {
+        requireProfilePermission(restaurantId, actor);
+        Restaurant restaurant = findActiveRestaurant(restaurantId);
+        validateBusinessHours(request);
+
+        businessHoursRepository.deleteAllByRestaurant_Id(restaurantId);
+
+        List<RestaurantBusinessHours> entries = new ArrayList<>();
+        for (BusinessHoursDayRequest day : request.days()) {
+            List<BusinessHoursIntervalRequest> intervals = day.intervals().stream()
+                    .sorted((first, second) -> first.opensAt().compareTo(second.opensAt()))
+                    .toList();
+
+            for (int position = 0; position < intervals.size(); position++) {
+                BusinessHoursIntervalRequest interval = intervals.get(position);
+                entries.add(new RestaurantBusinessHours(
+                        restaurant,
+                        day.dayOfWeek(),
+                        position,
+                        interval.opensAt(),
+                        interval.closesAt()
+                ));
+            }
+        }
+
+        businessHoursRepository.saveAll(entries);
+        return getBusinessHoursAfterReplacement(request);
+    }
+
+    private List<BusinessHoursDayResponse> getBusinessHoursAfterReplacement(ReplaceBusinessHoursRequest request) {
+        return request.days().stream()
+                .sorted((first, second) -> first.dayOfWeek().compareTo(second.dayOfWeek()))
+                .map(day -> new BusinessHoursDayResponse(
+                        day.dayOfWeek(),
+                        day.intervals().stream()
+                                .sorted((first, second) -> first.opensAt().compareTo(second.opensAt()))
+                                .map(interval -> new BusinessHoursIntervalResponse(interval.opensAt(), interval.closesAt()))
+                                .toList()
+                ))
+                .toList();
+    }
+
+    private void validateBusinessHours(ReplaceBusinessHoursRequest request) {
+        if (request == null || request.days() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe a grade semanal de funcionamento.");
+        }
+
+        Set<DayOfWeek> configuredDays = new HashSet<>();
+        for (BusinessHoursDayRequest day : request.days()) {
+            if (day == null || day.dayOfWeek() == null || day.intervals() == null || day.intervals().isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cada dia informado precisa ter ao menos um intervalo.");
+            }
+            if (!configuredDays.add(day.dayOfWeek())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Não repita o mesmo dia na grade semanal.");
+            }
+
+            List<BusinessHoursIntervalRequest> intervals = day.intervals().stream()
+                    .sorted((first, second) -> first.opensAt().compareTo(second.opensAt()))
+                    .toList();
+            LocalTime previousClosingTime = null;
+
+            for (BusinessHoursIntervalRequest interval : intervals) {
+                if (interval == null || interval.opensAt() == null || interval.closesAt() == null
+                        || !interval.closesAt().isAfter(interval.opensAt())) {
+                    throw new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST,
+                            "O horário de fechamento deve ser posterior ao horário de abertura."
+                    );
+                }
+                if (previousClosingTime != null && interval.opensAt().isBefore(previousClosingTime)) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Os intervalos do dia não podem se sobrepor.");
+                }
+                previousClosingTime = interval.closesAt();
+            }
+        }
     }
 
     private String optionalText(String value) {
