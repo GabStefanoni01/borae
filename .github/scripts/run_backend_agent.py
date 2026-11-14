@@ -16,12 +16,12 @@ def main() -> int:
 
     # Remove the provider key before starting the agent/tools so shell commands
     # launched by the agent do not inherit it from the runner environment.
-    api_key = os.environ.pop("GEMINI_API_KEY", None)
+    api_key = os.environ.pop("GROQ_API_KEY", None)
     if not api_key:
-        print("The GEMINI_API_KEY repository secret is not configured.", file=sys.stderr)
+        print("The GROQ_API_KEY repository secret is not configured.", file=sys.stderr)
         return 2
 
-    model = os.environ.get("LLM_MODEL", "gemini/gemini-2.5-flash")
+    model = os.environ.get("LLM_MODEL", "groq/openai/gpt-oss-120b")
 
     from openhands.sdk import Conversation, LLM
     from openhands.tools.preset.default import get_default_agent
