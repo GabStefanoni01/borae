@@ -105,7 +105,8 @@ Implementada em componentes standalone do Angular 20 em `frontend/src/app/blog/`
 ---
 
 ## 7. Metadados SEO
-- **Domínio canônico configurado:** `https://borae1.onrender.com`
+- **Domínio canônico configurado:** `https://borae-web.onrender.com`
+- **Correção (14/11/2026):** o domínio original `borae1.onrender.com` não existe (404); o canônico, o `sitemap.xml`, o `robots.txt`, as meta tags e o JSON-LD passaram a usar `https://borae-web.onrender.com`, que é o Static Site publicado no Render. A propriedade do Google Search Console precisa ser deste domínio.
 - **Verificação do Google Search Console (`src/index.html`):**
   `<meta name="google-site-verification" content="LNBtubRhP0jRhpRvVbi9xvTFXKFZvfm5lO8qnl0Ml94" />`
 - **Títulos e descrições exclusivos por rota:** atualizados dinamicamente via `BlogSeoService` e presentes na página inicial.
@@ -127,7 +128,7 @@ Disponibilizado na raiz pública (`/sitemap.xml`), listando `/` (`priority 1.0`)
 ---
 
 ## 10. Robots (`frontend/public/robots.txt`)
-Disponibilizado na raiz pública (`/robots.txt`), permitindo o rastreamento de `/`, `/blog` e `/assets/`, bloqueando `/app`, `/auth`, `/login` e `/cadastro`, e apontando para `Sitemap: https://borae1.onrender.com/sitemap.xml`.
+Disponibilizado na raiz pública (`/robots.txt`), permitindo o rastreamento de `/`, `/blog` e `/assets/`, bloqueando `/app`, `/auth`, `/login` e `/cadastro`, e apontando para `Sitemap: https://borae-web.onrender.com/sitemap.xml`.
 
 ---
 

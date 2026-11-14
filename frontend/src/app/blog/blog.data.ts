@@ -1,6 +1,6 @@
 import { BlogArticle, BlogCategory, BlogCategorySlug } from './blog.models';
 
-export const BORAE_CANONICAL_ORIGIN = 'https://borae1.onrender.com';
+export const BORAE_CANONICAL_ORIGIN = 'https://borae-web.onrender.com';
 
 export const BLOG_CATEGORIES: readonly BlogCategory[] = [
   {
