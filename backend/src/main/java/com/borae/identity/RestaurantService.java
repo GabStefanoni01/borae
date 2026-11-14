@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.text.Normalizer;
 import java.util.Locale;
 import java.util.UUID;
@@ -26,9 +27,7 @@ public class RestaurantService {
     @Transactional
     public UserRestaurantAccessResponse create(CreateRestaurantRequest request, UserAccount owner) {
         String name = request.name().trim();
-        String description = request.description() == null || request.description().isBlank()
-                ? null
-                : request.description().trim();
+        String description = optionalText(request.description());
 
         Restaurant restaurant = restaurantRepository.save(
                 new Restaurant(name, createSlug(name), description)
@@ -57,17 +56,44 @@ public class RestaurantService {
         Restaurant restaurant = findActiveRestaurant(restaurantId);
 
         String name = request.name() == null ? restaurant.getName() : request.name().trim();
-        String slug = request.slug() == null ? restaurant.getSlug() : normalizeSlug(request.slug());
-        String description = request.description() == null
-                ? restaurant.getDescription()
-                : request.description().isBlank() ? null : request.description().trim();
+        if (name.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O nome do restaurante não pode ficar vazio.");
+        }
 
-        if (restaurantRepository.existsBySlugAndIdNot(slug, restaurantId)) {
+        String slug = request.slug() == null ? restaurant.getSlug() : normalizeSlug(request.slug());
+        if (!slug.equals(restaurant.getSlug())
+                && restaurantRepository.existsBySlugAndIdNot(slug, restaurantId)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Este endereço público já está em uso.");
         }
 
-        restaurant.updateProfile(name, slug, description);
+        BigDecimal latitude = request.latitude() == null ? restaurant.getLatitude() : request.latitude();
+        BigDecimal longitude = request.longitude() == null ? restaurant.getLongitude() : request.longitude();
+        if ((latitude == null) != (longitude == null)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Latitude e longitude devem ser informadas ou removidas em conjunto."
+            );
+        }
+
+        restaurant.updateProfile(
+                name,
+                slug,
+                request.description() == null ? restaurant.getDescription() : optionalText(request.description()),
+                request.phone() == null ? restaurant.getPhone() : optionalText(request.phone()),
+                request.whatsapp() == null ? restaurant.getWhatsapp() : optionalText(request.whatsapp()),
+                request.instagram() == null ? restaurant.getInstagram() : optionalText(request.instagram()),
+                request.website() == null ? restaurant.getWebsite() : optionalText(request.website()),
+                request.address() == null ? restaurant.getAddress() : optionalText(request.address()),
+                latitude,
+                longitude,
+                request.category() == null ? restaurant.getCategory() : optionalText(request.category())
+        );
         return RestaurantProfileResponse.from(restaurant);
+    }
+
+    private String optionalText(String value) {
+        if (value == null || value.isBlank()) return null;
+        return value.trim();
     }
 
     private Restaurant findActiveRestaurant(UUID restaurantId) {
