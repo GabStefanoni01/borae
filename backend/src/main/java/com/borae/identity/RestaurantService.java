@@ -180,14 +180,19 @@ public class RestaurantService {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Não repita o mesmo dia na grade semanal.");
             }
 
+            for (BusinessHoursIntervalRequest interval : day.intervals()) {
+                if (interval == null || interval.opensAt() == null || interval.closesAt() == null) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe os horários de abertura e fechamento.");
+                }
+            }
+
             List<BusinessHoursIntervalRequest> intervals = day.intervals().stream()
                     .sorted((first, second) -> first.opensAt().compareTo(second.opensAt()))
                     .toList();
             LocalTime previousClosingTime = null;
 
             for (BusinessHoursIntervalRequest interval : intervals) {
-                if (interval == null || interval.opensAt() == null || interval.closesAt() == null
-                        || !interval.closesAt().isAfter(interval.opensAt())) {
+                if (!interval.closesAt().isAfter(interval.opensAt())) {
                     throw new ResponseStatusException(
                             HttpStatus.BAD_REQUEST,
                             "O horário de fechamento deve ser posterior ao horário de abertura."
