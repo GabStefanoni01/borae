@@ -28,10 +28,10 @@ public class RestaurantMedia {
     @Column(name = "media_type", nullable = false, length = 16)
     private RestaurantMediaType mediaType;
 
-    @Column(name = "object_key", nullable = false, unique = true, length = 500)
-    private String objectKey;
+    @Column(name = "provider_file_id", nullable = false, unique = true, length = 200)
+    private String providerFileId;
 
-    @Column(name = "public_url", length = 1000)
+    @Column(name = "public_url", nullable = false, length = 1000)
     private String publicUrl;
 
     @Column(name = "content_type", nullable = false, length = 50)
@@ -51,12 +51,12 @@ public class RestaurantMedia {
 
     protected RestaurantMedia() {}
 
-    public RestaurantMedia(Restaurant restaurant, RestaurantMediaType mediaType, String objectKey,
+    public RestaurantMedia(Restaurant restaurant, RestaurantMediaType mediaType, String providerFileId,
                            String publicUrl, String contentType, long fileSize, int width, int height) {
         this.id = UUID.randomUUID();
         this.restaurant = restaurant;
         this.mediaType = mediaType;
-        this.objectKey = objectKey;
+        this.providerFileId = providerFileId;
         this.publicUrl = publicUrl;
         this.contentType = contentType;
         this.fileSize = fileSize;
@@ -68,7 +68,7 @@ public class RestaurantMedia {
     public UUID getId() { return id; }
     public Restaurant getRestaurant() { return restaurant; }
     public RestaurantMediaType getMediaType() { return mediaType; }
-    public String getObjectKey() { return objectKey; }
+    public String getProviderFileId() { return providerFileId; }
     public String getPublicUrl() { return publicUrl; }
     public String getContentType() { return contentType; }
     public long getFileSize() { return fileSize; }
