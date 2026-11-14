@@ -103,4 +103,5 @@ jobs:
             --base main \
             --head "$BRANCH_NAME" \
             --title "AI Backend Agent: implementação solicitada" \
-            --body-file "$RUNNER_TEMP/pr-body.md"
+            --body-file "$RUNNER_TEMP/pr-body.md" \\
+            --draft
