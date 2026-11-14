@@ -16,3 +16,7 @@ CREATE TABLE restaurant_media (
 
 CREATE INDEX idx_restaurant_media_restaurant_type
     ON restaurant_media (restaurant_id, media_type, created_at);
+
+CREATE UNIQUE INDEX uq_restaurant_media_single_logo
+    ON restaurant_media (restaurant_id)
+    WHERE media_type = 'LOGO';
