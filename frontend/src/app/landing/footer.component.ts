@@ -27,12 +27,25 @@ import { BrandLogoComponent } from '../shared/brand-logo.component';
         <div class="footer-nav-col">
           <span class="footer-col-title">Navegação</span>
           <ul class="footer-links">
-            <li><a href="#inicio">Início</a></li>
-            <li><a href="#restaurantes">Para restaurantes</a></li>
-            <li><a href="#consumidores">Para consumidores</a></li>
-            <li><a href="#como-funciona">Como funciona</a></li>
-            <li><a href="#sobre">Sobre o Boraê</a></li>
-            <li><a href="#faq">Perguntas frequentes</a></li>
+            <li><a href="/#inicio">Início</a></li>
+            <li><a href="/#restaurantes">Para restaurantes</a></li>
+            <li><a href="/#consumidores">Para consumidores</a></li>
+            <li><a href="/#como-funciona">Como funciona</a></li>
+            <li><a href="/#sobre">Sobre o Boraê</a></li>
+            <li><a href="/#faq">Perguntas frequentes</a></li>
+          </ul>
+        </div>
+
+        <!-- Coluna de Conteúdo (Blog e Pilares Editoriais) -->
+        <div class="footer-content-col">
+          <span class="footer-col-title">Conteúdo</span>
+          <ul class="footer-links">
+            <li><a routerLink="/blog">Blog Boraê</a></li>
+            <li><a routerLink="/blog" [queryParams]="{ categoria: 'gestao-e-inovacao' }">Gestão e inovação</a></li>
+            <li><a routerLink="/blog" [queryParams]="{ categoria: 'cardapios-e-experiencia' }">Cardápios digitais</a></li>
+            <li><a routerLink="/blog" [queryParams]="{ categoria: 'cultura-e-gastronomia' }">Cultura gastronômica</a></li>
+            <li><a routerLink="/blog" [queryParams]="{ categoria: 'tecnologia-e-gastronomia' }">Tecnologia e gastronomia</a></li>
+            <li><a routerLink="/blog" [queryParams]="{ categoria: 'marketing-e-relacionamento' }">Marketing e relacionamento</a></li>
           </ul>
         </div>
 
@@ -42,7 +55,7 @@ import { BrandLogoComponent } from '../shared/brand-logo.component';
           <ul class="footer-links">
             <li><a routerLink="/auth">Acessar minha conta</a></li>
             <li><a routerLink="/auth">Cadastrar restaurante</a></li>
-            <li><a href="#ecossistema">Ecossistema Boraê</a></li>
+            <li><a href="/#ecossistema">Ecossistema Boraê</a></li>
           </ul>
           <div class="platform-status-badge">
             <span class="status-indicator"></span>
@@ -77,8 +90,15 @@ import { BrandLogoComponent } from '../shared/brand-logo.component';
 
     @media (min-width: 768px) {
       .footer-container {
-        grid-template-columns: 1.5fr 1fr 1fr;
-        gap: 48px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 40px;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .footer-container {
+        grid-template-columns: 1.4fr 1fr 1.1fr 1fr;
+        gap: 44px;
       }
     }
 

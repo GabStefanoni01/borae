@@ -19,18 +19,19 @@ import { BrandLogoComponent } from '../shared/brand-logo.component';
         <!-- Navegação Desktop -->
         <nav class="desktop-nav" aria-label="Navegação principal">
           <ul class="nav-list">
-            <li><a href="#inicio" class="nav-link">Início</a></li>
-            <li><a href="#restaurantes" class="nav-link">Para restaurantes</a></li>
-            <li><a href="#consumidores" class="nav-link">Para consumidores</a></li>
-            <li><a href="#como-funciona" class="nav-link">Como funciona</a></li>
-            <li><a href="#sobre" class="nav-link">Sobre o Boraê</a></li>
+            <li><a href="/#inicio" class="nav-link">Início</a></li>
+            <li><a href="/#restaurantes" class="nav-link">Para restaurantes</a></li>
+            <li><a href="/#consumidores" class="nav-link">Para consumidores</a></li>
+            <li><a href="/#como-funciona" class="nav-link">Como funciona</a></li>
+            <li><a href="/#sobre" class="nav-link">Sobre o Boraê</a></li>
+            <li><a routerLink="/blog" class="nav-link">Blog</a></li>
           </ul>
         </nav>
 
         <!-- Ações do Header -->
         <div class="header-actions">
           <a routerLink="/auth" class="login-link">Entrar</a>
-          <a href="#conheca" class="btn btn-primary header-cta">Conheça o Boraê</a>
+          <a href="/#conheca" class="btn btn-primary header-cta">Conheça o Boraê</a>
           
           <!-- Botão Menu Mobile -->
           <button 
@@ -67,17 +68,18 @@ import { BrandLogoComponent } from '../shared/brand-logo.component';
         </div>
         <nav class="mobile-nav" aria-label="Navegação móvel">
           <ul class="mobile-nav-list">
-            <li><a href="#inicio" class="mobile-link" (click)="closeMobileMenu()">Início</a></li>
-            <li><a href="#restaurantes" class="mobile-link" (click)="closeMobileMenu()">Para restaurantes</a></li>
-            <li><a href="#consumidores" class="mobile-link" (click)="closeMobileMenu()">Para consumidores</a></li>
-            <li><a href="#como-funciona" class="mobile-link" (click)="closeMobileMenu()">Como funciona</a></li>
-            <li><a href="#sobre" class="mobile-link" (click)="closeMobileMenu()">Sobre o Boraê</a></li>
-            <li><a href="#faq" class="mobile-link" (click)="closeMobileMenu()">Perguntas frequentes</a></li>
+            <li><a href="/#inicio" class="mobile-link" (click)="closeMobileMenu()">Início</a></li>
+            <li><a href="/#restaurantes" class="mobile-link" (click)="closeMobileMenu()">Para restaurantes</a></li>
+            <li><a href="/#consumidores" class="mobile-link" (click)="closeMobileMenu()">Para consumidores</a></li>
+            <li><a href="/#como-funciona" class="mobile-link" (click)="closeMobileMenu()">Como funciona</a></li>
+            <li><a href="/#sobre" class="mobile-link" (click)="closeMobileMenu()">Sobre o Boraê</a></li>
+            <li><a routerLink="/blog" class="mobile-link" (click)="closeMobileMenu()">Blog</a></li>
+            <li><a href="/#faq" class="mobile-link" (click)="closeMobileMenu()">Perguntas frequentes</a></li>
           </ul>
         </nav>
         <div class="mobile-actions">
           <a routerLink="/auth" class="btn btn-secondary full-width" (click)="closeMobileMenu()">Acessar conta</a>
-          <a href="#conheca" class="btn btn-primary full-width" (click)="closeMobileMenu()">Conheça o Boraê</a>
+          <a href="/#conheca" class="btn btn-primary full-width" (click)="closeMobileMenu()">Conheça o Boraê</a>
         </div>
       </div>
   `,

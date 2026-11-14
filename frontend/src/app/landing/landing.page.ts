@@ -1,5 +1,4 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { Title, Meta } from '@angular/platform-browser';
 import { HeaderComponent } from './header.component';
 import { HeroComponent } from './hero.component';
 import { ProposalComponent } from './proposal.component';
@@ -9,10 +8,12 @@ import { ConsumersComponent } from './consumers.component';
 import { HowItWorksComponent } from './how-it-works.component';
 import { EcosystemComponent } from './ecosystem.component';
 import { PurposeComponent } from './purpose.component';
+import { BlogSectionComponent } from '../blog/blog-section.component';
 import { FaqComponent } from './faq.component';
 import { CtaComponent } from './cta.component';
 import { FooterComponent } from './footer.component';
 import { warmUpApi } from '../shared/api-warmup';
+import { BlogSeoService } from '../blog/blog-seo.service';
 
 @Component({
   selector: 'app-landing-page',
@@ -27,6 +28,7 @@ import { warmUpApi } from '../shared/api-warmup';
     HowItWorksComponent,
     EcosystemComponent,
     PurposeComponent,
+    BlogSectionComponent,
     FaqComponent,
     CtaComponent,
     FooterComponent
@@ -61,14 +63,17 @@ import { warmUpApi } from '../shared/api-warmup';
         <!-- Seção 9: Identidade e Propósito -->
         <app-purpose />
 
-        <!-- Seção 10: Perguntas Frequentes -->
+        <!-- Seção 10: Conteúdo Editorial / Blog Boraê -->
+        <app-blog-section />
+
+        <!-- Seção 11: Perguntas Frequentes -->
         <app-faq />
 
-        <!-- Seção 11: CTA Final -->
+        <!-- Seção 12: CTA Final -->
         <app-cta />
       </main>
 
-      <!-- Seção 12: Footer Institucional -->
+      <!-- Seção 13: Footer Institucional -->
       <app-footer />
     </div>
   `,
@@ -91,16 +96,11 @@ import { warmUpApi } from '../shared/api-warmup';
   `]
 })
 export class LandingPage implements OnInit {
-  private readonly titleService = inject(Title);
-  private readonly metaService = inject(Meta);
+  private readonly seoService = inject(BlogSeoService);
 
   ngOnInit(): void {
     // Começa a reativar a API (plano gratuito do Render) antes de a pessoa ir para o login.
     warmUpApi();
-    this.titleService.setTitle('Boraê | Experiências gastronômicas mais inteligentes');
-    this.metaService.updateTag({
-      name: 'description',
-      content: 'Conheça o Boraê, uma plataforma que conecta restaurantes e consumidores por meio de tecnologia, descoberta e novas experiências gastronômicas.'
-    });
+    this.seoService.setLandingSeo();
   }
 }
