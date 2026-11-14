@@ -60,7 +60,7 @@ class RestaurantServiceTest {
                 restaurantId,
                 request("Boraê Centro", "Nova descrição", "borae-centro",
                         "11999990000", null, "@borae", "https://borae.example",
-                        "Rua Central, 100", " -23.5505200 ", "-46.6333080", "Brasileira"),
+                        "Rua Central, 100", "-23.5505200", "-46.6333080", "Brasileira"),
                 owner
         );
 
@@ -119,7 +119,7 @@ class RestaurantServiceTest {
         when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(restaurant));
 
         assertThrows(ResponseStatusException.class, () -> restaurantService.updateProfile(
-                restaurantId, request(null, null, null, null, null, null, null, null, new BigDecimal("-23.5"), null, null), owner
+                restaurantId, request(null, null, null, null, null, null, null, null, "-23.5", null, null), owner
         ));
     }
 
