@@ -20,13 +20,13 @@ public class RestaurantMediaService {
     private final RestaurantRepository restaurantRepository;
     private final RestaurantMembershipRepository membershipRepository;
     private final RestaurantMediaRepository mediaRepository;
-    private final R2ObjectStorage storage;
+    private final RestaurantObjectStorage storage;
     private final RestaurantImageProcessor imageProcessor;
 
     public RestaurantMediaService(RestaurantRepository restaurantRepository,
                                   RestaurantMembershipRepository membershipRepository,
                                   RestaurantMediaRepository mediaRepository,
-                                  R2ObjectStorage storage,
+                                  RestaurantObjectStorage storage,
                                   RestaurantImageProcessor imageProcessor) {
         this.restaurantRepository = restaurantRepository;
         this.membershipRepository = membershipRepository;
@@ -77,20 +77,21 @@ public class RestaurantMediaService {
                 ? mediaRepository.findFirstByRestaurant_IdAndMediaType(restaurantId, RestaurantMediaType.LOGO).orElse(null)
                 : null;
 
-        String key = "restaurants/" + restaurantId + "/" + type.name().toLowerCase() + "/" +
-                UUID.randomUUID() + "." + processed.extension();
-        storage.put(key, processed.bytes(), processed.contentType());
+        String folder = "/restaurants/" + restaurantId + "/" + type.name().toLowerCase();
+        String fileName = UUID.randomUUID() + "." + processed.extension();
+        RestaurantObjectStorage.StoredObject uploaded =
+                storage.upload(folder, fileName, processed.bytes(), processed.contentType());
 
         RestaurantMedia saved;
         try {
-            saved = mediaRepository.save(new RestaurantMedia(restaurant, type, key, storage.publicUrl(key),
+            saved = mediaRepository.save(new RestaurantMedia(restaurant, type, uploaded.fileId(), uploaded.publicUrl(),
                     processed.contentType(), processed.bytes().length, processed.width(), processed.height()));
             if (previousLogo != null) {
                 mediaRepository.delete(previousLogo);
-                storage.delete(previousLogo.getObjectKey());
+                storage.delete(previousLogo.getProviderFileId());
             }
         } catch (RuntimeException exception) {
-            storage.delete(key);
+            storage.delete(uploaded.fileId());
             throw exception;
         }
         return RestaurantMediaResponse.from(saved);
@@ -102,7 +103,7 @@ public class RestaurantMediaService {
         RestaurantMedia media = mediaRepository.findByIdAndRestaurant_Id(mediaId, restaurantId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Imagem não encontrada."));
         mediaRepository.delete(media);
-        storage.delete(media.getObjectKey());
+        storage.delete(media.getProviderFileId());
     }
 
     private void requireManagerAccess(UUID restaurantId, UserAccount actor) {
