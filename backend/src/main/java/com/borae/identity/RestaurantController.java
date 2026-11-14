@@ -47,7 +47,10 @@ public class RestaurantController {
     }
 
     @GetMapping("/{restaurantId}")
-    @Operation(summary = "Consultar perfil do restaurante", description = "Retorna os dados do perfil para membros autorizados.")
+    @Operation(
+            summary = "Consultar perfil do restaurante",
+            description = "Retorna o perfil para usuários OWNER ou MANAGER vinculados ao restaurante."
+    )
     public RestaurantProfileResponse getProfile(
             @PathVariable UUID restaurantId,
             Authentication authentication
