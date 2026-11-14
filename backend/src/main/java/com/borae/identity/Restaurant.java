@@ -42,4 +42,10 @@ public class Restaurant {
     public String getSlug() { return slug; }
     public String getDescription() { return description; }
     public boolean isActive() { return active; }
+
+    public void updateProfile(String name, String slug, String description) {
+        this.name = name;
+        this.slug = slug;
+        this.description = description;
+    }
 }
