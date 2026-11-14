@@ -47,7 +47,7 @@ export const DASHBOARD_MODULES: DashboardModule[] = [
     title: 'Visão geral', subtitle: 'Bem-vindo ao seu espaço de gestão no Boraê.'
   },
   {
-    id: 'restaurante', label: 'Meu restaurante', icon: 'store', group: 'Estabelecimento', path: 'restaurante', status: 'partial',
+    id: 'restaurante', label: 'Meu restaurante', icon: 'store', group: 'Estabelecimento', path: 'restaurante', status: 'available',
     title: 'Meu restaurante', subtitle: 'Gerencie as informações que representam seu estabelecimento dentro do Boraê.'
   },
   {

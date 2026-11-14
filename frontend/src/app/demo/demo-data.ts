@@ -16,7 +16,13 @@ export const DEMO_INVITE_TOKEN = 'DEMO-CONVITE-2026';
 export type DemoRole = 'OWNER' | 'MANAGER' | 'STAFF';
 
 export interface DemoUser { id: string; fullName: string; email: string; password: string; }
-export interface DemoRestaurant { id: string; name: string; slug: string; description?: string; }
+export interface DemoRestaurant {
+  id: string; name: string; slug: string; description?: string | null;
+  phone?: string | null; whatsapp?: string | null; instagram?: string | null; website?: string | null;
+  address?: string | null; latitude?: number | null; longitude?: number | null; category?: string | null;
+  publicationStatus?: 'DRAFT' | 'PUBLISHED' | 'SUSPENDED';
+  hours?: { dayOfWeek: string; intervals: { opensAt: string; closesAt: string }[] }[];
+}
 export interface DemoMembership { id: string; restaurantId: string; userId: string; role: DemoRole; active: boolean; }
 export interface DemoInvitation { id: string; restaurantId: string; email: string; role: 'MANAGER' | 'STAFF'; token: string; expiresAt: string; accepted: boolean; }
 
@@ -40,7 +46,21 @@ export function createDemoSeed(): DemoDatabase {
   return {
     users,
     restaurants: [
-      { id: CANTINA, name: 'Cantina Bella Vista', slug: 'cantina-bella-vista', description: 'Massas artesanais e cozinha italiana contemporânea.' },
+      {
+        id: CANTINA, name: 'Cantina Bella Vista', slug: 'cantina-bella-vista',
+        description: 'Massas artesanais e cozinha italiana contemporânea.',
+        phone: '(11) 3333-4444', whatsapp: '(11) 99999-0000', instagram: '@cantinabellavista', website: null,
+        address: 'Rua das Oliveiras, 120 — Pinheiros, São Paulo/SP', latitude: -23.5614, longitude: -46.6820,
+        category: 'Italiana', publicationStatus: 'DRAFT',
+        hours: [
+          { dayOfWeek: 'TUESDAY', intervals: [{ opensAt: '11:30', closesAt: '15:00' }, { opensAt: '18:30', closesAt: '23:00' }] },
+          { dayOfWeek: 'WEDNESDAY', intervals: [{ opensAt: '11:30', closesAt: '15:00' }, { opensAt: '18:30', closesAt: '23:00' }] },
+          { dayOfWeek: 'THURSDAY', intervals: [{ opensAt: '11:30', closesAt: '15:00' }, { opensAt: '18:30', closesAt: '23:00' }] },
+          { dayOfWeek: 'FRIDAY', intervals: [{ opensAt: '11:30', closesAt: '15:00' }, { opensAt: '18:30', closesAt: '23:59' }] },
+          { dayOfWeek: 'SATURDAY', intervals: [{ opensAt: '12:00', closesAt: '23:59' }] },
+          { dayOfWeek: 'SUNDAY', intervals: [{ opensAt: '12:00', closesAt: '17:00' }] }
+        ]
+      },
       { id: CAFE, name: 'Café da Praça', slug: 'cafe-da-praca' }
     ],
     memberships: [

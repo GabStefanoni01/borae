@@ -46,6 +46,8 @@ export class RestaurantContext {
   readonly canViewTeam = computed(() => this.role() === 'OWNER' || this.role() === 'MANAGER');
   /** Convidar, alterar papel e remover — somente OWNER na implementação atual. */
   readonly canManageTeam = computed(() => this.role() === 'OWNER');
+  /** Perfil, horários e imagens — OWNER e MANAGER (API de perfil do restaurante). */
+  readonly canEditProfile = computed(() => this.role() === 'OWNER' || this.role() === 'MANAGER');
 
   load(): void {
     this.status.set('loading');
@@ -86,6 +88,11 @@ export class RestaurantContext {
     this.restaurants.update(list => [...list.filter(r => r.restaurantId !== access.restaurantId), access]);
     this.select(access.restaurantId);
     this.justCreated.set(access.restaurantName);
+  }
+
+  /** Reflete na navegação o nome/slug salvos no perfil (PATCH /restaurants/{id}). */
+  updateRestaurantInfo(restaurantId: string, name: string, slug: string): void {
+    this.restaurants.update(list => list.map(r => r.restaurantId === restaurantId ? { ...r, restaurantName: name, restaurantSlug: slug } : r));
   }
 
   clear(): void {
