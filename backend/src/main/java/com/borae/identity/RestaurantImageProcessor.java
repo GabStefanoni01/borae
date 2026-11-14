@@ -8,6 +8,7 @@ import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -37,12 +38,14 @@ public class RestaurantImageProcessor {
             throw badImage();
         }
 
-        try (ByteArrayInputStream input = new ByteArrayInputStream(source)) {
-            Iterator<javax.imageio.ImageReader> readers = ImageIO.getImageReaders(input);
+        try (ByteArrayInputStream input = new ByteArrayInputStream(source);
+             ImageInputStream imageInput = ImageIO.createImageInputStream(input)) {
+            if (imageInput == null) throw badImage();
+            Iterator<javax.imageio.ImageReader> readers = ImageIO.getImageReaders(imageInput);
             if (!readers.hasNext()) throw badImage();
             javax.imageio.ImageReader reader = readers.next();
             try {
-                reader.setInput(ImageIO.createImageInputStream(input), true, true);
+                reader.setInput(imageInput, true, true);
                 String actualFormat = reader.getFormatName().toLowerCase(Locale.ROOT);
                 if (!(actualFormat.equals("jpeg") || actualFormat.equals("jpg") ||
                         actualFormat.equals("png") || actualFormat.equals("webp"))) throw badImage();
