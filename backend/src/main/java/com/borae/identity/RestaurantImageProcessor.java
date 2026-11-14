@@ -47,8 +47,13 @@ public class RestaurantImageProcessor {
             try {
                 reader.setInput(imageInput, true, true);
                 String actualFormat = reader.getFormatName().toLowerCase(Locale.ROOT);
-                if (!(actualFormat.equals("jpeg") || actualFormat.equals("jpg") ||
-                        actualFormat.equals("png") || actualFormat.equals("webp"))) throw badImage();
+                boolean formatMatches = switch (expectedType) {
+                    case "image/jpeg" -> actualFormat.equals("jpeg") || actualFormat.equals("jpg");
+                    case "image/png" -> actualFormat.equals("png");
+                    case "image/webp" -> actualFormat.equals("webp");
+                    default -> false;
+                };
+                if (!formatMatches) throw badImage();
                 int width = reader.getWidth(0);
                 int height = reader.getHeight(0);
                 if (width < 1 || height < 1 || (long) width * height > MAX_PIXELS) throw badImage();
