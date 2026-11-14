@@ -36,7 +36,9 @@ public class ImageKitRestaurantObjectStorage implements RestaurantObjectStorage 
         FileUploadResponse response = client().files().upload(params);
         String publicUrl = response.url().orElseThrow(() ->
                 new IllegalStateException("O ImageKit não retornou a URL pública do arquivo enviado."));
-        return new StoredObject(response.fileId(), publicUrl);
+        String fileId = response.fileId().orElseThrow(() ->
+                new IllegalStateException("O ImageKit não retornou o identificador do arquivo enviado."));
+        return new StoredObject(fileId, publicUrl);
     }
 
     @Override
