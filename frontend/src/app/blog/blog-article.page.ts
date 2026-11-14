@@ -286,7 +286,7 @@ import { BlogSeoService } from './blog-seo.service';
                   @for (source of post.externalSources; track source.url) {
                     <li>
                       <a [href]="source.url" target="_blank" rel="noopener noreferrer">
-                        {{ source.title }} — {{ source.publisher }}
+                        {{ source.title }} ({{ source.publisher }})
                       </a>
                       <p>{{ source.note }}</p>
                     </li>
