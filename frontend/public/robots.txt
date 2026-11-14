@@ -9,4 +9,4 @@ Disallow: /auth
 Disallow: /login
 Disallow: /cadastro
 
-Sitemap: https://borae1.onrender.com/sitemap.xml
+Sitemap: https://borae-web.onrender.com/sitemap.xml
