@@ -1,7 +1,7 @@
 import { HttpErrorResponse, HttpInterceptorFn, HttpRequest, HttpResponse } from '@angular/common/http';
-import { Observable, delay, of, throwError } from 'rxjs';
+import { Observable, delay, from, of, switchMap, throwError } from 'rxjs';
 import { API_URL } from '../auth.service';
-import { DemoDatabase, DemoMembership, DemoRole, DemoUser, createDemoSeed } from './demo-data';
+import { DemoDatabase, DemoMembership, DemoRestaurant, DemoRole, DemoUser, createDemoSeed } from './demo-data';
 
 /**
  * MODO DEMONSTRAÇÃO — simulador local da API do Boraê.
@@ -84,6 +84,30 @@ function handle(req: HttpRequest<unknown>): Observable<HttpResponse<unknown>> {
     return ok(member(db, membership));
   }
 
+  // ---------- Perfil, horários e imagens (OWNER e MANAGER) ----------
+  const profileRoute = path.match(/^\/restaurants\/([^/]+)(?:\/(business-hours|media)(?:\/([^/]+))?)?$/);
+  if (profileRoute && !(method === 'POST' && !profileRoute[2])) {
+    const [, restaurantId, section, mediaId] = profileRoute;
+    const restaurant = db.restaurants.find(r => r.id === restaurantId);
+    const membership = db.memberships.find(m => m.restaurantId === restaurantId && m.userId === user.id && m.active);
+    if (!membership) return fail(403, 'Você não tem acesso a este restaurante.');
+    if (membership.role === 'STAFF') return fail(403, 'Seu papel não permite administrar o perfil.');
+    if (!restaurant) return fail(404, 'Restaurante não encontrado.');
+
+    if (!section && method === 'GET') return ok(profileOf(restaurant));
+    if (!section && method === 'PATCH') return updateProfile(db, restaurant, body as Record<string, unknown>);
+    if (section === 'business-hours' && method === 'GET') return ok(sortHours(restaurant.hours ?? []));
+    if (section === 'business-hours' && method === 'PUT') return replaceHours(db, restaurant, req.body as { days?: unknown });
+    if (section === 'media' && method === 'GET' && !mediaId) return ok(mediaOf(restaurantId));
+    if (section === 'media' && method === 'POST' && !mediaId) return uploadMedia(restaurantId, req.body);
+    if (section === 'media' && method === 'DELETE' && mediaId) {
+      const index = DEMO_MEDIA.findIndex(m => m.id === mediaId && m.restaurantId === restaurantId);
+      if (index < 0) return fail(404, 'Imagem não encontrada.');
+      DEMO_MEDIA.splice(index, 1);
+      return ok(null, 204);
+    }
+  }
+
   // ---------- Equipe do restaurante ----------
   const team = path.match(/^\/restaurants\/([^/]+)\/(members|invitations)(?:\/([^/]+))?$/);
   if (team) {
@@ -135,6 +159,135 @@ function handle(req: HttpRequest<unknown>): Observable<HttpResponse<unknown>> {
   }
 
   return fail(404, 'Recurso não disponível no modo demonstração.');
+}
+
+// ---------- perfil (modo demonstração) ----------
+interface DemoMedia {
+  id: string; restaurantId: string; type: 'LOGO' | 'PHOTO'; url: string; contentType: string;
+  sizeBytes: number; width: number; height: number; createdAt: string;
+}
+/** Imagens ficam só na memória da aba (arquivos grandes não cabem no sessionStorage). */
+const DEMO_MEDIA: DemoMedia[] = [];
+const WEEK = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+type DemoHours = NonNullable<DemoRestaurant['hours']>;
+
+function profileOf(r: DemoRestaurant) {
+  return {
+    id: r.id, name: r.name, slug: r.slug, description: r.description ?? null, active: true,
+    phone: r.phone ?? null, whatsapp: r.whatsapp ?? null, instagram: r.instagram ?? null, website: r.website ?? null,
+    address: r.address ?? null, latitude: r.latitude ?? null, longitude: r.longitude ?? null,
+    category: r.category ?? null, publicationStatus: r.publicationStatus ?? 'DRAFT'
+  };
+}
+
+/** Mesma semântica do backend: campo ausente mantém; string vazia limpa; lat/lng juntas; slug único. */
+function updateProfile(db: DemoDatabase, r: DemoRestaurant, body: Record<string, unknown>): Observable<HttpResponse<unknown>> {
+  const name = body['name'] == null ? r.name : String(body['name']).trim();
+  if (!name || name.length > 180) return fail(400, 'O nome do restaurante não pode ficar vazio.');
+
+  let slug = r.slug;
+  if (body['slug'] != null) {
+    if (!/^[a-zA-Z0-9À-ÿ-]+$/.test(String(body['slug']))) return fail(400, 'Use apenas letras, números e hífens.');
+    slug = String(body['slug']).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+      .replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    if (!slug || slug.length > 120) return fail(400, 'O endereço público informado é inválido.');
+    if (slug !== r.slug && db.restaurants.some(x => x.slug === slug && x.id !== r.id)) return fail(409, 'Este endereço público já está em uso.');
+  }
+
+  const lat = body['latitude'] == null ? r.latitude ?? null : Number(body['latitude']);
+  const lng = body['longitude'] == null ? r.longitude ?? null : Number(body['longitude']);
+  if ((lat == null) !== (lng == null)) return fail(400, 'Latitude e longitude devem ser informadas em conjunto.');
+  if (lat != null && (Number.isNaN(lat) || lat < -90 || lat > 90)) return fail(400, 'Latitude inválida.');
+  if (lng != null && (Number.isNaN(lng) || lng < -180 || lng > 180)) return fail(400, 'Longitude inválida.');
+
+  const limits: Record<string, number> = { description: 1000, phone: 30, whatsapp: 30, instagram: 120, website: 255, address: 500, category: 80 };
+  const updates: Record<string, string | null> = {};
+  for (const [key, max] of Object.entries(limits)) {
+    if (body[key] == null) continue;
+    const value = String(body[key]).trim();
+    if (value.length > max) return fail(400, 'Dados inválidos.');
+    updates[key] = value || null;
+  }
+  Object.assign(r, updates, { name, slug, latitude: lat, longitude: lng });
+  save(db);
+  return ok(profileOf(r));
+}
+
+function sortHours(days: DemoHours) {
+  return [...days]
+    .sort((a, b) => WEEK.indexOf(a.dayOfWeek) - WEEK.indexOf(b.dayOfWeek))
+    .map(d => ({ dayOfWeek: d.dayOfWeek, intervals: [...d.intervals].sort((a, b) => a.opensAt.localeCompare(b.opensAt)) }));
+}
+
+function replaceHours(db: DemoDatabase, r: DemoRestaurant, body: { days?: unknown }): Observable<HttpResponse<unknown>> {
+  const days = body?.days as DemoHours | undefined;
+  if (!Array.isArray(days)) return fail(400, 'Informe a grade semanal de funcionamento.');
+  const seen = new Set<string>();
+  for (const day of days) {
+    if (!day || !WEEK.includes(day.dayOfWeek) || !Array.isArray(day.intervals) || day.intervals.length === 0) {
+      return fail(400, 'Cada dia informado precisa ter ao menos um intervalo.');
+    }
+    if (seen.has(day.dayOfWeek)) return fail(400, 'Não repita o mesmo dia na grade semanal.');
+    seen.add(day.dayOfWeek);
+    const sorted = [...day.intervals].sort((a, b) => String(a?.opensAt).localeCompare(String(b?.opensAt)));
+    let previousClose: string | null = null;
+    for (const iv of sorted) {
+      if (!iv?.opensAt || !iv?.closesAt) return fail(400, 'Informe os horários de abertura e fechamento.');
+      if (iv.closesAt <= iv.opensAt) return fail(400, 'O fechamento deve ser posterior à abertura.');
+      if (previousClose && iv.opensAt < previousClose) return fail(400, 'Os intervalos do dia não podem se sobrepor.');
+      previousClose = iv.closesAt;
+    }
+  }
+  r.hours = days.map(d => ({ dayOfWeek: d.dayOfWeek, intervals: d.intervals.map(iv => ({ opensAt: iv.opensAt.slice(0, 5), closesAt: iv.closesAt.slice(0, 5) })) }));
+  save(db);
+  return ok(sortHours(r.hours));
+}
+
+function mediaOf(restaurantId: string) {
+  return DEMO_MEDIA
+    .filter(m => m.restaurantId === restaurantId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .map(({ restaurantId: _owner, ...media }) => media);
+}
+
+function uploadMedia(restaurantId: string, body: unknown): Observable<HttpResponse<unknown>> {
+  if (!(body instanceof FormData)) return fail(400, 'Selecione o tipo e o arquivo de imagem.');
+  const type = body.get('type');
+  const file = body.get('file');
+  if ((type !== 'LOGO' && type !== 'PHOTO') || !(file instanceof File) || file.size === 0) return fail(400, 'Selecione o tipo e o arquivo de imagem.');
+  if (file.size > (type === 'LOGO' ? 5 : 10) * 1024 * 1024) return fail(413, 'Arquivo grande demais.');
+  if (type === 'PHOTO' && DEMO_MEDIA.filter(m => m.restaurantId === restaurantId && m.type === 'PHOTO').length >= 100) return fail(409, 'Limite de 100 fotos.');
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return fail(400, 'Formato não aceito.');
+
+  const url = URL.createObjectURL(file);
+  return from(imageSize(url)).pipe(switchMap(size => {
+    if (!size) {
+      URL.revokeObjectURL(url);
+      return fail(400, 'Não foi possível processar a imagem enviada.');
+    }
+    if (type === 'LOGO') {
+      for (let i = DEMO_MEDIA.length - 1; i >= 0; i--) {
+        if (DEMO_MEDIA[i].restaurantId === restaurantId && DEMO_MEDIA[i].type === 'LOGO') DEMO_MEDIA.splice(i, 1);
+      }
+    }
+    const scale = Math.min(1, 2000 / Math.max(size.width, size.height));
+    const media: DemoMedia = {
+      id: uid('media'), restaurantId, type, url, contentType: file.type, sizeBytes: file.size,
+      width: Math.round(size.width * scale), height: Math.round(size.height * scale), createdAt: new Date().toISOString()
+    };
+    DEMO_MEDIA.push(media);
+    const { restaurantId: _owner, ...response } = media;
+    return ok(response, 201);
+  }));
+}
+
+function imageSize(url: string): Promise<{ width: number; height: number } | null> {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
 }
 
 // ---------- utilidades ----------

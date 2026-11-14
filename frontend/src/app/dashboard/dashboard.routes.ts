@@ -22,7 +22,15 @@ export const DASHBOARD_ROUTES: Routes = [
     providers: [RestaurantContext],
     children: [
       { path: '', title: TITLE('Visão geral'), loadComponent: () => import('./pages/overview.page').then(m => m.OverviewPage) },
-      { path: 'restaurante', title: TITLE('Meu restaurante'), loadComponent: () => import('./pages/restaurant.page').then(m => m.RestaurantPage) },
+      {
+        path: 'restaurante',
+        loadComponent: () => import('./pages/restaurant.page').then(m => m.RestaurantPage),
+        children: [
+          { path: '', title: TITLE('Meu restaurante'), loadComponent: () => import('./profile/profile-form.page').then(m => m.ProfileFormPage) },
+          { path: 'horarios', title: TITLE('Horários'), loadComponent: () => import('./profile/business-hours.page').then(m => m.BusinessHoursPage) },
+          { path: 'imagens', title: TITLE('Imagens'), loadComponent: () => import('./profile/media.page').then(m => m.MediaPage) }
+        ]
+      },
       { path: 'equipe', title: TITLE('Equipe'), loadComponent: () => import('./pages/team.page').then(m => m.TeamPage) },
       { path: 'configuracoes', title: TITLE('Configurações'), loadComponent: () => import('./pages/settings.page').then(m => m.SettingsPage) },
       { path: 'novo-restaurante', title: TITLE('Cadastrar restaurante'), loadComponent: () => import('./pages/create-restaurant.page').then(m => m.CreateRestaurantPage) },
