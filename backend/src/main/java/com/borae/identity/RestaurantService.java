@@ -130,6 +130,7 @@ public class RestaurantService {
         validateBusinessHours(request);
 
         businessHoursRepository.deleteAllByRestaurant_Id(restaurantId);
+        businessHoursRepository.flush();
 
         List<RestaurantBusinessHours> entries = new ArrayList<>();
         for (BusinessHoursDayRequest day : request.days()) {
