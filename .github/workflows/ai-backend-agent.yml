@@ -1,0 +1,106 @@
+name: AI Backend Agent
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "Descreva a tarefa que o agente deve implementar no backend"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: ai-backend-agent-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  backend-agent:
+    name: Run AI backend developer
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install OpenHands SDK
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade openhands-sdk openhands-tools
+
+      - name: Create isolated task branch
+        id: branch
+        env:
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          BRANCH="ai/backend-agent/run-${RUN_ID}-${RUN_ATTEMPT}"
+          git switch -c "$BRANCH"
+          echo "name=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Run OpenHands backend agent
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          LLM_MODEL: ${{ vars.AI_AGENT_LLM_MODEL || 'gemini/gemini-2.5-flash' }}
+          AGENT_TASK: ${{ inputs.task }}
+        run: python .github/scripts/run_backend_agent.py
+
+      - name: Verify backend
+        run: mvn --batch-mode --no-transfer-progress -f backend/pom.xml verify
+
+      - name: Validate and commit agent changes
+        id: changes
+        run: |
+          git add -A -- backend/ docs/
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "The agent did not produce any changes."
+            exit 1
+          fi
+
+          if git diff --cached --name-only | grep -Ev '^(backend/|docs/)'; then
+            echo "The agent changed files outside the allowed paths."
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "feat(backend): implement task with AI agent"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Push branch and open pull request
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH_NAME: ${{ steps.branch.outputs.name }}
+          AGENT_TASK: ${{ inputs.task }}
+        run: |
+          gh auth setup-git
+          git push --set-upstream origin "$BRANCH_NAME"
+
+          printf '## Tarefa solicitada\n\n%s\n\n## Validação\n\n- Workflow executou o agente em runner hospedado do GitHub Actions.\n- Build e testes do backend executados antes da abertura desta PR.\n- Revisão e aprovação humana obrigatórias antes de qualquer merge.\n' "$AGENT_TASK" > "$RUNNER_TEMP/pr-body.md"
+
+          gh pr create \
+            --base main \
+            --head "$BRANCH_NAME" \
+            --title "AI Backend Agent: implementação solicitada" \
+            --body-file "$RUNNER_TEMP/pr-body.md"
