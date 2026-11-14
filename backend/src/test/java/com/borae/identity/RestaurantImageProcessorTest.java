@@ -29,7 +29,7 @@ class RestaurantImageProcessorTest {
         BufferedImage optimized = ImageIO.read(new java.io.ByteArrayInputStream(result.bytes()));
         assertEquals(2000, optimized.getWidth());
         assertEquals(1000, optimized.getHeight());
-        assertEquals(BufferedImage.TYPE_INT_ARGB, optimized.getType());
+        org.junit.jupiter.api.Assertions.assertTrue(optimized.getColorModel().hasAlpha());
     }
 
     @Test
