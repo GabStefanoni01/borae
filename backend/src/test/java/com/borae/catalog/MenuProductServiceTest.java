@@ -149,6 +149,36 @@ class MenuProductServiceTest {
                         List.of(), List.of()), actor));
     }
 
+
+    @Test
+    void archivedProductsCannotChangeAvailability() {
+        grantRole(RestaurantRole.STAFF);
+        MenuProduct product = new MenuProduct(category, "Hambúrguer", null, 2590L, 0,
+                List.of("Pão"), List.of());
+        product.archive();
+        when(menuRepository.findByIdAndRestaurant_Id(menu.getId(), restaurantId)).thenReturn(Optional.of(menu));
+        when(productRepository.findByIdAndCategory_Menu_Id(product.getId(), menu.getId()))
+                .thenReturn(Optional.of(product));
+
+        assertThrows(ResponseStatusException.class, () -> service.changeAvailability(restaurantId, menu.getId(),
+                product.getId(), ProductAvailability.UNAVAILABLE, actor));
+        assertEquals(ProductAvailability.AVAILABLE, product.getAvailability());
+    }
+
+    @Test
+    void duplicateAddonNamesAreRejectedIgnoringRepeatedWhitespace() {
+        grantRole(RestaurantRole.OWNER);
+        when(menuRepository.findByIdAndRestaurant_Id(menu.getId(), restaurantId)).thenReturn(Optional.of(menu));
+        when(categoryRepository.findByIdAndMenu_Id(category.getId(), menu.getId())).thenReturn(Optional.of(category));
+        CreateMenuProductRequest invalid = new CreateMenuProductRequest(category.getId(), "Hambúrguer", null,
+                2590L, 0, List.of(), List.of(
+                new ProductAddonRequest("Queijo extra", 300L, true),
+                new ProductAddonRequest("QUEIJO   EXTRA", 300L, true)));
+
+        assertThrows(ResponseStatusException.class, () -> service.create(restaurantId, menu.getId(), invalid, actor));
+        verify(productRepository, never()).save(any(MenuProduct.class));
+    }
+
     private CreateMenuProductRequest request(UUID categoryId, String name, long price) {
         return new CreateMenuProductRequest(categoryId, name, null, price, 0,
                 List.of("Pão", "Carne"), List.of(new ProductAddonRequest("Cheddar", 300L, true)));
