@@ -244,7 +244,7 @@ public class MenuProductService {
         if (value == null || value.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O nome é obrigatório.");
         }
-        return value.trim();
+        return value.trim().replaceAll("\\s+", " ");
     }
 
     private String optionalText(String value) {
