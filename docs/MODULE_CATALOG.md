@@ -1,6 +1,6 @@
 # Especificação de módulo — Catálogo e cardápio digital
 
-**Status:** planejamento aprovado para iniciar implementação incremental  
+**Status:** em implementação incremental na PR #22; cardápios e categorias já foram incorporados à branch, demais etapas ainda estão pendentes de implementação e validação  
 **Prioridade:** próximo módulo central do produto após a fundação de restaurante/perfil  
 **Escopo deste documento:** orientar backend, frontend, banco de dados, experiência pública, testes e integração  
 **Importante:** esta especificação não significa que entidades, endpoints ou telas do catálogo já existam. Os contratos finais devem ser confirmados no código, nos testes e no OpenAPI de cada entrega.
@@ -349,7 +349,7 @@ A gestão deve integrar-se ao dashboard atual, respeitando os padrões Angular j
 
 ## 7. Ordem de implementação sugerida
 
-Entregar em incrementos pequenos, cada um em branch e PR própria, sem desenvolver todo o módulo em uma única mudança.
+Entregar em incrementos pequenos, com commits separados na branch `docs/catalog-menu-module-plan`, mantendo planejamento, backend e frontend dentro da mesma PR #22 até a conclusão e validação do módulo. Não abrir PR paralela para este escopo. A PR permanece em draft e não deve ser integrada à main antes da revisão humana e dos critérios de aceite.
 
 ### Etapa 0 — Inspeção e alinhamento técnico
 - Inspecionar código real de backend, frontend, autenticação, membership, mídia/ImageKit e migrations.
@@ -389,6 +389,7 @@ Entregar em incrementos pequenos, cada um em branch e PR própria, sem desenvolv
 **Critério de conclusão:** imagem é enviada, associada, consultada e removida de forma consistente, sem expor credenciais.
 
 ### Etapa 4 — Frontend administrativo
+- Seguir o guia operacional [FRONTEND_CATALOG_IMPLEMENTATION.md](FRONTEND_CATALOG_IMPLEMENTATION.md), preparado para orientar o desenvolvimento Angular.
 - Listagem e criação de cardápios.
 - Gestão de categorias.
 - Lista e formulário de produtos.
