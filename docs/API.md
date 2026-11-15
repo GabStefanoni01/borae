@@ -40,6 +40,8 @@ Consulte a documentação OpenAPI/Swagger publicada para obter os contratos comp
 | POST | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/archive` | OWNER ou MANAGER | Arquiva produto. |
 | POST | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/restore` | OWNER ou MANAGER | Reativa produto arquivado. |
 | PUT | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/order` | OWNER ou MANAGER | Reordena os produtos de uma categoria; o corpo informa `categoryId` e a lista completa de `productIds`. |
+| POST | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/image` | OWNER ou MANAGER | Envia ou substitui imagem do produto (JPEG, PNG ou WebP, até 10 MB), processada no backend e armazenada no ImageKit. |
+| DELETE | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/image` | OWNER ou MANAGER | Remove a imagem associada ao produto e agenda a remoção do arquivo remoto após commit.
 
 ## 3. Regras de equipe implementadas
 
@@ -71,6 +73,7 @@ Consulte a documentação OpenAPI/Swagger publicada para obter os contratos comp
 - Adicionais possuem nome, preço adicional em centavos e estado ativo/inativo; duplicidades são rejeitadas.
 - Produto arquivado não pode ser editado; pode ser reativado por OWNER/MANAGER.
 - Produto indisponível permanece cadastrado e pode ser exibido futuramente com indicação própria.
+- A imagem do produto é opcional; o binário fica no ImageKit e o banco guarda metadados e associação.
 - STAFF pode alterar apenas a disponibilidade.
 - Todas as operações validam vínculo ativo com restaurante e pertencimento de cardápio/categoria/produto, evitando troca de IDs entre restaurantes.
 - A ordenação de produtos é definida por categoria e exige a lista completa dos produtos daquela categoria.
@@ -87,4 +90,4 @@ Os detalhes completos de DTOs, validações, status HTTP e exemplos devem ser co
 4. Atualizar o frontend consumidor do contrato no mesmo PR, quando aplicável.
 
 ## 7. Funcionalidades ainda não disponíveis na API
-Imagens de produto, consulta pública por slug, QR Code, modelos 3D, IA, fidelidade, Boraê Club, descoberta, pedidos, pagamentos e administração global ainda não estão disponíveis. Não tratar esses itens como endpoints implementados.
+Consulta pública por slug, QR Code, modelos 3D, IA, fidelidade, Boraê Club, descoberta, pedidos, pagamentos e administração global ainda não estão disponíveis. Não tratar esses itens como endpoints implementados.
