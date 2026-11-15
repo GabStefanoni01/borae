@@ -548,6 +548,16 @@ Os DTOs públicos são separados dos DTOs administrativos. A rota `/api/v1/publi
 - Restaurante inexistente/não publicado retorna 404 e não consulta o catálogo.
 - Cardápio sem categorias ativas não consulta produtos.
 
+### Auditoria de integridade e segurança
+
+- [x] Produto arquivado não pode ter disponibilidade alterada.
+- [x] Duplicidade de ingredientes e adicionais ignora diferenças de acentuação, caixa e espaços repetidos.
+- [x] Verificação de isolamento multi-tenant nas rotas administrativas: recursos são buscados dentro do restaurante/cardápio informado; tentativas de usar IDs de outro restaurante não resolvem o recurso.
+- [x] Verificação de publicação pública: consulta somente restaurante ativo/publicado, cardápios publicados, categorias ativas, produtos não arquivados e adicionais ativos.
+- [x] Verificação de upload: papel OWNER/MANAGER, pertencimento do restaurante/cardápio/produto, limite de tamanho e validação do formato real da imagem.
+- [ ] Verificar no ambiente de produção CORS, `PUBLIC_RESTAURANT_URL_PREFIX`, credenciais ImageKit, JWT_SECRET e limites do proxy para multipart.
+- [ ] Executar testes integrados contra PostgreSQL real e validar migrations V6–V8 no banco de homologação.
+
 ### Próximas pendências do backend na PR #22
 
 - Validar a variável `PUBLIC_RESTAURANT_URL_PREFIX` no ambiente de deploy.
