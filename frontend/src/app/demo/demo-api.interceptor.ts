@@ -1,6 +1,7 @@
 import { HttpErrorResponse, HttpInterceptorFn, HttpRequest, HttpResponse } from '@angular/common/http';
 import { Observable, delay, from, of, switchMap, throwError } from 'rxjs';
 import { API_URL } from '../auth.service';
+import { DemoHelpers, handleCatalog, handlePublicCatalog } from './demo-catalog';
 import { DemoDatabase, DemoMembership, DemoRestaurant, DemoRole, DemoUser, createDemoSeed } from './demo-data';
 
 /**
@@ -50,9 +51,17 @@ function handle(req: HttpRequest<unknown>): Observable<HttpResponse<unknown>> {
     return ok(authResponse(user), 201);
   }
 
+  // ---------- Cardápio público (sem sessão) ----------
+  const publicReply = handlePublicCatalog(method, path, db, HELPERS);
+  if (publicReply) return publicReply;
+
   // ---------- Rotas autenticadas ----------
   const user = currentUser(req, db);
   if (!user) return fail(401, 'Sessão inválida ou usuário inativo.');
+
+  // ---------- Catálogo, publicação do restaurante e QR Code ----------
+  const catalogReply = handleCatalog(req, path, db, user, HELPERS);
+  if (catalogReply) return catalogReply;
 
   if (method === 'GET' && path === '/users/me') return ok(profile(user));
   if (method === 'GET' && path === '/users/me/restaurants') {
@@ -291,6 +300,8 @@ function imageSize(url: string): Promise<{ width: number; height: number } | nul
 }
 
 // ---------- utilidades ----------
+const HELPERS: DemoHelpers = { ok: (body, status) => ok(body, status), fail: (status, message) => fail(status, message), save: db => save(db), uid: prefix => uid(prefix) };
+
 function load(): DemoDatabase {
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY);
