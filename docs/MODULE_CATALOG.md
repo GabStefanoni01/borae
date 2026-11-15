@@ -550,7 +550,9 @@ Os DTOs públicos são separados dos DTOs administrativos. A rota `/api/v1/publi
 
 ### Auditoria de integridade e segurança
 
-- [x] Produto arquivado não pode ter disponibilidade alterada.
+- [x] Produto arquivado não pode ter disponibilidade alterada (retorna conflito HTTP 409).
+- [x] STAFF consegue consultar cardápios/categorias e alterar somente disponibilidade; operações administrativas continuam restritas a OWNER/MANAGER.
+- [x] Payload com item nulo em lista de adicionais é rejeitado com HTTP 400, sem erro interno 500.
 - [x] Duplicidade de ingredientes e adicionais ignora diferenças de acentuação, caixa e espaços repetidos.
 - [x] Verificação de isolamento multi-tenant nas rotas administrativas: recursos são buscados dentro do restaurante/cardápio informado; tentativas de usar IDs de outro restaurante não resolvem o recurso.
 - [x] Verificação de publicação pública: consulta somente restaurante ativo/publicado, cardápios publicados, categorias ativas, produtos não arquivados e adicionais ativos.
