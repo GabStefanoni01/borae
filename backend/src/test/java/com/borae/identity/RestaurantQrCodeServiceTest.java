@@ -25,7 +25,7 @@ class RestaurantQrCodeServiceTest {
 
     private RestaurantQrCodeService service() {
         return new RestaurantQrCodeService(
-                restaurantRepository, membershipRepository, "https://borae.example/r/{slug}");
+                restaurantRepository, membershipRepository, "https://borae.example/r/");
     }
 
     @Test
