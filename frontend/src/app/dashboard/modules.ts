@@ -55,65 +55,12 @@ export const DASHBOARD_MODULES: DashboardModule[] = [
     title: 'Equipe', subtitle: 'Organize as pessoas que participam da gestão do seu restaurante.'
   },
   {
-    id: 'cardapios', label: 'Cardápios', icon: 'book-open', group: 'Cardápio', path: 'cardapios', status: 'planned',
-    title: 'Cardápios', subtitle: 'Organize as opções do seu restaurante e prepare uma experiência digital para seus clientes.',
-    summary: 'Crie cardápios para diferentes momentos e organize seus produtos de acordo com a identidade e a operação do seu estabelecimento.',
-    benefit: 'Vários cardápios por restaurante (por exemplo, almoço, jantar ou bebidas), cada um com suas categorias e produtos, publicados quando você decidir.',
-    features: [
-      'Criar, editar, listar, abrir e arquivar cardápios',
-      'Publicar, despublicar e pré-visualizar como consumidor',
-      'Estados de publicação: rascunho, publicado e arquivado — todo cardápio novo começa como rascunho',
-      'Mais de um cardápio publicado ao mesmo tempo'
-    ],
-    decisions: {
-      title: 'Definições aprovadas',
-      items: [
-        'No MVP não haverá troca automática de cardápio por horário.',
-        'O QR Code principal abrirá a página pública do restaurante, onde o cliente escolhe o cardápio.'
-      ]
-    }
+    id: 'cardapios', label: 'Cardápios', icon: 'book-open', group: 'Cardápio', path: 'cardapios', status: 'available',
+    title: 'Cardápios', subtitle: 'Organize cardápios, categorias e produtos do seu restaurante.'
   },
   {
-    id: 'categorias', label: 'Categorias', icon: 'tag', group: 'Cardápio', path: 'categorias', status: 'planned',
-    title: 'Categorias', subtitle: 'Organize seu cardápio em seções claras e fáceis de explorar.',
-    summary: 'Categorias como entradas, pratos principais, bebidas e sobremesas vão estruturar a navegação de cada cardápio.',
-    benefit: 'Clientes encontram o que procuram mais rápido, e você mantém o cardápio organizado.',
-    features: ['Listar, criar e renomear categorias', 'Ordenar a sequência de exibição', 'Ativar e desativar categorias'],
-    decisions: {
-      title: 'Definições aprovadas',
-      items: ['Categorias com produtos não poderão ser apagadas sem uma regra de realocação ou arquivamento.']
-    }
-  },
-  {
-    id: 'produtos', label: 'Produtos', icon: 'utensils', group: 'Cardápio', path: 'produtos', status: 'planned',
-    title: 'Produtos', subtitle: 'Apresente seus pratos com informações claras, ingredientes e opções adicionais.',
-    summary: 'Cada produto terá nome, descrição, preço, categoria, imagem, disponibilidade, ingredientes e adicionais.',
-    benefit: 'O cliente entende exatamente o que está escolhendo antes de pedir.',
-    features: [
-      'Busca e filtros por categoria e disponibilidade',
-      'Ingredientes cadastrados um a um, indicando quais o cliente pode remover',
-      'Adicionais com preço visível no cardápio',
-      'Arquivamento e pré-visualização'
-    ],
-    decisions: {
-      title: 'Definições aprovadas',
-      items: [
-        'Remoções de ingredientes e ponto da carne serão instruções informadas no pedido e apresentadas ao garçom.',
-        'Não haverá tamanhos ou combos nesta etapa.',
-        'Ingredientes são declarados pelo restaurante; não há formulário de alergênicos nem garantia de ausência de contaminação cruzada.'
-      ]
-    }
-  },
-  {
-    id: 'qr-code', label: 'QR Code', icon: 'qr-code', group: 'Cardápio', path: 'qr-code', status: 'planned',
-    title: 'QR Code', subtitle: 'Prepare uma forma simples de conectar o ambiente físico do seu restaurante à experiência digital do Boraê.',
-    summary: 'Com o cardápio publicado, seus clientes poderão acessar a experiência digital do estabelecimento por meio de um QR Code.',
-    benefit: 'Acesso imediato ao cardápio na mesa, sem instalar aplicativo.',
-    features: ['QR Code principal do restaurante', 'Pré-visualização do destino', 'Download da imagem e formatos de impressão', 'Instruções de utilização'],
-    decisions: {
-      title: 'Definições aprovadas',
-      items: ['Um QR Code por estabelecimento. QR Codes por mesa poderão ser avaliados posteriormente.']
-    }
+    id: 'qr-code', label: 'Página pública e QR', icon: 'qr-code', group: 'Cardápio', path: 'qr-code', status: 'available',
+    title: 'Página pública e QR Code', subtitle: 'Publique o perfil do restaurante e compartilhe o acesso aos cardápios.'
   },
   {
     id: 'experiencias-3d', label: 'Experiências 3D', icon: 'cube', group: 'Experiência', path: 'experiencias-3d', status: 'planned',

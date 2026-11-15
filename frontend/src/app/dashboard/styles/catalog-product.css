@@ -1,0 +1,58 @@
+/* Catálogo — formulário de produto e página pública/QR Code (.c-*) */
+/* Formulário de produto */
+.c-form-header{margin-bottom:16px}
+.c-form-header h1{margin:0;font-size:22px;font-weight:800}
+.c-form-header p{margin:4px 0 0;color:var(--d-muted)}
+.c-product-form{display:grid;gap:16px;grid-template-columns:minmax(0,1fr) minmax(0,320px);align-items:start}
+.c-product-main,.c-product-side{display:grid;gap:16px;min-width:0}
+.c-product-side{position:sticky;top:calc(var(--d-topbar) + 16px)}
+@media (max-width:980px){.c-product-form{grid-template-columns:minmax(0,1fr)}.c-product-side{position:static}}
+.c-sticky-actions{grid-column:1/-1;display:grid;gap:10px;position:sticky;bottom:0;z-index:5;padding:12px 0;background:linear-gradient(transparent,var(--d-bg) 30%)}
+.c-money{display:flex;align-items:center;gap:8px}
+.c-money > span{font-weight:600;color:var(--d-muted);white-space:nowrap}
+.c-money-sm{max-width:150px}
+.c-rows{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:8px}
+.c-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.c-row-input{flex:1;min-width:0}
+.c-row-tools{display:flex}
+.c-addon-row{padding:10px;border:1px solid var(--d-border-soft);border-radius:10px}
+.c-addon-row.inactive{background:var(--d-hover)}
+.c-addon-fields{display:flex;flex-wrap:wrap;align-items:center;gap:8px;flex:1;min-width:0}
+.c-addon-fields > .d-input{flex:1 1 160px;min-width:0}
+.c-addon-preview{width:100%;font-size:12px;color:var(--d-muted)}
+.c-add-line{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.c-add-line .d-input{flex:1 1 200px;min-width:0}
+.c-empty-line{margin:0 0 12px;font-size:13px;color:var(--d-muted)}
+.c-image-box{position:relative;display:grid;place-items:center;aspect-ratio:4/3;margin-bottom:12px;border:1px dashed var(--d-border-strong);border-radius:12px;overflow:hidden;background:var(--d-head)}
+.c-image-box img{width:100%;height:100%;object-fit:cover}
+.c-image-empty{display:grid;justify-items:center;gap:6px;font-size:13px;color:var(--d-muted)}
+.c-upload{position:absolute;left:10px;right:10px;bottom:10px;display:grid;gap:6px;padding:8px 10px;border-radius:8px;background:var(--d-surface);font-size:12px;box-shadow:var(--d-shadow)}
+.c-upload-bar{height:4px;border-radius:4px;background:var(--d-hover);overflow:hidden}
+.c-upload-bar span{display:block;height:100%;background:var(--d-primary);transition:width .2s}
+.c-image-actions{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+.c-file{position:relative;overflow:hidden}
+.c-file input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.c-file.disabled{opacity:.55;pointer-events:none}
+.c-file:focus-within{outline:2px solid var(--d-primary);outline-offset:2px}
+.c-summary h2{margin:0 0 10px;font-size:14px}
+.c-summary dl{margin:0;display:grid;gap:8px}
+.c-summary dl div{display:flex;justify-content:space-between;font-size:13px}
+.c-summary dt{color:var(--d-muted)}
+.c-summary dd{margin:0;font-weight:700}
+.c-preview{display:grid;gap:8px}
+
+/* Publicação e QR Code */
+.c-pub-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));align-items:start}
+.c-pub-card h2,.c-qr-card h2{margin:12px 0 6px;font-size:18px;font-weight:700}
+.c-qr-card h2{margin-top:0}
+.c-pub-card p,.c-qr-card p{margin:0 0 16px;color:var(--d-ink-2)}
+.c-pub-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;background:var(--d-warning-soft);color:var(--d-warning-ink)}
+.c-pub-badge[data-status=PUBLISHED]{background:var(--d-success-soft);color:var(--d-success-ink)}
+.c-pub-badge[data-status=SUSPENDED]{background:var(--d-error-soft);color:var(--d-error-ink)}
+.c-pub-notes{list-style:none;margin:18px 0 0;padding:14px 0 0;border-top:1px solid var(--d-border-soft);display:grid;gap:8px;font-size:12.5px;color:var(--d-muted)}
+.c-pub-notes li{display:flex;gap:8px}
+.c-pub-notes bo-icon{flex-shrink:0;margin-top:2px}
+.c-qr-box{display:grid;place-items:center;width:100%;max-width:260px;aspect-ratio:1;margin:0 auto 16px;padding:10px;border:1px solid var(--d-border);border-radius:16px;background:#fff}
+.c-qr-box img{width:100%;height:100%;image-rendering:pixelated}
+.c-qr-empty{display:grid;justify-items:center;gap:8px;padding:12px;text-align:center;font-size:13px;color:#707070}
+.c-qr-error{color:#9F1F16}

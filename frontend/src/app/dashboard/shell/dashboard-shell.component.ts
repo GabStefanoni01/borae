@@ -13,6 +13,7 @@ import { ThemeToggleComponent } from '../../shared/theme-toggle.component';
 import { DASHBOARD_MODULES, MODULE_GROUPS, moduleByPath } from '../modules';
 import { RestaurantContext } from '../restaurant-context.service';
 import { RoleBadgeComponent, StateComponent } from '../ui/ui.components';
+import { ToastsComponent } from '../ui/feedback';
 import { RestaurantSwitcherComponent } from './restaurant-switcher.component';
 
 const EXTRA_PAGES: Record<string, string> = {
@@ -32,10 +33,10 @@ const EXTRA_PAGES: Record<string, string> = {
   encapsulation: ViewEncapsulation.None,
   imports: [
     RouterOutlet, RouterLink, RouterLinkActive, IconComponent, BrandLogoComponent, ThemeToggleComponent,
-    RestaurantSwitcherComponent, RoleBadgeComponent, StateComponent
+    RestaurantSwitcherComponent, RoleBadgeComponent, StateComponent, ToastsComponent
   ],
   templateUrl: './dashboard-shell.component.html',
-  styleUrls: ['../styles/tokens.css', '../styles/layout.css', '../styles/ui.css', '../styles/ui-menus.css', '../styles/ui-forms.css']
+  styleUrls: ['../styles/tokens.css', '../styles/layout.css', '../styles/ui.css', '../styles/ui-menus.css', '../styles/ui-forms.css', '../styles/catalog.css', '../styles/catalog-editor.css', '../styles/catalog-product.css']
 })
 export class DashboardShellComponent implements OnInit {
   protected readonly ctx = inject(RestaurantContext);
