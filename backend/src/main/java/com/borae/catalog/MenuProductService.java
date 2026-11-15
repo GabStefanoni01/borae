@@ -226,7 +226,7 @@ public class MenuProductService {
     private void ensureUniqueNames(List<String> names, String message) {
         Set<String> normalized = names.stream()
                 .map(value -> Normalizer.normalize(value, Normalizer.Form.NFD)
-                        .replaceAll("\\p{M}", "").toLowerCase(Locale.ROOT))
+                        .replaceAll("\\p{M}", "").replaceAll("\\s+", " ").trim().toLowerCase(Locale.ROOT))
                 .collect(Collectors.toSet());
         if (normalized.size() != names.size()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
