@@ -94,7 +94,11 @@ public class MenuProductImageService {
             }
             return MenuProductResponse.from(product);
         } catch (RuntimeException exception) {
-            storage.delete(uploaded.fileId());
+            try {
+                storage.delete(uploaded.fileId());
+            } catch (RuntimeException cleanupException) {
+                exception.addSuppressed(cleanupException);
+            }
             throw exception;
         }
     }
