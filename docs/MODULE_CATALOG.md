@@ -473,7 +473,7 @@ Entregar em incrementos pequenos, com commits separados na branch `docs/catalog-
 - [ ] Página pública lista somente cardápios publicados, categorias ativas e produtos não arquivados.
 - [ ] Produto indisponível continua identificável como indisponível.
 - [ ] Consumidor consulta sem login.
-- [ ] QR Code principal leva à página do restaurante.
+- [x] QR Code principal leva à página do restaurante (endpoint backend implementado; prefixo público configurável).
 - [ ] Frontend contempla loading, erro, vazio, sucesso e responsividade.
 - [ ] Testes automatizados e validação ponta a ponta passam.
 - [ ] Swagger e documentação refletem somente endpoints efetivamente implementados.
