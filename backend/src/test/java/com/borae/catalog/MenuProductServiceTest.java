@@ -192,6 +192,25 @@ class MenuProductServiceTest {
         verify(productRepository, never()).save(any(MenuProduct.class));
     }
 
+
+    @Test
+    void productTextFieldsAreTrimmedAndRepeatedWhitespaceIsCollapsed() {
+        grantRole(RestaurantRole.OWNER);
+        when(menuRepository.findByIdAndRestaurant_Id(menu.getId(), restaurantId)).thenReturn(Optional.of(menu));
+        when(categoryRepository.findByIdAndMenu_Id(category.getId(), menu.getId())).thenReturn(Optional.of(category));
+        when(productRepository.save(any(MenuProduct.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        CreateMenuProductRequest input = new CreateMenuProductRequest(category.getId(), "  Hambúrguer   artesanal ",
+                "  Feito   na casa ", 2590L, 0, List.of("  Cebola   roxa "),
+                List.of(new ProductAddonRequest("  Queijo   extra ", 300L, true)));
+
+        MenuProductResponse response = service.create(restaurantId, menu.getId(), input, actor);
+
+        assertEquals("Hambúrguer artesanal", response.name());
+        assertEquals("Feito na casa", response.description());
+        assertEquals(List.of("Cebola roxa"), response.ingredients());
+        assertEquals("Queijo extra", response.addons().get(0).name());
+    }
+
     private CreateMenuProductRequest request(UUID categoryId, String name, long price) {
         return new CreateMenuProductRequest(categoryId, name, null, price, 0,
                 List.of("Pão", "Carne"), List.of(new ProductAddonRequest("Cheddar", 300L, true)));
