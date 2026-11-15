@@ -41,6 +41,12 @@ public class MenuService {
                 .stream().map(MenuResponse::from).toList();
     }
 
+    @Transactional(readOnly = true)
+    public MenuResponse getMenu(UUID restaurantId, UUID menuId, UserAccount actor) {
+        requireManagerAccess(restaurantId, actor);
+        return MenuResponse.from(findMenu(restaurantId, menuId));
+    }
+
     @Transactional
     public MenuResponse createMenu(UUID restaurantId, CreateMenuRequest request, UserAccount actor) {
         requireManagerAccess(restaurantId, actor);
