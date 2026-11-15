@@ -19,6 +19,7 @@ Consulte a documentação OpenAPI/Swagger publicada para obter os contratos comp
 | POST | `/api/v1/restaurants` | Autenticado | Cria restaurante e vínculo OWNER na mesma transação. |
 | POST | `/api/v1/restaurants/{restaurantId}/publish` | OWNER ou MANAGER | Publica o perfil do restaurante e habilita sua página pública. |
 | POST | `/api/v1/restaurants/{restaurantId}/unpublish` | OWNER ou MANAGER | Despublica o perfil sem arquivar cardápios ou apagar conteúdo. |
+| GET | `/api/v1/restaurants/{restaurantId}/qrcode` | OWNER ou MANAGER | Gera e baixa um QR Code PNG para a URL pública do restaurante. |
 | GET | `/api/v1/restaurants/{restaurantId}/members` | OWNER ou MANAGER | Lista membros ativos do restaurante. |
 | POST | `/api/v1/restaurants/{restaurantId}/invitations` | OWNER | Cria convite para MANAGER ou STAFF. |
 | POST | `/api/v1/restaurant-invitations/accept` | Autenticado | Aceita convite usando o token e a conta com e-mail correspondente. |
@@ -28,7 +29,7 @@ Consulte a documentação OpenAPI/Swagger publicada para obter os contratos comp
 | POST | `/api/v1/restaurants/{restaurantId}/menus` | OWNER ou MANAGER | Cria cardápio. |
 | GET | `/api/v1/restaurants/{restaurantId}/menus/{menuId}` | Membro ativo | Consulta cardápio. |
 | PUT | `/api/v1/restaurants/{restaurantId}/menus/{menuId}` | OWNER ou MANAGER | Atualiza cardápio. |
-| POST | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/publish` | OWNER ou MANAGER | Publica cardápio. |
+| POST | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/publish` | OWNER ou MANAGER | Publica cardápio somente quando existe ao menos uma categoria ativa com um produto não arquivado. |
 | POST | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/unpublish` | OWNER ou MANAGER | Despublica cardápio. |
 | POST | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/archive` | OWNER ou MANAGER | Arquiva cardápio. |
 | GET | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/categories` | Membro ativo | Lista categorias. |
@@ -62,6 +63,10 @@ Regras da resposta pública:
 - O caminho `/api/v1/public/**` é liberado da autenticação JWT; os demais endpoints continuam protegidos conforme suas regras.
 
 **Publicação do perfil:** OWNER ou MANAGER pode publicar e despublicar o perfil pelos endpoints autenticados. Restaurante suspenso não pode ser publicado nem ter seu estado alterado pelo painel da equipe. Despublicar não arquiva cardápios nem apaga o catálogo.
+
+### QR Code principal
+
+O endpoint autenticado `GET /api/v1/restaurants/{restaurantId}/qrcode` retorna `image/png` como download. O QR Code aponta para a URL pública do restaurante, nunca para um cardápio individual. A URL é configurada por `PUBLIC_RESTAURANT_URL_TEMPLATE`, usando `{slug}` como placeholder (exemplo: `https://seudominio.com/r/{slug}`). OWNER e MANAGER podem gerar o arquivo; STAFF não tem permissão.
 
 ## 4. Regras de equipe implementadas
 
@@ -110,4 +115,4 @@ Os detalhes completos de DTOs, validações, status HTTP e exemplos devem ser co
 4. Atualizar o frontend consumidor do contrato no mesmo PR, quando aplicável.
 
 ## 8. Funcionalidades ainda não disponíveis na API
-QR Code, modelos 3D, IA, fidelidade, Boraê Club, descoberta, pedidos, pagamentos e administração global ainda não estão disponíveis. Não tratar esses itens como endpoints implementados.
+Modelos 3D, IA, fidelidade, Boraê Club, descoberta, pedidos, pagamentos e administração global ainda não estão disponíveis. Não tratar esses itens como endpoints implementados.
