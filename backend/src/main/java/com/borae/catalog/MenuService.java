@@ -23,15 +23,18 @@ public class MenuService {
     private final RestaurantMembershipRepository membershipRepository;
     private final MenuRepository menuRepository;
     private final MenuCategoryRepository categoryRepository;
+    private final MenuProductRepository productRepository;
 
     public MenuService(RestaurantRepository restaurantRepository,
                        RestaurantMembershipRepository membershipRepository,
                        MenuRepository menuRepository,
-                       MenuCategoryRepository categoryRepository) {
+                       MenuCategoryRepository categoryRepository,
+                       MenuProductRepository productRepository) {
         this.restaurantRepository = restaurantRepository;
         this.membershipRepository = membershipRepository;
         this.menuRepository = menuRepository;
         this.categoryRepository = categoryRepository;
+        this.productRepository = productRepository;
     }
 
     @Transactional(readOnly = true)
@@ -74,6 +77,13 @@ public class MenuService {
     public MenuResponse publishMenu(UUID restaurantId, UUID menuId, UserAccount actor) {
         requireManagerAccess(restaurantId, actor);
         Menu menu = findMenu(restaurantId, menuId);
+        long publishableProducts = productRepository
+                .countByCategory_Menu_IdAndCategory_ActiveTrueAndLifecycleStatusNot(
+                        menuId, ProductLifecycleStatus.ARCHIVED);
+        if (publishableProducts == 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "O cardápio precisa ter ao menos uma categoria ativa com um produto não arquivado antes da publicação.");
+        }
         try {
             menu.publish();
         } catch (IllegalStateException exception) {
