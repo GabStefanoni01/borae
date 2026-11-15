@@ -1,6 +1,6 @@
 # Especificação de módulo — Catálogo e cardápio digital
 
-**Status:** em implementação incremental na PR #22; backend de cardápios, categorias, produtos, imagens e endpoint de consulta pública por slug incorporados à branch; frontend, QR Code e validação integrada ainda pendentes  
+**Status:** em implementação incremental na PR #22; backend de cardápios, categorias, produtos, imagens, consulta pública por slug e geração do QR Code principal incorporados à branch; frontend e validação integrada ainda pendentes  
 **Prioridade:** próximo módulo central do produto após a fundação de restaurante/perfil  
 **Escopo deste documento:** orientar backend, frontend, banco de dados, experiência pública, testes e integração  
 **Importante:** esta especificação não significa que entidades, endpoints ou telas do catálogo já existam. Os contratos finais devem ser confirmados no código, nos testes e no OpenAPI de cada entrega.
@@ -43,7 +43,7 @@ Estados do cardápio:
 Regras:
 - Um cardápio novo começa em `DRAFT`.
 - O restaurante cadastra categorias e produtos, revisa e publica o cardápio.
-- A publicação valida a consistência mínima necessária.
+- A publicação exige ao menos uma categoria ativa com um produto não arquivado.
 - A publicação é controlada pelo cardápio, não por produto nem globalmente pelo restaurante.
 - Não existe publicação individual de produto no MVP.
 - Em um cardápio publicado, alterações salvas entram no ar imediatamente; não há uma segunda aprovação/publicação por edição.
@@ -552,7 +552,7 @@ Os DTOs públicos são separados dos DTOs administrativos. A rota `/api/v1/publi
 
 ### Próximas pendências
 
-- Implementar QR Code principal apontando para a URL pública.
+- Validar a URL pública configurada para o QR Code no ambiente de deploy.
 - Implementar e integrar a página pública no frontend.
 - Implementar frontend administrativo Angular e validar contratos reais.
 - Executar validação integrada, revisão de segurança e testes ponta a ponta.
