@@ -66,7 +66,7 @@ Regras da resposta pública:
 
 ### QR Code principal
 
-O endpoint autenticado `GET /api/v1/restaurants/{restaurantId}/qrcode` retorna `image/png` como download. O QR Code aponta para a URL pública do restaurante, nunca para um cardápio individual. A URL é configurada por `PUBLIC_RESTAURANT_URL_TEMPLATE`, usando `{slug}` como placeholder (exemplo: `https://seudominio.com/r/{slug}`). OWNER e MANAGER podem gerar o arquivo; STAFF não tem permissão.
+O endpoint autenticado `GET /api/v1/restaurants/{restaurantId}/qrcode` retorna `image/png` como download. O QR Code aponta para a URL pública do restaurante, nunca para um cardápio individual. A URL é configurada por `PUBLIC_RESTAURANT_URL_PREFIX`, usando o prefixo da rota pública e acrescentando o slug do restaurante (exemplo: `https://seudominio.com/r/`). OWNER e MANAGER podem gerar o arquivo; STAFF não tem permissão.
 
 ## 4. Regras de equipe implementadas
 
