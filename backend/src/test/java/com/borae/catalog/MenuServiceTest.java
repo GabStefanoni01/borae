@@ -32,6 +32,7 @@ class MenuServiceTest {
     @Mock private RestaurantMembershipRepository membershipRepository;
     @Mock private MenuRepository menuRepository;
     @Mock private MenuCategoryRepository categoryRepository;
+    @Mock private MenuProductRepository productRepository;
 
     @InjectMocks private MenuService menuService;
 
@@ -83,9 +84,25 @@ class MenuServiceTest {
         grantRole(RestaurantRole.MANAGER);
         Menu menu = new Menu(restaurant, "Almoço", null, 0);
         when(menuRepository.findByIdAndRestaurant_Id(menu.getId(), restaurantId)).thenReturn(Optional.of(menu));
+        when(productRepository.countByCategory_Menu_IdAndCategory_ActiveTrueAndLifecycleStatusNot(
+                menu.getId(), ProductLifecycleStatus.ARCHIVED)).thenReturn(1L);
 
         assertEquals(MenuStatus.PUBLISHED, menuService.publishMenu(restaurantId, menu.getId(), owner).status());
         assertEquals(MenuStatus.DRAFT, menuService.unpublishMenu(restaurantId, menu.getId(), owner).status());
+    }
+
+
+    @Test
+    void menuWithoutActiveCategoryAndNonArchivedProductCannotBePublished() {
+        grantRole(RestaurantRole.OWNER);
+        Menu menu = new Menu(restaurant, "Almoço", null, 0);
+        when(menuRepository.findByIdAndRestaurant_Id(menu.getId(), restaurantId)).thenReturn(Optional.of(menu));
+        when(productRepository.countByCategory_Menu_IdAndCategory_ActiveTrueAndLifecycleStatusNot(
+                menu.getId(), ProductLifecycleStatus.ARCHIVED)).thenReturn(0L);
+
+        assertThrows(ResponseStatusException.class,
+                () -> menuService.publishMenu(restaurantId, menu.getId(), owner));
+        assertEquals(MenuStatus.DRAFT, menu.getStatus());
     }
 
     @Test
