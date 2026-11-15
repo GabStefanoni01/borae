@@ -115,6 +115,10 @@ public class MenuProduct {
     }
 
     public void changeAvailability(ProductAvailability availability) {
+        ensureActive();
+        if (availability == null) {
+            throw new IllegalArgumentException("A disponibilidade do produto é obrigatória.");
+        }
         this.availability = availability;
     }
 
