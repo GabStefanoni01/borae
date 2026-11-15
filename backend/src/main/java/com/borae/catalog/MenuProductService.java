@@ -94,7 +94,11 @@ public class MenuProductService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe a disponibilidade do produto.");
         }
         MenuProduct product = findProduct(menuId, productId);
-        product.changeAvailability(availability);
+        try {
+            product.changeAvailability(availability);
+        } catch (IllegalStateException exception) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, exception.getMessage());
+        }
         return MenuProductResponse.from(product);
     }
 
