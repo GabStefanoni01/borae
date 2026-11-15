@@ -17,6 +17,8 @@ Consulte a documentação OpenAPI/Swagger publicada para obter os contratos comp
 | GET | `/api/v1/users/me` | Autenticado | Retorna os dados da conta autenticada. |
 | GET | `/api/v1/users/me/restaurants` | Autenticado | Lista os restaurantes aos quais o usuário possui vínculo ativo. |
 | POST | `/api/v1/restaurants` | Autenticado | Cria restaurante e vínculo OWNER na mesma transação. |
+| POST | `/api/v1/restaurants/{restaurantId}/publish` | OWNER ou MANAGER | Publica o perfil do restaurante e habilita sua página pública. |
+| POST | `/api/v1/restaurants/{restaurantId}/unpublish` | OWNER ou MANAGER | Despublica o perfil sem arquivar cardápios ou apagar conteúdo. |
 | GET | `/api/v1/restaurants/{restaurantId}/members` | OWNER ou MANAGER | Lista membros ativos do restaurante. |
 | POST | `/api/v1/restaurants/{restaurantId}/invitations` | OWNER | Cria convite para MANAGER ou STAFF. |
 | POST | `/api/v1/restaurant-invitations/accept` | Autenticado | Aceita convite usando o token e a conta com e-mail correspondente. |

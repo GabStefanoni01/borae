@@ -522,6 +522,11 @@ O catálogo é a fonte de dados para:
 
 ### Backend de publicação do perfil e consulta pública por slug — implementados na branch
 
+Endpoints de publicação do perfil:
+- `POST /api/v1/restaurants/{restaurantId}/publish` — OWNER/MANAGER; altera o estado para `PUBLISHED`.
+- `POST /api/v1/restaurants/{restaurantId}/unpublish` — OWNER/MANAGER; retorna o estado para `DRAFT` sem alterar cardápios.
+- Restaurante inativo retorna 404. Restaurante `SUSPENDED` retorna 409 e não pode ser reativado pela equipe do estabelecimento.
+
 Endpoint implementado:
 - `GET /api/v1/public/restaurants/{slug}/menu` — público, sem JWT.
 
