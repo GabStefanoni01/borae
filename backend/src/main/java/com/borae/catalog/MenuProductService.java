@@ -248,6 +248,6 @@ public class MenuProductService {
     }
 
     private String optionalText(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
+        return value == null || value.isBlank() ? null : value.trim().replaceAll("\\s+", " ");
     }
 }
