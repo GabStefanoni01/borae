@@ -349,7 +349,7 @@ A gestão deve integrar-se ao dashboard atual, respeitando os padrões Angular j
 
 ## 7. Ordem de implementação sugerida
 
-Entregar em incrementos pequenos, com commits separados na branch `docs/catalog-menu-module-plan`, mantendo planejamento, backend e frontend dentro da mesma PR #22 até a conclusão e validação do módulo. Não abrir PR paralela para este escopo. A PR permanece em draft e não deve ser integrada à main antes da revisão humana e dos critérios de aceite.
+Entregar em incrementos pequenos, com commits separados na branch `docs/catalog-menu-module-plan`, mantendo planejamento e backend dentro da PR #22. O frontend está deliberadamente fora desta entrega e será tratado em uma PR futura. Não abrir PR paralela para o backend deste escopo. A PR permanece em draft e não deve ser integrada à main antes da revisão humana e dos critérios de aceite.
 
 ### Etapa 0 — Inspeção e alinhamento técnico
 - Inspecionar código real de backend, frontend, autenticação, membership, mídia/ImageKit e migrations.
@@ -388,7 +388,7 @@ Entregar em incrementos pequenos, com commits separados na branch `docs/catalog-
 
 **Critério de conclusão:** imagem é enviada, associada, consultada e removida de forma consistente, sem expor credenciais.
 
-### Etapa 4 — Frontend administrativo
+### Etapa 4 — Frontend administrativo (adiado; fora da PR #22)
 - Seguir o guia operacional [FRONTEND_CATALOG_IMPLEMENTATION.md](FRONTEND_CATALOG_IMPLEMENTATION.md), preparado para orientar o desenvolvimento Angular.
 - Listagem e criação de cardápios.
 - Gestão de categorias.
@@ -401,16 +401,14 @@ Entregar em incrementos pequenos, com commits separados na branch `docs/catalog-
 
 **Critério de conclusão:** OWNER/MANAGER conseguem administrar o catálogo pelo painel e STAFF consegue alterar somente disponibilidade.
 
-### Etapa 5 — API e página pública
-- Endpoint público por slug.
-- Página pública responsiva do restaurante.
-- Seleção entre vários cardápios publicados.
-- Navegação por categorias e detalhes de produtos.
-- Exibição de preços, ingredientes, adicionais e indisponibilidade.
-- QR Code principal apontando para a página do restaurante.
-- Cache e invalidação após mudanças relevantes.
+### Etapa 5 — API pública e QR Code (backend na PR #22)
+- Endpoint público por slug, sem autenticação.
+- Retornar apenas restaurante publicado, cardápios publicados, categorias ativas e produtos não arquivados.
+- Exibir dados públicos de preços, ingredientes, adicionais ativos e disponibilidade no contrato da API.
+- Gerar QR Code principal apontando para a URL pública configurada do restaurante.
+- Manter o QR Code independente de um cardápio específico.
 
-**Critério de conclusão:** consumidor abre por link/QR sem login e vê somente dados publicados e atualizados.
+**Critério de conclusão do backend:** consumidor consegue consultar os dados públicos pela API sem login e o restaurante consegue baixar um QR Code que aponta para sua rota pública. A página visual e sua navegação ficam para uma PR futura.
 
 ### Etapa 6 — Validação integrada e endurecimento
 - Testes ponta a ponta em desktop e mobile.
@@ -550,9 +548,9 @@ Os DTOs públicos são separados dos DTOs administrativos. A rota `/api/v1/publi
 - Restaurante inexistente/não publicado retorna 404 e não consulta o catálogo.
 - Cardápio sem categorias ativas não consulta produtos.
 
-### Próximas pendências
+### Próximas pendências do backend na PR #22
 
-- Validar a URL pública configurada para o QR Code no ambiente de deploy.
-- Implementar e integrar a página pública no frontend.
-- Implementar frontend administrativo Angular e validar contratos reais.
-- Executar validação integrada, revisão de segurança e testes ponta a ponta.
+- Validar a variável `PUBLIC_RESTAURANT_URL_PREFIX` no ambiente de deploy.
+- Executar validação integrada do backend, revisão de segurança e testes de ponta a ponta da API.
+
+**Fora da PR #22:** página pública visual e painel administrativo Angular serão implementados em uma entrega futura, conforme orientação de escopo.
