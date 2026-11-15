@@ -1,9 +1,9 @@
 package com.borae.catalog;
 
+import com.borae.identity.RestaurantMedia;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
-import jakarta.persistence.Embeddable;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -11,7 +11,9 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 
@@ -49,6 +51,11 @@ public class MenuProduct {
 
     @Column(name = "display_order", nullable = false)
     private int displayOrder;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinTable(name = "menu_product_image", joinColumns = @JoinColumn(name = "product_id"),
+            inverseJoinColumns = @JoinColumn(name = "media_id"))
+    private RestaurantMedia image;
 
     @ElementCollection
     @CollectionTable(name = "menu_product_ingredient", joinColumns = @JoinColumn(name = "product_id"))
@@ -89,6 +96,9 @@ public class MenuProduct {
     public int getDisplayOrder() { return displayOrder; }
     public List<String> getIngredients() { return List.copyOf(ingredients); }
     public List<MenuProductAddon> getAddons() { return List.copyOf(addons); }
+    public RestaurantMedia getImage() { return image; }
+
+    public void setImage(RestaurantMedia image) { this.image = image; }
 
     public void update(MenuCategory category, String name, String description, long priceInCents,
                        int displayOrder, List<String> ingredients, List<MenuProductAddon> addons) {

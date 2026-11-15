@@ -14,7 +14,8 @@ public record MenuProductResponse(
         ProductAvailability availability,
         int displayOrder,
         List<String> ingredients,
-        List<AddonResponse> addons
+        List<AddonResponse> addons,
+        String imageUrl
 ) {
     public record AddonResponse(String name, long priceDeltaInCents, boolean active) {}
 
@@ -32,7 +33,8 @@ public record MenuProductResponse(
                 product.getIngredients(),
                 product.getAddons().stream()
                         .map(addon -> new AddonResponse(addon.getName(), addon.getPriceDeltaInCents(), addon.isActive()))
-                        .toList()
+                        .toList(),
+                product.getImage() == null ? null : product.getImage().getPublicUrl()
         );
     }
 }
