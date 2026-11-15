@@ -130,6 +130,37 @@ class MenuServiceTest {
                 new UpdateMenuCategoryRequest("Pratos", null, 0, true), owner));
     }
 
+
+    @Test
+    void categoryNameMustBeUniqueIgnoringCaseAndAccentsWhenCreating() {
+        grantRole(RestaurantRole.OWNER);
+        Menu menu = new Menu(restaurant, "Almoço", null, 0);
+        MenuCategory existing = new MenuCategory(menu, "Bebidas", null, 0);
+        when(menuRepository.findByIdAndRestaurant_Id(menu.getId(), restaurantId)).thenReturn(Optional.of(menu));
+        when(categoryRepository.findAllByMenu_IdOrderByDisplayOrderAscNameAsc(menu.getId()))
+                .thenReturn(List.of(existing));
+
+        assertThrows(ResponseStatusException.class, () -> menuService.createCategory(restaurantId, menu.getId(),
+                new CreateMenuCategoryRequest("BEBÍDAS", null, 1), owner));
+        verify(categoryRepository, never()).save(any(MenuCategory.class));
+    }
+
+    @Test
+    void categoryNameMustBeUniqueWhenUpdating() {
+        grantRole(RestaurantRole.MANAGER);
+        Menu menu = new Menu(restaurant, "Almoço", null, 0);
+        MenuCategory existing = new MenuCategory(menu, "Bebidas", null, 0);
+        MenuCategory target = new MenuCategory(menu, "Lanches", null, 1);
+        when(menuRepository.findByIdAndRestaurant_Id(menu.getId(), restaurantId)).thenReturn(Optional.of(menu));
+        when(categoryRepository.findByIdAndMenu_Id(target.getId(), menu.getId())).thenReturn(Optional.of(target));
+        when(categoryRepository.findAllByMenu_IdOrderByDisplayOrderAscNameAsc(menu.getId()))
+                .thenReturn(List.of(existing, target));
+
+        assertThrows(ResponseStatusException.class, () -> menuService.updateCategory(restaurantId, menu.getId(),
+                target.getId(), new UpdateMenuCategoryRequest("BEBÍDAS", null, 1, true), owner));
+        assertEquals("Lanches", target.getName());
+    }
+
     @Test
     void categoryOrderMustContainEveryCategoryExactlyOnce() {
         grantRole(RestaurantRole.MANAGER);
