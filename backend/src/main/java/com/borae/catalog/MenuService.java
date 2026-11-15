@@ -11,8 +11,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.text.Normalizer;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
@@ -125,8 +127,10 @@ public class MenuService {
                                                CreateMenuCategoryRequest request, UserAccount actor) {
         requireManagerAccess(restaurantId, actor);
         Menu menu = findEditableMenu(restaurantId, menuId);
+        String categoryName = normalizeRequired(request.name());
+        ensureUniqueCategoryName(menu, categoryName, null);
         MenuCategory category = categoryRepository.save(new MenuCategory(menu,
-                normalizeRequired(request.name()), optionalText(request.description()), request.displayOrder()));
+                categoryName, optionalText(request.description()), request.displayOrder()));
         return MenuCategoryResponse.from(category);
     }
 
@@ -134,11 +138,12 @@ public class MenuService {
     public MenuCategoryResponse updateCategory(UUID restaurantId, UUID menuId, UUID categoryId,
                                                UpdateMenuCategoryRequest request, UserAccount actor) {
         requireManagerAccess(restaurantId, actor);
-        findEditableMenu(restaurantId, menuId);
+        Menu menu = findEditableMenu(restaurantId, menuId);
         MenuCategory category = categoryRepository.findByIdAndMenu_Id(categoryId, menuId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Categoria não encontrada."));
-        category.update(normalizeRequired(request.name()), optionalText(request.description()),
-                request.displayOrder(), request.active());
+        String categoryName = normalizeRequired(request.name());
+        ensureUniqueCategoryName(menu, categoryName, categoryId);
+        category.update(categoryName, optionalText(request.description()), request.displayOrder(), request.active());
         return MenuCategoryResponse.from(category);
     }
 
@@ -199,6 +204,24 @@ public class MenuService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Seu papel não permite administrar cardápios e categorias.");
         }
+    }
+
+    private void ensureUniqueCategoryName(Menu menu, String candidate, UUID excludedCategoryId) {
+        String normalizedCandidate = normalizeCategoryName(candidate);
+        boolean duplicate = categoryRepository.findAllByMenu_IdOrderByDisplayOrderAscNameAsc(menu.getId()).stream()
+                .filter(category -> !category.getId().equals(excludedCategoryId))
+                .anyMatch(category -> normalizeCategoryName(category.getName()).equals(normalizedCandidate));
+        if (duplicate) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Já existe uma categoria com esse nome neste cardápio.");
+        }
+    }
+
+    private String normalizeCategoryName(String value) {
+        return Normalizer.normalize(value.trim(), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .replaceAll("\\s+", " ")
+                .toLowerCase(Locale.ROOT);
     }
 
     private String normalizeRequired(String value) {
