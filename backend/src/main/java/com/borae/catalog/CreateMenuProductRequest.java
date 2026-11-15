@@ -16,6 +16,6 @@ public record CreateMenuProductRequest(
         @NotNull @PositiveOrZero Long priceInCents,
         @NotNull @PositiveOrZero Integer displayOrder,
         @NotNull @Size(max = 40) List<@NotBlank @Size(max = 120) String> ingredients,
-        @NotNull @Size(max = 30) List<@Valid ProductAddonRequest> addons
+        @NotNull @Size(max = 30) List<@NotNull @Valid ProductAddonRequest> addons
 ) {
 }
