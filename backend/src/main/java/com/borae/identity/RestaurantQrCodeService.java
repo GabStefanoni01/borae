@@ -27,19 +27,19 @@ public class RestaurantQrCodeService {
 
     private final RestaurantRepository restaurantRepository;
     private final RestaurantMembershipRepository membershipRepository;
-    private final String publicRestaurantUrlTemplate;
+    private final String publicRestaurantUrlPrefix;
 
     public RestaurantQrCodeService(
             RestaurantRepository restaurantRepository,
             RestaurantMembershipRepository membershipRepository,
-            @org.springframework.beans.factory.annotation.Value("${app.public-restaurant-url-template}") String publicRestaurantUrlTemplate
+            @org.springframework.beans.factory.annotation.Value("${app.public-restaurant-url-prefix}") String publicRestaurantUrlPrefix
     ) {
         this.restaurantRepository = restaurantRepository;
         this.membershipRepository = membershipRepository;
-        if (publicRestaurantUrlTemplate == null || !publicRestaurantUrlTemplate.contains("{slug}")) {
-            throw new IllegalStateException("A configuração app.public-restaurant-url-template deve conter o placeholder {slug}.");
+        if (publicRestaurantUrlPrefix == null || publicRestaurantUrlPrefix.isBlank()) {
+            throw new IllegalStateException("A configuração app.public-restaurant-url-prefix é obrigatória.");
         }
-        this.publicRestaurantUrlTemplate = publicRestaurantUrlTemplate;
+        this.publicRestaurantUrlPrefix = publicRestaurantUrlPrefix;
     }
 
     @Transactional(readOnly = true)
@@ -59,7 +59,9 @@ public class RestaurantQrCodeService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Restaurante não encontrado."));
 
         String encodedSlug = UriUtils.encodePathSegment(restaurant.getSlug(), StandardCharsets.UTF_8);
-        String publicUrl = publicRestaurantUrlTemplate.replace("{slug}", encodedSlug);
+        String publicUrl = publicRestaurantUrlPrefix.endsWith("/")
+                ? publicRestaurantUrlPrefix + encodedSlug
+                : publicRestaurantUrlPrefix + "/" + encodedSlug;
         URI uri;
         try {
             uri = URI.create(publicUrl);
