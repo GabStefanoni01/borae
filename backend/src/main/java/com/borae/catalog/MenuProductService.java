@@ -214,6 +214,9 @@ public class MenuProductService {
         if (addons == null || addons.size() > 30) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe até 30 adicionais.");
         }
+        if (addons.stream().anyMatch(java.util.Objects::isNull)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A lista de adicionais não pode conter itens nulos.");
+        }
         List<String> names = addons.stream().map(addon -> normalizeRequired(addon.name())).toList();
         ensureUniqueNames(names, "Não repita adicionais no mesmo produto.");
         return java.util.stream.IntStream.range(0, addons.size())
