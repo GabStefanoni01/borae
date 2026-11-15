@@ -2,7 +2,12 @@
   "name": "borae-frontend",
   "version": "0.1.0",
   "private": true,
-  "scripts": {"start": "ng serve --host 0.0.0.0", "start:demo": "ng serve --host 0.0.0.0 --configuration demo", "build": "ng build"},
+  "scripts": {
+    "start": "ng serve --host 0.0.0.0",
+    "start:demo": "ng serve --host 0.0.0.0 --configuration demo",
+    "build": "ng build",
+    "test": "ng test --no-watch"
+  },
   "dependencies": {
     "@angular/common": "20.3.0",
     "@angular/compiler": "20.3.0",
@@ -18,6 +23,8 @@
     "@angular/build": "20.3.0",
     "@angular/cli": "20.3.0",
     "@angular/compiler-cli": "20.3.0",
-    "typescript": "5.9.2"
+    "jsdom": "26.1.0",
+    "typescript": "5.9.2",
+    "vitest": "3.2.4"
   }
 }
