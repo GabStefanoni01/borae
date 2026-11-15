@@ -107,7 +107,7 @@ D-02 aprovada em 13/11/2026.
 - Na edição do produto, adicionar, editar, remover e ordenar ingredientes individualmente (ex.: pão, carne, queijo, cebola e bacon).\n- Cadastrar adicionais opcionais com acréscimo de preço (ex.: bacon, cheddar e ovo).\n- Definir quais ingredientes do produto poderão ser removidos pelo cliente (ex.: sem cebola ou sem tomate).
 - Exibir a lista de ingredientes nos detalhes públicos do produto.
 
-D-04 aprovada em 13/11/2026. O cadastro é livre e simples; não inclui formulário específico de alergênicos ou contaminação cruzada.\n\nD-05 aprovada em 13/11/2026. Adicionais são cadastrados com preço visível no cardápio. Remoções e ponto da carne, quando aplicável, são instruções informadas no momento do pedido e apresentadas ao garçom; não são opções pré-cadastradas no produto. Não haverá tamanhos ou combos nesta etapa.
+D-04 aprovada em 13/11/2026. O cadastro é livre e simples; não inclui formulário específico de alergênicos ou contaminação cruzada.\n\nD-05 aprovada em 13/11/2026. Adicionais são cadastrados com preço visível no cardápio. Remoções de ingredientes e ponto da carne, quando aplicável, serão instruções informadas no momento de um pedido futuro; não são opções pré-cadastradas no produto. Não haverá tamanhos ou combos nesta etapa.
 - Arquivar sem perder histórico necessário.
 - Pré-visualizar como consumidor.
 
