@@ -179,6 +179,19 @@ class MenuProductServiceTest {
         verify(productRepository, never()).save(any(MenuProduct.class));
     }
 
+
+    @Test
+    void nullAddonEntriesAreRejectedAsBadRequest() {
+        grantRole(RestaurantRole.OWNER);
+        when(menuRepository.findByIdAndRestaurant_Id(menu.getId(), restaurantId)).thenReturn(Optional.of(menu));
+        when(categoryRepository.findByIdAndMenu_Id(category.getId(), menu.getId())).thenReturn(Optional.of(category));
+        CreateMenuProductRequest invalid = new CreateMenuProductRequest(category.getId(), "Hambúrguer", null,
+                2590L, 0, List.of(), java.util.Arrays.asList((ProductAddonRequest) null));
+
+        assertThrows(ResponseStatusException.class, () -> service.create(restaurantId, menu.getId(), invalid, actor));
+        verify(productRepository, never()).save(any(MenuProduct.class));
+    }
+
     private CreateMenuProductRequest request(UUID categoryId, String name, long price) {
         return new CreateMenuProductRequest(categoryId, name, null, price, 0,
                 List.of("Pão", "Carne"), List.of(new ProductAddonRequest("Cheddar", 300L, true)));
