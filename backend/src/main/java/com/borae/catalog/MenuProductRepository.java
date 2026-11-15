@@ -26,4 +26,7 @@ public interface MenuProductRepository extends JpaRepository<MenuProduct, UUID> 
             UUID categoryId, ProductLifecycleStatus lifecycleStatus);
 
     Optional<MenuProduct> findByIdAndCategory_Menu_Id(UUID productId, UUID menuId);
+
+    long countByCategory_Menu_IdAndCategory_ActiveTrueAndLifecycleStatusNot(
+            UUID menuId, ProductLifecycleStatus lifecycleStatus);
 }
