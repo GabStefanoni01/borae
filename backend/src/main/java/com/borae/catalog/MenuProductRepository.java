@@ -22,5 +22,8 @@ public interface MenuProductRepository extends JpaRepository<MenuProduct, UUID> 
 
     List<MenuProduct> findAllByCategory_IdOrderByDisplayOrderAscNameAsc(UUID categoryId);
 
+    List<MenuProduct> findAllByCategory_IdAndLifecycleStatusOrderByDisplayOrderAscNameAsc(
+            UUID categoryId, ProductLifecycleStatus lifecycleStatus);
+
     Optional<MenuProduct> findByIdAndCategory_Menu_Id(UUID productId, UUID menuId);
 }

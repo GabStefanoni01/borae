@@ -43,7 +43,25 @@ Consulte a documentação OpenAPI/Swagger publicada para obter os contratos comp
 | POST | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/image` | OWNER ou MANAGER | Envia ou substitui imagem do produto (JPEG, PNG ou WebP, até 10 MB), processada no backend e armazenada no ImageKit. |
 | DELETE | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/image` | OWNER ou MANAGER | Remove a imagem associada ao produto e agenda a remoção do arquivo remoto após commit.
 
-## 3. Regras de equipe implementadas
+## 3. Consulta pública do cardápio
+
+| Método | Caminho | Acesso | Descrição |
+| --- | --- | --- | --- |
+| GET | `/api/v1/public/restaurants/{slug}/menu` | Público, sem JWT | Retorna dados públicos do restaurante, cardápios publicados, categorias ativas e produtos não arquivados. |
+
+Regras da resposta pública:
+- O restaurante precisa estar ativo e com `publication_status = PUBLISHED`; caso contrário, retorna 404.
+- Somente cardápios `PUBLISHED` são retornados.
+- Somente categorias ativas são retornadas.
+- Produtos com ciclo de vida `ARCHIVED` são omitidos; produtos `UNAVAILABLE` permanecem visíveis com seu estado explícito.
+- Somente adicionais ativos são incluídos.
+- A resposta usa DTOs públicos próprios e não inclui dados de equipe, membership, credenciais ou configurações internas.
+- A imagem é representada pela URL pública do ImageKit quando houver imagem associada.
+- O caminho `/api/v1/public/**` é liberado da autenticação JWT; os demais endpoints continuam protegidos conforme suas regras.
+
+**Dependência de publicação:** o domínio já possui `RestaurantPublicationStatus`, mas o fluxo/endpoint para publicar o perfil do restaurante ainda não foi implementado. Portanto, esta consulta só retornará dados quando o restaurante estiver efetivamente marcado como `PUBLISHED` por um fluxo administrativo futuro.
+
+## 4. Regras de equipe implementadas
 
 ### Papéis
 - OWNER: proprietário do restaurante.
@@ -66,7 +84,7 @@ Consulte a documentação OpenAPI/Swagger publicada para obter os contratos comp
 - OWNER não pode ser removido nem ter seu papel alterado pelos endpoints de equipe.
 - Remoção é lógica: o vínculo fica inativo.
 
-## 4. Catálogo — contratos implementados na branch da PR #22
+## 5. Catálogo — contratos implementados na branch da PR #22
 
 - Valores de produtos e acréscimos de adicionais são inteiros em centavos (BRL).
 - Ingredientes são uma lista textual ordenada por produto; nomes duplicados são rejeitados após normalização sem distinção de caixa/acentos.
@@ -78,16 +96,16 @@ Consulte a documentação OpenAPI/Swagger publicada para obter os contratos comp
 - Todas as operações validam vínculo ativo com restaurante e pertencimento de cardápio/categoria/produto, evitando troca de IDs entre restaurantes.
 - A ordenação de produtos é definida por categoria e exige a lista completa dos produtos daquela categoria.
 
-## 5. Criação de restaurante
+## 6. Criação de restaurante
 
 `POST /api/v1/restaurants` cria o estabelecimento e o vínculo OWNER em uma única transação. Identidade do proprietário e papel são definidos no servidor a partir do usuário autenticado; não confiar em valores enviados pelo frontend.
 
-## 6. Respostas e erros
+## 7. Respostas e erros
 Os detalhes completos de DTOs, validações, status HTTP e exemplos devem ser consultados no Swagger/OpenAPI da versão publicada. Ao alterar um contrato:
 1. Atualizar DTO/controller e testes.
 2. Atualizar esta tabela e regras relevantes.
 3. Conferir a documentação OpenAPI gerada.
 4. Atualizar o frontend consumidor do contrato no mesmo PR, quando aplicável.
 
-## 7. Funcionalidades ainda não disponíveis na API
-Consulta pública por slug, QR Code, modelos 3D, IA, fidelidade, Boraê Club, descoberta, pedidos, pagamentos e administração global ainda não estão disponíveis. Não tratar esses itens como endpoints implementados.
+## 8. Funcionalidades ainda não disponíveis na API
+QR Code, modelos 3D, IA, fidelidade, Boraê Club, descoberta, pedidos, pagamentos e administração global ainda não estão disponíveis. Não tratar esses itens como endpoints implementados.

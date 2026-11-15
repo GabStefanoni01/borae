@@ -1,6 +1,6 @@
 # Especificação de módulo — Catálogo e cardápio digital
 
-**Status:** em implementação incremental na PR #22; cardápios e categorias já foram incorporados à branch, demais etapas ainda estão pendentes de implementação e validação  
+**Status:** em implementação incremental na PR #22; backend de cardápios, categorias, produtos, imagens e endpoint de consulta pública por slug incorporados à branch; frontend, QR Code e validação integrada ainda pendentes  
 **Prioridade:** próximo módulo central do produto após a fundação de restaurante/perfil  
 **Escopo deste documento:** orientar backend, frontend, banco de dados, experiência pública, testes e integração  
 **Importante:** esta especificação não significa que entidades, endpoints ou telas do catálogo já existam. Os contratos finais devem ser confirmados no código, nos testes e no OpenAPI de cada entrega.
@@ -515,3 +515,39 @@ O catálogo é a fonte de dados para:
 - [Decisões aprovadas e pendências](OPEN_DECISIONS.md)
 - [Decisões comerciais e operacionais](DECISIONS_COMMERCIAL_AND_OPERATIONS.md)
 
+
+
+## 13. Estado da implementação — atualização da PR #22
+
+### Backend público por slug — implementado na branch
+
+Endpoint implementado:
+- `GET /api/v1/public/restaurants/{slug}/menu` — público, sem JWT.
+
+A resposta contém somente uma allowlist de dados públicos:
+- Identidade básica e contatos públicos do restaurante.
+- Cardápios em estado `PUBLISHED`, ordenados pela ordem configurada.
+- Categorias ativas, ordenadas.
+- Produtos com ciclo de vida `ACTIVE`, ordenados.
+- Preço em centavos, disponibilidade, ingredientes e imagem opcional.
+- Somente adicionais ativos, com acréscimo em centavos.
+
+O endpoint retorna 404 para restaurante inexistente, inativo ou cujo estado de publicação não seja `PUBLISHED`. Cardápios em rascunho/arquivados, categorias inativas, produtos arquivados e adicionais inativos não são expostos. Produto indisponível continua na resposta com `availability = UNAVAILABLE`.
+
+Os DTOs públicos são separados dos DTOs administrativos. A rota `/api/v1/public/**` foi liberada da autenticação JWT sem alterar a proteção dos demais endpoints.
+
+**Dependência ainda pendente:** embora o domínio já tenha `RestaurantPublicationStatus`, não existe ainda fluxo/API para publicar o perfil do restaurante. Assim, a API pública está implementada e protegida pelas regras de publicação, mas a disponibilização efetiva de um restaurante depende da implementação futura desse fluxo.
+
+### Testes adicionados
+
+- Retorno de cardápio publicado, categoria ativa, produto ativo e somente adicionais ativos.
+- Restaurante inexistente/não publicado retorna 404 e não consulta o catálogo.
+- Cardápio sem categorias ativas não consulta produtos.
+
+### Próximas pendências
+
+- Implementar o fluxo de publicação do perfil do restaurante.
+- Implementar QR Code principal apontando para a URL pública.
+- Implementar e integrar a página pública no frontend.
+- Implementar frontend administrativo Angular e validar contratos reais.
+- Executar validação integrada, revisão de segurança e testes ponta a ponta.
