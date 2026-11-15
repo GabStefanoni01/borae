@@ -84,6 +84,19 @@ public class Restaurant {
     public String getCategory() { return category; }
     public RestaurantPublicationStatus getPublicationStatus() { return publicationStatus; }
 
+    public void publish() {
+        if (!active) throw new IllegalStateException("Restaurante inativo não pode ser publicado.");
+        if (publicationStatus == RestaurantPublicationStatus.SUSPENDED) throw new IllegalStateException("Restaurante suspenso não pode ser publicado pelo painel.");
+        publicationStatus = RestaurantPublicationStatus.PUBLISHED;
+    }
+
+    public void unpublish() {
+        if (publicationStatus == RestaurantPublicationStatus.SUSPENDED) throw new IllegalStateException("Restaurante suspenso não pode ser despublicado pelo painel.");
+        publicationStatus = RestaurantPublicationStatus.DRAFT;
+    }
+
+    public void suspend() { this.publicationStatus = RestaurantPublicationStatus.SUSPENDED; }
+
     public void updateProfile(
             String name,
             String slug,

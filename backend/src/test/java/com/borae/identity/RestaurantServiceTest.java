@@ -133,6 +133,41 @@ class RestaurantServiceTest {
     }
 
     @Test
+    void ownerCanPublishRestaurantProfile() {
+        grantRole(RestaurantRole.OWNER);
+        when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(restaurant));
+        RestaurantProfileResponse response = restaurantService.publish(restaurantId, owner);
+        assertEquals(RestaurantPublicationStatus.PUBLISHED, response.publicationStatus());
+    }
+
+    @Test
+    void managerCanUnpublishRestaurantWithoutChangingCatalog() {
+        grantRole(RestaurantRole.MANAGER);
+        restaurant.publish();
+        when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(restaurant));
+        RestaurantProfileResponse response = restaurantService.unpublish(restaurantId, owner);
+        assertEquals(RestaurantPublicationStatus.DRAFT, response.publicationStatus());
+    }
+
+    @Test
+    void staffCannotPublishRestaurantProfile() {
+        grantRole(RestaurantRole.STAFF);
+        assertThrows(ResponseStatusException.class, () -> restaurantService.publish(restaurantId, owner));
+    }
+
+    @Test
+    void suspendedRestaurantCannotBePublishedOrUnpublishedByRestaurantTeam() {
+        grantRole(RestaurantRole.OWNER);
+        restaurant.suspend();
+        when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(restaurant));
+        ResponseStatusException publishException = assertThrows(ResponseStatusException.class, () -> restaurantService.publish(restaurantId, owner));
+        ResponseStatusException unpublishException = assertThrows(ResponseStatusException.class, () -> restaurantService.unpublish(restaurantId, owner));
+        assertEquals(409, publishException.getStatusCode().value());
+        assertEquals(409, unpublishException.getStatusCode().value());
+        assertEquals(RestaurantPublicationStatus.SUSPENDED, restaurant.getPublicationStatus());
+    }
+
+    @Test
     void managerCanReplaceWeeklyScheduleWithMultipleIntervals() {
         grantRole(RestaurantRole.MANAGER);
         when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(restaurant));

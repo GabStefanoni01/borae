@@ -59,7 +59,7 @@ Regras da resposta pública:
 - A imagem é representada pela URL pública do ImageKit quando houver imagem associada.
 - O caminho `/api/v1/public/**` é liberado da autenticação JWT; os demais endpoints continuam protegidos conforme suas regras.
 
-**Dependência de publicação:** o domínio já possui `RestaurantPublicationStatus`, mas o fluxo/endpoint para publicar o perfil do restaurante ainda não foi implementado. Portanto, esta consulta só retornará dados quando o restaurante estiver efetivamente marcado como `PUBLISHED` por um fluxo administrativo futuro.
+**Publicação do perfil:** OWNER ou MANAGER pode publicar e despublicar o perfil pelos endpoints autenticados. Restaurante suspenso não pode ser publicado nem ter seu estado alterado pelo painel da equipe. Despublicar não arquiva cardápios nem apaga o catálogo.
 
 ## 4. Regras de equipe implementadas
 

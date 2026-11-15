@@ -457,6 +457,7 @@ Entregar em incrementos pequenos, com commits separados na branch `docs/catalog-
 ## 9. Critérios de aceite do módulo
 
 - [ ] OWNER cria, edita, publica, despublica e arquiva cardápios.
+- [x] OWNER/MANAGER publica e despublica o perfil do restaurante; suspensão não pode ser revertida pelo painel.
 - [ ] MANAGER executa as mesmas operações de catálogo permitidas pela matriz D-07.
 - [ ] STAFF não cria nem edita conteúdo ou preço; altera somente disponibilidade.
 - [ ] Um restaurante consegue manter vários cardápios publicados simultaneamente.
@@ -519,7 +520,7 @@ O catálogo é a fonte de dados para:
 
 ## 13. Estado da implementação — atualização da PR #22
 
-### Backend público por slug — implementado na branch
+### Backend de publicação do perfil e consulta pública por slug — implementados na branch
 
 Endpoint implementado:
 - `GET /api/v1/public/restaurants/{slug}/menu` — público, sem JWT.
@@ -536,7 +537,7 @@ O endpoint retorna 404 para restaurante inexistente, inativo ou cujo estado de p
 
 Os DTOs públicos são separados dos DTOs administrativos. A rota `/api/v1/public/**` foi liberada da autenticação JWT sem alterar a proteção dos demais endpoints.
 
-**Dependência ainda pendente:** embora o domínio já tenha `RestaurantPublicationStatus`, não existe ainda fluxo/API para publicar o perfil do restaurante. Assim, a API pública está implementada e protegida pelas regras de publicação, mas a disponibilização efetiva de um restaurante depende da implementação futura desse fluxo.
+**Publicação do perfil implementada:** OWNER e MANAGER podem publicar ou despublicar o restaurante. A suspensão é reservada a um fluxo administrativo e não pode ser revertida pela equipe do estabelecimento. Despublicar o perfil não altera o estado individual dos cardápios.
 
 ### Testes adicionados
 
@@ -546,7 +547,6 @@ Os DTOs públicos são separados dos DTOs administrativos. A rota `/api/v1/publi
 
 ### Próximas pendências
 
-- Implementar o fluxo de publicação do perfil do restaurante.
 - Implementar QR Code principal apontando para a URL pública.
 - Implementar e integrar a página pública no frontend.
 - Implementar frontend administrativo Angular e validar contratos reais.

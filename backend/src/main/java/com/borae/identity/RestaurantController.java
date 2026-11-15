@@ -70,6 +70,18 @@ public class RestaurantController {
         return restaurantService.updateProfile(restaurantId, request, currentUser(authentication));
     }
 
+    @PostMapping("/{restaurantId}/publish")
+    @Operation(summary = "Publicar perfil do restaurante", description = "Disponibiliza o restaurante e seus cardápios publicados na página pública. Somente OWNER e MANAGER.")
+    public RestaurantProfileResponse publish(@PathVariable UUID restaurantId, Authentication authentication) {
+        return restaurantService.publish(restaurantId, currentUser(authentication));
+    }
+
+    @PostMapping("/{restaurantId}/unpublish")
+    @Operation(summary = "Despublicar perfil do restaurante", description = "Retira o restaurante da página pública sem arquivar cardápios ou apagar conteúdo.")
+    public RestaurantProfileResponse unpublish(@PathVariable UUID restaurantId, Authentication authentication) {
+        return restaurantService.unpublish(restaurantId, currentUser(authentication));
+    }
+
     @GetMapping("/{restaurantId}/business-hours")
     @Operation(
             summary = "Consultar horários de funcionamento",
