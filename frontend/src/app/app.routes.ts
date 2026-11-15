@@ -29,6 +29,12 @@ export const routes: Routes = [
     loadChildren: () => import('./dashboard/dashboard.routes').then(m => m.DASHBOARD_ROUTES)
   },
   {
+    // Página pública do restaurante (sem login). O prefixo /r/ precisa coincidir com
+    // PUBLIC_RESTAURANT_URL_PREFIX do backend, que gera o QR Code.
+    path: 'r/:slug',
+    loadComponent: () => import('./public-menu/public-menu.page').then(m => m.PublicMenuPage)
+  },
+  {
     path: '**',
     redirectTo: ''
   }
