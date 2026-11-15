@@ -32,6 +32,13 @@ public class MenuController {
         return menuService.listMenus(restaurantId, currentUser(authentication));
     }
 
+    @GetMapping("/{menuId}")
+    @Operation(summary = "Consultar cardápio")
+    public MenuResponse get(@PathVariable UUID restaurantId, @PathVariable UUID menuId,
+                            Authentication authentication) {
+        return menuService.getMenu(restaurantId, menuId, currentUser(authentication));
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Criar cardápio em rascunho")
