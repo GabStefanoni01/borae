@@ -8,7 +8,7 @@ As PRs #22 (backend de catálogo/cardápio) e #25 (frontend de catálogo/cardáp
 
 O módulo 3D/AR é a próxima experiência prevista em `docs/ROADMAP.md` e já possui requisitos em `docs/MODULE_3D_AR.md`. O catálogo é a dependência funcional necessária: os modelos serão associados a produtos existentes.
 
-**Inconsistência técnica que precisa ser resolvida antes do upload 3D:** a decisão aprovada D-09 define Cloudflare R2 como object storage, mas a implementação atual de imagens de restaurante e produto usa ImageKit (`ImageKitRestaurantObjectStorage`). O módulo não deve ampliar essa divergência. A camada de armazenamento deve ser alinhada ao R2 antes de habilitar modelos 3D em produção.
+**Decisão de armazenamento para esta etapa:** o Boraê continuará utilizando ImageKit como provedor oficial de mídia. A decisão/documentação D-09 deverá ser revisada para refletir essa escolha. Antes de habilitar modelos 3D em produção, será necessário validar a compatibilidade do ImageKit com arquivos GLB e os requisitos de entrega, tamanho, MIME, cache e URLs; não presumir suporte sem testes.
 
 ## 2. Objetivo
 
@@ -18,15 +18,16 @@ A experiência deve ser progressiva: o cardápio continua funcional mesmo sem mo
 
 ## 3. Backend — implementação
 
-### 3.1 Infraestrutura de mídia e Cloudflare R2 (pré-requisito)
+### 3.1 Infraestrutura de mídia com ImageKit
 
 - Auditar `RestaurantObjectStorage`, `ImageKitRestaurantObjectStorage`, `RestaurantMedia`, `RestaurantMediaType` e o fluxo de imagem de produto.
-- Implementar adaptador de Cloudflare R2 usando API compatível com S3, credenciais exclusivamente no backend e configuração por variáveis de ambiente.
+- Manter ImageKit como provedor oficial de armazenamento e entrega de mídia; não implementar adaptador para outro provedor nem migração das imagens existentes.
 - Preservar a abstração `RestaurantObjectStorage` ou evoluí-la para uma interface neutra de object storage; controllers e serviços de domínio não devem conhecer o provedor.
-- Migrar as imagens existentes do ImageKit para R2 com estratégia segura e rastreável: inventário, cópia, verificação de integridade, atualização de referências e possibilidade de rollback. Não apagar objetos antigos antes de confirmar a migração.
+- Validar upload, armazenamento e entrega de GLB pelo ImageKit: formatos aceitos, limites de tamanho, MIME, URLs, transformações, cache/CDN e comportamento de download. Registrar os resultados antes de fechar os limites do MVP.
+- Se houver limitação do ImageKit para arquivos 3D, apresentar evidência e alternativa técnica antes de alterar a decisão de infraestrutura. Não trocar o provedor por antecipação.
 - Manter os contratos HTTP atuais de imagem de restaurante e produto, para não exigir retrabalho desnecessário no Angular.
-- Configurar URLs públicas/CDN ou URLs assinadas conforme a política definida para cada tipo de asset. Nunca expor chaves de acesso.
-- Documentar limites, CORS, domínio, lifecycle e custos dentro das cotas aprovadas. Não presumir que a configuração do bucket já existe.
+- Manter credenciais e operações privilegiadas exclusivamente no backend; o frontend não deve receber chaves privadas do ImageKit.
+- Documentar configuração, limites, domínio, políticas de entrega e custos aplicáveis.
 
 ### 3.2 Modelo de domínio 3D
 
@@ -43,7 +44,7 @@ A experiência deve ser progressiva: o cardápio continua funcional mesmo sem mo
 - Validar membership ativo, restaurantId, menuId e productId em toda operação.
 - Validar conteúdo real do arquivo, não apenas extensão ou Content-Type declarado.
 - Preferir GLB para distribuição. Definir e documentar o suporte a glTF e dependências externas antes da implementação; não aceitar referências remotas arbitrárias.
-- Definir limites numéricos de tamanho, polígonos, texturas e dimensões após teste de desempenho e capacidade do R2/CDN. Não inventar limites sem medição.
+- Definir limites numéricos de tamanho, polígonos, texturas e dimensões após teste de desempenho e limites efetivos do ImageKit. Não inventar limites sem medição.
 - Processar/inspecionar arquivos em ambiente isolado, sem executar conteúdo enviado. Rejeitar arquivo corrompido, formato não suportado, dependências ausentes e arquivos acima dos limites.
 - Gerar identificadores/chaves aleatórias e separar os objetos por restaurante/produto.
 - Tratar falhas de banco/storage com compensação: não perder o modelo anterior se a substituição falhar; limpar objetos órfãos de forma segura.
@@ -70,7 +71,7 @@ A experiência deve ser progressiva: o cardápio continua funcional mesmo sem mo
 - Testar upload válido/inválido, MIME falso, arquivo corrompido, limites, substituição, remoção e falhas do storage.
 - Testar acesso cruzado entre restaurantes, papéis OWNER/MANAGER/STAFF e acesso público a modelo não publicado.
 - Testar que modelo pendente/rejeitado nunca aparece na API pública.
-- Testar migração de mídia ImageKit → R2 com verificação de integridade e rollback documentado.
+- Testar upload e entrega de arquivos GLB pelo ImageKit, incluindo integridade, MIME, cache/CDN, URLs e limites aplicáveis.
 - Testar persistência com PostgreSQL real e storage de homologação.
 - Atualizar Swagger, `docs/API.md`, `docs/MODULE_3D_AR.md`, modelo de domínio, variáveis de ambiente e runbooks operacionais.
 
@@ -85,7 +86,7 @@ A experiência deve ser progressiva: o cardápio continua funcional mesmo sem mo
 - Permitir informar/ajustar largura, altura e profundidade físicas, com unidade explícita e orientações de calibração.
 - OWNER/MANAGER podem gerenciar. STAFF e demais usuários sem permissão veem somente o que a política de leitura permitir.
 - Ao trocar o restaurante ou produto selecionado, cancelar/descartar estados locais para não misturar assets de contextos diferentes.
-- Não implementar upload direto ao R2 com credenciais no navegador; usar os endpoints/fluxo seguro definido pelo backend.
+- Não disponibilizar credenciais privadas do ImageKit no navegador; usar o fluxo seguro definido pelo backend.
 
 ### 4.2 Prévia administrativa
 
@@ -112,7 +113,7 @@ A experiência deve ser progressiva: o cardápio continua funcional mesmo sem mo
 
 ## 5. Critérios de aceite
 
-- [ ] Armazenamento de mídia alinhado ao Cloudflare R2 conforme D-09, com migração segura das imagens atuais.
+- [ ] ImageKit validado para upload e entrega de modelos GLB, sem migração de provedor.
 - [ ] Upload 3D validado no backend e protegido contra arquivos inválidos e acesso cruzado.
 - [ ] OWNER/MANAGER gerenciam o modelo; STAFF não altera assets.
 - [ ] Um produto pode ter modelo 3D pronto, substituível e removível.
@@ -131,7 +132,7 @@ Pedidos, carrinho, checkout, pagamentos, reservas, QR Code por mesa, PDV/ERP, ed
 
 ## 7. Dependências e ordem de execução
 
-1. Validar configuração real do Cloudflare R2 e executar a migração de mídia atual do ImageKit com rollback.
+1. Validar o ImageKit para upload e entrega dos modelos GLB e revisar a decisão/documentação D-09 para refletir o provedor escolhido.
 2. Implementar domínio, upload, validação, metadados e endpoints 3D no backend.
 3. Publicar contratos/Swagger e testar API/storage em homologação.
 4. Implementar painel e prévia Angular.
