@@ -102,6 +102,28 @@ public class RestaurantService {
         return RestaurantProfileResponse.from(restaurant);
     }
 
+    @Transactional
+    public RestaurantProfileResponse publish(UUID restaurantId, UserAccount actor) {
+        requireProfilePermission(restaurantId, actor);
+        Restaurant restaurant = findActiveRestaurant(restaurantId);
+        if (restaurant.getPublicationStatus() == RestaurantPublicationStatus.SUSPENDED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Este restaurante está suspenso e não pode ser publicado pelo painel.");
+        }
+        restaurant.publish();
+        return RestaurantProfileResponse.from(restaurant);
+    }
+
+    @Transactional
+    public RestaurantProfileResponse unpublish(UUID restaurantId, UserAccount actor) {
+        requireProfilePermission(restaurantId, actor);
+        Restaurant restaurant = findActiveRestaurant(restaurantId);
+        if (restaurant.getPublicationStatus() == RestaurantPublicationStatus.SUSPENDED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Este restaurante está suspenso e não pode ser alterado pelo painel.");
+        }
+        restaurant.unpublish();
+        return RestaurantProfileResponse.from(restaurant);
+    }
+
     @Transactional(readOnly = true)
     public List<BusinessHoursDayResponse> getBusinessHours(UUID restaurantId, UserAccount actor) {
         requireProfilePermission(restaurantId, actor);

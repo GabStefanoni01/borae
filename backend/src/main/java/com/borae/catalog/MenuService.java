@@ -41,14 +41,14 @@ public class MenuService {
 
     @Transactional(readOnly = true)
     public List<MenuResponse> listMenus(UUID restaurantId, UserAccount actor) {
-        requireManagerAccess(restaurantId, actor);
+        requireMembership(restaurantId, actor);
         return menuRepository.findAllByRestaurant_IdOrderByDisplayOrderAscNameAsc(restaurantId)
                 .stream().map(MenuResponse::from).toList();
     }
 
     @Transactional(readOnly = true)
     public MenuResponse getMenu(UUID restaurantId, UUID menuId, UserAccount actor) {
-        requireManagerAccess(restaurantId, actor);
+        requireMembership(restaurantId, actor);
         return MenuResponse.from(findMenu(restaurantId, menuId));
     }
 
@@ -116,7 +116,7 @@ public class MenuService {
 
     @Transactional(readOnly = true)
     public List<MenuCategoryResponse> listCategories(UUID restaurantId, UUID menuId, UserAccount actor) {
-        requireManagerAccess(restaurantId, actor);
+        requireMembership(restaurantId, actor);
         findMenu(restaurantId, menuId);
         return categoryRepository.findAllByMenu_IdOrderByDisplayOrderAscNameAsc(menuId)
                 .stream().map(MenuCategoryResponse::from).toList();
@@ -194,12 +194,16 @@ public class MenuService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Restaurante não encontrado."));
     }
 
-    private void requireManagerAccess(UUID restaurantId, UserAccount actor) {
-        RestaurantMembership membership = membershipRepository
+    private RestaurantMembership requireMembership(UUID restaurantId, UserAccount actor) {
+        return membershipRepository
                 .findByUser_IdAndRestaurant_IdAndActiveTrue(actor.getId(), restaurantId)
                 .filter(item -> item.getRestaurant().isActive())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
                         "Você não tem acesso a este restaurante."));
+    }
+
+    private void requireManagerAccess(UUID restaurantId, UserAccount actor) {
+        RestaurantMembership membership = requireMembership(restaurantId, actor);
         if (membership.getRole() != RestaurantRole.OWNER && membership.getRole() != RestaurantRole.MANAGER) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Seu papel não permite administrar cardápios e categorias.");

@@ -79,6 +79,27 @@ class MenuServiceTest {
         verify(menuRepository, never()).findAllByRestaurant_IdOrderByDisplayOrderAscNameAsc(restaurantId);
     }
 
+
+    @Test
+    void staffCanReadMenusAndCategoriesButCannotAdministerThem() {
+        grantRole(RestaurantRole.STAFF);
+        Menu menu = new Menu(restaurant, "Almoço", null, 0);
+        MenuCategory category = new MenuCategory(menu, "Pratos", null, 0);
+        when(menuRepository.findAllByRestaurant_IdOrderByDisplayOrderAscNameAsc(restaurantId))
+                .thenReturn(List.of(menu));
+        when(menuRepository.findByIdAndRestaurant_Id(menu.getId(), restaurantId)).thenReturn(Optional.of(menu));
+        when(categoryRepository.findAllByMenu_IdOrderByDisplayOrderAscNameAsc(menu.getId()))
+                .thenReturn(List.of(category));
+
+        assertEquals(1, menuService.listMenus(restaurantId, owner).size());
+        assertEquals(menu.getId(), menuService.getMenu(restaurantId, menu.getId(), owner).id());
+        assertEquals(1, menuService.listCategories(restaurantId, menu.getId(), owner).size());
+
+        assertThrows(ResponseStatusException.class, () -> menuService.createMenu(restaurantId,
+                new CreateMenuRequest("Jantar", null, 1), owner));
+        verify(menuRepository, never()).save(any(Menu.class));
+    }
+
     @Test
     void menuCanBePublishedAndThenUnpublished() {
         grantRole(RestaurantRole.MANAGER);

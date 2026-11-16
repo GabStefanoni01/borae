@@ -1,119 +1,568 @@
-# Especificação de módulo — Catálogo e cardápio
+# Especificação de módulo — Catálogo e cardápio digital
 
-**Prioridade:** próxima grande entrega de produto após perfil/configuração do restaurante.  
-**Status:** planejado; nenhum endpoint de catálogo deve ser presumido existente.
+**Status:** em implementação incremental na PR #22; backend de cardápios, categorias, produtos, imagens, consulta pública por slug e geração do QR Code principal incorporados à branch; frontend e validação integrada ainda pendentes  
+**Prioridade:** próximo módulo central do produto após a fundação de restaurante/perfil  
+**Escopo deste documento:** orientar backend, frontend, banco de dados, experiência pública, testes e integração  
+**Importante:** esta especificação não significa que entidades, endpoints ou telas do catálogo já existam. Os contratos finais devem ser confirmados no código, nos testes e no OpenAPI de cada entrega.
 
-## 1. Objetivo
+## 1. Objetivo do módulo
 
-Permitir que o restaurante cadastre e mantenha um cardápio confiável, e que consumidores consultem somente conteúdo publicado.
+Construir a base de catálogo do Boraê para que cada restaurante consiga cadastrar, organizar, manter e publicar seus cardápios sem depender do time técnico. O consumidor deverá conseguir abrir uma página pública responsiva, escolher um cardápio e consultar categorias, produtos, preços, ingredientes, adicionais e disponibilidade, sem precisar criar conta.
 
-## 2. Escopo inicial
+O catálogo precisa ser uma fonte confiável de dados para os próximos módulos — assistente gastronômico, descoberta, experiência 3D/AR e fidelidade — sem antecipar ou implementar esses módulos agora.
 
-### Cardápios
-- Um restaurante pode possuir múltiplos cardápios, por exemplo Almoço, Jantar e Bebidas.
+### Resultados esperados
+
+- O restaurante consegue criar mais de um cardápio e manter vários publicados simultaneamente.
+- Cada cardápio tem categorias e produtos próprios, com ordenação controlada pelo restaurante.
+- O restaurante consegue editar preços, descrições, ingredientes, adicionais, imagens e disponibilidade.
+- O consumidor vê somente conteúdo que deve ser público, com preço e disponibilidade atuais.
+- A experiência funciona bem em celular, inclusive ao acessar por QR Code.
+- Dados de um restaurante nunca podem ser lidos ou alterados por outro restaurante através de troca de IDs.
+
+## 2. Decisões de produto já aprovadas — não reabrir
+
+As decisões abaixo são regras de produto aprovadas. A implementação deve respeitá-las; dúvidas de schema, endpoint ou experiência devem ser resolvidas sem alterar o comportamento de negócio.
+
+### 2.1 Múltiplos cardápios por restaurante — D-02
+
+- Um restaurante pode possuir vários cardápios, por exemplo **Almoço**, **Jantar**, **Bebidas** ou **Sobremesas**.
 - Cada cardápio tem suas próprias categorias e produtos.
-- Vários cardápios podem estar publicados simultaneamente.
-- A página pública do restaurante lista os cardápios publicados para o consumidor escolher.
-- No MVP, não existe alternância automática por horário.
-- O QR Code principal aponta para a página pública do restaurante, não para um cardápio individual.
+- Mais de um cardápio pode permanecer publicado ao mesmo tempo.
+- A página pública do restaurante apresenta os cardápios publicados para o consumidor escolher.
+- No MVP não existe alternância automática de cardápio por horário.
+- O QR Code principal direciona à página pública do restaurante, não a um cardápio individual.
 
-**Decisão de produto D-02 aprovada em 13/11/2026.**
+### 2.2 Publicação por cardápio — D-03
 
-### Categorias
+Estados do cardápio:
+- `DRAFT`: em preparação, não visível publicamente.
+- `PUBLISHED`: visível na página pública.
+- `ARCHIVED`: arquivado, não visível publicamente.
+
+Regras:
+- Um cardápio novo começa em `DRAFT`.
+- O restaurante cadastra categorias e produtos, revisa e publica o cardápio.
+- A publicação exige ao menos uma categoria ativa com um produto não arquivado.
+- A publicação é controlada pelo cardápio, não por produto nem globalmente pelo restaurante.
+- Não existe publicação individual de produto no MVP.
+- Em um cardápio publicado, alterações salvas entram no ar imediatamente; não há uma segunda aprovação/publicação por edição.
+- O restaurante pode despublicar ou arquivar o cardápio sem apagar os dados.
+- Produtos arquivados não aparecem publicamente.
+- Produtos indisponíveis podem continuar visíveis, claramente identificados como indisponíveis.
+
+### 2.3 Ingredientes — D-04
+
+- Ingredientes são itens livres cadastrados individualmente pelo restaurante e associados ao produto.
+- O restaurante pode adicionar, editar, remover e ordenar os ingredientes.
+- Exemplo: pão, carne, queijo, cebola e bacon.
+- Não existe neste escopo um catálogo padronizado de alergênicos nem declaração estruturada de contaminação cruzada.
+- A interface não deve inventar garantias sobre alergênicos com base apenas na lista de ingredientes.
+
+### 2.4 Adicionais e instruções — D-05
+
+- O restaurante pode cadastrar adicionais opcionais, como bacon, cheddar ou ovo.
+- Cada adicional tem nome, preço/acréscimo explícito e estado ativo/inativo.
+- O preço do adicional deve ser apresentado ao consumidor antes da seleção.
+- Remoção de ingredientes (por exemplo, “sem cebola”) não é uma opção pré-cadastrada do produto: será uma instrução/observação no momento do pedido, em módulo futuro.
+- Ponto da carne, quando aplicável, também será uma instrução futura no pedido.
+- Não haverá tamanhos ou combos nesta etapa.
+- Não implementar pedidos ou checkout junto com o catálogo.
+
+### 2.5 Preço — D-06
+
+- A moeda do MVP é BRL.
+- Valores são armazenados e trafegados como inteiros em centavos: `priceInCents` e `priceDeltaInCents`.
+- Não usar `float` ou `double` para valores monetários.
+- O backend é a autoridade para validação e cálculos.
+- Preços não podem ser negativos.
+- O frontend apenas formata centavos para reais na apresentação.
+
+### 2.6 Permissões — D-07
+
+A autorização é por vínculo ativo do usuário com o restaurante e deve ser validada no backend em todas as operações privadas.
+
+| Ação | OWNER | MANAGER | STAFF |
+|---|---:|---:|---:|
+| Consultar painel e catálogo administrativo | Sim | Sim | Conforme acesso operacional definido no painel |
+| Criar/editar cardápios, categorias e produtos | Sim | Sim | Não |
+| Alterar preços e ingredientes | Sim | Sim | Não |
+| Publicar, despublicar e arquivar cardápios | Sim | Sim | Não |
+| Alterar disponibilidade de produtos | Sim | Sim | Sim |
+| Consultar cardápio público | Público | Público | Público |
+
+STAFF pode alterar somente a disponibilidade operacional dos produtos, não o conteúdo, preço ou publicação. A interface pode ocultar ações não permitidas, mas isso nunca substitui a autorização no servidor.
+
+## 3. Escopo funcional
+
+### 3.1 Gestão de cardápios
+
+O painel do restaurante deve permitir:
+
+- Listar cardápios do restaurante.
+- Criar cardápio informando nome e, opcionalmente, descrição.
+- Abrir um cardápio para administrar categorias e produtos.
+- Editar nome e descrição.
+- Consultar estado (`DRAFT`, `PUBLISHED`, `ARCHIVED`).
+- Publicar um rascunho após validação.
+- Despublicar um cardápio publicado, retornando-o a `DRAFT`.
+- Arquivar sem apagar o conteúdo.
+- Reordenar cardápios quando a experiência de listagem exigir.
+- Visualizar uma prévia do que o consumidor verá.
+
+Não criar agendamento de publicação nem alternância automática por horário no MVP.
+
+### 3.2 Categorias
+
+Cada categoria pertence a exatamente um cardápio.
+
+Campos previstos:
 - Nome obrigatório.
 - Descrição opcional.
 - Ordem de exibição.
 - Estado ativo/inativo.
-- Não permitir categorias duplicadas com mesmo nome no mesmo menu, conforme regra de normalização a definir.
-- Categoria inativa não deve aceitar novos produtos publicados; comportamento de produtos já associados deve ser definido antes do schema.
+- Identificador UUID.
+- Datas de criação e atualização.
 
-### Produtos
-Campos mínimos propostos:
+Ações:
+- Listar categorias do cardápio.
+- Criar, editar e renomear.
+- Ativar/desativar.
+- Reordenar por lista explícita de IDs.
+- Consultar quantidade de produtos associados.
+
+Regras e cuidados:
+- Não permitir nomes duplicados no mesmo cardápio após normalização definida na implementação.
+- Categorias inativas não aparecem na página pública.
+- O comportamento de produtos associados a uma categoria desativada deve ser consistente: eles deixam de ser exibidos publicamente enquanto a categoria estiver inativa, sem apagar o produto.
+- Não excluir categoria que ainda tenha produtos sem definir e validar uma operação explícita de realocação ou arquivamento. Preferir desativação como primeira opção.
+- Validar no backend que a categoria pertence ao cardápio e ao restaurante informado.
+
+### 3.3 Produtos
+
+Cada produto pertence a uma categoria, e por consequência a um cardápio e restaurante.
+
+Campos previstos:
 - Nome obrigatório.
 - Descrição opcional.
-- Preço obrigatório e não negativo.
-- Moeda.
-- Categoria.
+- Preço em centavos (BRL), obrigatório e não negativo.
+- Categoria obrigatória.
 - Imagem opcional.
-- Lista de ingredientes: itens individuais cadastrados livremente pelo restaurante, cada um associado ao produto e com ordem de exibição.
-- O restaurante pode adicionar, editar e remover ingredientes. Exemplo: pão, carne, queijo, cebola e bacon.
-- Disponibilidade: AVAILABLE / UNAVAILABLE.
+- Ingredientes em lista ordenada de itens livres.
+- Adicionais opcionais com preço em centavos.
+- Estado de ciclo de vida: ativo ou arquivado.
+- Disponibilidade operacional: `AVAILABLE` ou `UNAVAILABLE`.
 - Ordem de exibição.
+- Datas de criação e atualização.
 
-Não misturar disponibilidade operacional com publicação: um produto pode estar publicado e temporariamente indisponível.
+Ações:
+- Listar produtos por cardápio/categoria.
+- Criar e editar.
+- Arquivar e, se permitido, reativar.
+- Alterar disponibilidade.
+- Reordenar.
+- Gerenciar ingredientes (adicionar, editar, remover e ordenar).
+- Gerenciar adicionais (criar, editar preço/nome, ativar/desativar e ordenar).
+- Vincular ou trocar imagem.
+- Consultar prévia pública do produto.
 
-**Decisão de produto D-04 aprovada em 13/11/2026:** ingredientes são cadastrados como uma lista livre de itens individuais associados ao produto. Não há catálogo padronizado de alergênicos nem declaração específica de contaminação cruzada neste escopo.
+Regras:
+- Não permitir preço negativo.
+- Produto arquivado não aparece publicamente.
+- Produto indisponível pode permanecer visível com rótulo claro.
+- Não confundir arquivamento com indisponibilidade.
+- Não aceitar que um produto seja associado a categoria de outro restaurante ou cardápio.
+- A disponibilidade pode ser alterada por OWNER, MANAGER e STAFF; demais campos apenas por OWNER/MANAGER.
+- Não implementar tamanhos, combos, variações complexas, estoque ou integração POS/ERP nesta fase.
 
-### Adicionais e instruções no pedido
-- O restaurante pode cadastrar adicionais opcionais, como bacon, cheddar e ovo.
-- Cada adicional deve ter preço/acréscimo definido e visível ao consumidor no cardápio.
-- Remoção de ingredientes não é cadastrada como opção do produto.
-- No momento do pedido, o cliente pode informar instruções como “sem cebola” ou “sem tomate”; essas observações devem ser exibidas claramente ao garçom.
-- Ponto da carne, quando aplicável, também pode ser informado como instrução no pedido.
-- Não haverá tamanhos ou combos nesta etapa.
+### 3.4 Ingredientes
 
-**Decisão de produto D-05 aprovada em 13/11/2026.**
+- Cada ingrediente é um item textual associado a um único produto.
+- A ordem cadastrada deve ser preservada na exibição.
+- Nome obrigatório após remoção de espaços em branco.
+- Não duplicar itens equivalentes no mesmo produto após normalização definida na implementação.
+- Não tratar ingredientes como alérgenos certificados.
+- A edição do produto deve permitir administrar a lista de forma simples, sem exigir cadastro global de ingredientes.
 
-## 3. Regras de preço
+### 3.5 Adicionais
 
-- Preço é mantido pelo restaurante e exibido como valor atual.
-- API não aceita preço calculado pelo frontend como autoridade.
-- O preço de cada adicional deve ser apresentado antes da seleção; backend calcula o valor considerando os adicionais escolhidos.
-- Observações de remoção de ingredientes não alteram o preço.
-- Histórico de preço não é obrigatório no primeiro MVP, mas alterações administrativas devem ser auditáveis.
-- O MVP utiliza somente BRL.
-- Preços de produtos e adicionais são armazenados como inteiros em centavos.
-- A API utiliza campos como `priceInCents` e `priceDeltaInCents`; a interface formata os valores para exibição em reais.
-- O backend realiza os cálculos monetários, sem `float` ou `double`.
-- Preços não podem ser negativos.
+- Cada adicional pertence a um produto.
+- Campos: nome, acréscimo de preço em centavos, estado ativo/inativo e ordem.
+- Nome obrigatório; preço não negativo.
+- Adicionais inativos não aparecem como opções públicas.
+- Exibir nome e preço adicional de forma inequívoca.
+- Não implementar seleção/compra do adicional ou cálculo de pedido nesta etapa; apenas cadastrar e apresentar as opções.
 
-## 4. Publicação
+### 3.6 Imagens de produtos
 
-**Decisão de produto D-03 aprovada em 13/11/2026.** A publicação é controlada por cardápio (`Menu`), não por produto nem globalmente por restaurante.
+O catálogo precisa permitir associar uma imagem ao produto. O arquivo binário não deve ser salvo no PostgreSQL.
 
-Fluxo:
-1. Um cardápio novo é criado como `DRAFT`.
-2. O restaurante adiciona categorias e produtos e revisa a prévia.
-3. A ação de publicar valida a consistência mínima do cardápio e muda seu estado para `PUBLISHED`.
-4. Categorias ativas e produtos elegíveis do cardápio passam a aparecer na página pública.
-5. Em cardápio publicado, alterações salvas entram no ar imediatamente, sem uma segunda etapa de publicação.
-6. O restaurante pode despublicar ou arquivar o cardápio sem apagar seus dados.
+Estado atual relevante:
+- O projeto já possui fluxo de mídia de restaurante com ImageKit, abstração `RestaurantObjectStorage`, metadados no PostgreSQL e endpoints de logo/fotos.
+- O endpoint atual de mídia de restaurante aceita `LOGO` e `PHOTO`; ainda não existe associação específica de mídia a produto.
+- A implementação do catálogo deve avaliar a reutilização da abstração e do provedor ImageKit existentes, estendendo o domínio de mídia de forma compatível. Não introduzir Cloudflare R2 nem criar um segundo mecanismo de upload sem decisão explícita.
+- Credenciais do ImageKit permanecem exclusivamente no backend.
 
-Não existe publicação individual de produto no MVP. Produto arquivado não aparece publicamente. Produto indisponível pode continuar visível, identificado como indisponível. A disponibilidade operacional é independente da publicação do cardápio.
+Requisitos:
+- JPEG, PNG e WebP.
+- Validar conteúdo real, extensão, MIME, tamanho e limites no backend; validação no navegador é apenas antecipação de erro.
+- Reutilizar o processamento de imagem já existente quando tecnicamente adequado (normalização de orientação, redimensionamento, compressão e remoção de metadados quando possível).
+- Persistir no banco apenas referência, URL pública e metadados necessários.
+- Impedir associação de imagem pertencente a outro restaurante.
+- Ao trocar/remover imagem, evitar arquivos órfãos e manter consistência entre banco e provedor.
+- Definir limites específicos para imagens de produto durante a implementação, sem assumir que o limite de 100 fotos de galeria seja automaticamente a política correta para o catálogo.
+- Entregar imagem com carregamento responsivo/lazy loading na página pública.
 
-## 5. Menu público
+### 3.7 Página pública do restaurante e cardápio
 
-- Endpoint público usa slug estável.
-- Retorna apenas menu publicado, categorias ativas e produtos publicados.
-- Pode incluir produtos indisponíveis com status claro.
-- Não retorna campos internos, IDs de usuário, equipe ou notas administrativas.
-- Dados são cacheáveis apenas com estratégia de invalidação ao atualizar preço/disponibilidade.
+A página pública deve ser acessível pelo slug do restaurante e não exigir login.
 
-## 6. Upload de imagem e mídia
+Estrutura funcional:
+1. Identidade pública do restaurante: nome, descrição, logo/capa quando disponíveis, categoria, endereço/contato e horário conforme os dados públicos já existentes.
+2. Lista dos cardápios publicados.
+3. Seleção de um cardápio.
+4. Navegação por categorias.
+5. Lista de produtos elegíveis.
+6. Detalhe do produto com imagem, descrição, preço, ingredientes e adicionais ativos.
+7. Indicação visível de produto indisponível.
 
-- Utilizar serviço externo de object storage; nunca guardar binários no PostgreSQL.
-- Formatos de imagem aceitos: JPG/JPEG, PNG e WebP.
-- Validar MIME real, extensão, tamanho máximo e checksum.
-- Gerar variantes otimizadas para mobile e permitir entrega por CDN.
-- Remover metadados EXIF sensíveis quando possível.
-- Restringir acesso a arquivos privados e validar escopo do restaurante.
-- Cloudflare R2 será utilizado como object storage para imagens e modelos 3D no MVP, dentro das cotas gratuitas disponíveis. A entrega pode utilizar domínio/CDN da Cloudflare conforme configuração.
-- Limites numéricos de tamanho e resolução permanecem pendentes; monitorar consumo para evitar cobranças.
+Regras de exposição:
+- Retornar somente cardápios `PUBLISHED`.
+- Retornar somente categorias ativas.
+- Não retornar produtos arquivados.
+- Produtos indisponíveis podem ser retornados com estado explícito.
+- Não expor IDs internos de usuário, dados da equipe, notas administrativas ou campos privados.
+- Validar status de publicação do restaurante; restaurante suspenso ou não publicado não pode expor o cardápio.
+- Não exigir cadastro, login ou localização do consumidor para consultar.
+- Não exibir ações de pedido, pagamento, carrinho ou checkout.
 
-## 7. Critérios de aceite
+### 3.8 QR Code
 
-- OWNER consegue criar/editar categoria e produto.
-- Usuário de outro restaurante não consegue ler ou alterar recurso privado por troca de ID.
-- Produto DRAFT não aparece no menu público.
-- Produto indisponível não é apresentado como disponível.
-- Preço e acréscimos são calculados pelo backend.
-- Alterações são refletidas na página pública dentro do SLA de cache definido.
-- Fluxos têm estados de carregamento, erro, vazio e sucesso.
-- Testes cobrem validação, autorização, isolamento e publicação.
+- O QR Code principal do restaurante deve apontar para a URL pública do restaurante, não para um menu específico.
+- A página pública lista os cardápios publicados para escolha.
+- O QR Code é uma forma de abrir a mesma URL pública; não criar um segundo fluxo de consulta.
+- Geração/download do QR pode ser entregue junto da página pública ou em incremento posterior, mas não deve bloquear o CRUD inicial do catálogo.
+- QR Code por mesa não faz parte do escopo atual.
 
-## 8. Fora do primeiro recorte
-- Estoque integrado a ERP/POS.
-- Pedidos e pagamento.
-- Importação automática de cardápios.
-- Gestão complexa de combos e promoções.
-- Tradução automática.
+## 4. Modelo de domínio proposto
+
+Entidades conceituais:
+
+- `Menu`: pertence a `Restaurant`; contém nome, descrição, status, ordem, timestamps e informação de publicação.
+- `MenuCategory`: pertence a `Menu`; contém nome, descrição, ordem, estado ativo e timestamps.
+- `Product`: pertence a uma categoria; contém nome, descrição, preço em centavos, referência de imagem, estado de ciclo de vida, disponibilidade, ordem e timestamps.
+- `ProductIngredient`: pertence a `Product`; contém nome e ordem.
+- `ProductAddon`: pertence a `Product`; contém nome, acréscimo em centavos, estado ativo e ordem.
+- Referência de mídia: associação segura entre produto e arquivo existente no provedor, com metadados mantidos no PostgreSQL.
+
+Relacionamentos:
+- Restaurant 1:N Menu.
+- Menu 1:N MenuCategory.
+- MenuCategory 1:N Product.
+- Product 1:N ProductIngredient.
+- Product 1:N ProductAddon.
+- Product 0..1:N referência de imagem conforme decisão física final; no MVP, uma imagem principal por produto é suficiente.
+
+Invariantes:
+- Todos os recursos devem ter escopo de restaurante verificável.
+- Categoria deve pertencer ao menu esperado.
+- Produto deve pertencer à categoria esperada.
+- Ingredientes e adicionais devem pertencer ao produto esperado.
+- Reordenação recebe IDs explícitos e rejeita IDs ausentes, repetidos ou fora do escopo.
+- Constraints no banco devem reforçar unicidade e integridade sempre que possível.
+- Migrações Flyway incrementais; nunca alterar migrations já aplicadas.
+
+O schema físico, nomes finais de colunas, estratégia de exclusão e índices serão definidos na implementação após inspeção do código atual.
+
+## 5. API — recursos candidatos
+
+Os caminhos abaixo são uma proposta de organização REST. Os contratos finais devem ser confirmados no código e no Swagger; não assumir que já existem.
+
+### Administração autenticada
+
+| Método | Caminho candidato | Ação |
+|---|---|---|
+| GET | `/api/v1/restaurants/{restaurantId}/menus` | Listar cardápios |
+| POST | `/api/v1/restaurants/{restaurantId}/menus` | Criar cardápio |
+| GET | `/api/v1/restaurants/{restaurantId}/menus/{menuId}` | Consultar cardápio |
+| PATCH | `/api/v1/restaurants/{restaurantId}/menus/{menuId}` | Editar cardápio |
+| POST | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/publish` | Publicar |
+| POST | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/unpublish` | Despublicar |
+| POST | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/archive` | Arquivar |
+| GET/POST | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/categories` | Listar/criar categorias |
+| PATCH | `/api/v1/restaurants/{restaurantId}/categories/{categoryId}` | Editar categoria |
+| DELETE ou POST | `/api/v1/restaurants/{restaurantId}/categories/{categoryId}/...` | Desativar/remover conforme regra definida |
+| PUT | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/categories/order` | Reordenar categorias |
+| GET/POST | `/api/v1/restaurants/{restaurantId}/products` | Listar/criar produtos |
+| GET/PATCH | `/api/v1/restaurants/{restaurantId}/products/{productId}` | Consultar/editar produto |
+| DELETE ou POST | `/api/v1/restaurants/{restaurantId}/products/{productId}/archive` | Arquivar produto |
+| POST | `/api/v1/restaurants/{restaurantId}/products/{productId}/availability` | Alterar disponibilidade |
+| PUT | `/api/v1/restaurants/{restaurantId}/products/{productId}/ingredients` | Substituir lista de ingredientes |
+| PUT | `/api/v1/restaurants/{restaurantId}/products/{productId}/addons` | Substituir lista de adicionais |
+| PUT | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/order` | Reordenar produtos |
+
+Os endpoints de ingredientes/adicionais podem ser modelados como sub-recursos CRUD em vez de substituição integral, desde que a experiência de edição, validação e concorrência fique clara. Não duplicar regras em endpoints incompatíveis.
+
+### Consulta pública
+
+| Método | Caminho candidato | Ação |
+|---|---|---|
+| GET | `/api/v1/public/restaurants/{slug}/menu` | Página pública e lista de cardápios publicados |
+| GET | `/api/v1/public/restaurants/{slug}/menus/{menuSlugOrId}` | Consultar um cardápio publicado, se necessário |
+
+A consulta pública não exige JWT. A API deve validar publicação do restaurante/cardápio e retornar somente campos explicitamente públicos.
+
+### Contrato e erros
+
+- Usar DTOs de request/response; não retornar entidades JPA.
+- Valores monetários em centavos inteiros.
+- Datas em ISO-8601.
+- IDs UUID.
+- Erros coerentes com os padrões já adotados no backend.
+- Documentar códigos 400, 401, 403, 404, 409 e 413 quando aplicáveis.
+- Atualizar OpenAPI/Swagger e `docs/API.md` quando os endpoints forem realmente implementados.
+- Não aceitar `restaurantId`, papel ou identidade enviados no corpo como prova de autorização.
+
+## 6. Experiência do painel administrativo
+
+A gestão deve integrar-se ao dashboard atual, respeitando os padrões Angular já existentes.
+
+### Navegação sugerida
+
+- **Cardápios:** visão geral, criar cardápio, status e ações.
+- **Editor do cardápio:** categorias e produtos.
+- **Editor de produto:** dados básicos, preço, imagem, ingredientes e adicionais.
+- **Prévia:** simulação da experiência pública.
+- **Disponibilidade:** ação rápida disponível também para STAFF, sem liberar edição do produto.
+
+### Comportamentos essenciais
+
+- Exibir estado vazio com CTA para criar o primeiro cardápio.
+- Distinguir rascunho, publicado e arquivado visualmente.
+- Alertar quando tentar sair com alterações não salvas.
+- Evitar perda de formulário após erro de rede.
+- Mostrar feedback de salvamento e erros de validação por campo quando possível.
+- Não permitir ações administrativas para STAFF; a disponibilidade deve continuar acessível.
+- Usar confirmação para arquivamento quando houver impacto visível.
+- Permitir edição em telas pequenas, sem depender de hover.
+- Prévia pública deve refletir exatamente as regras de exposição da API pública.
+
+## 7. Ordem de implementação sugerida
+
+Entregar em incrementos pequenos, com commits separados na branch `docs/catalog-menu-module-plan`, mantendo planejamento e backend dentro da PR #22. O frontend está deliberadamente fora desta entrega e será tratado em uma PR futura. Não abrir PR paralela para o backend deste escopo. A PR permanece em draft e não deve ser integrada à main antes da revisão humana e dos critérios de aceite.
+
+### Etapa 0 — Inspeção e alinhamento técnico
+- Inspecionar código real de backend, frontend, autenticação, membership, mídia/ImageKit e migrations.
+- Confirmar convenções de pacotes, DTOs, tratamento de erros e testes.
+- Comparar contratos planejados com o código atual.
+- Registrar apenas decisões técnicas necessárias para iniciar; não reabrir D-02 a D-07.
+
+**Saída:** desenho técnico curto e lista de arquivos/entidades a criar ou estender.
+
+### Etapa 1 — Backend: cardápios e categorias
+- Criar migrations Flyway e entidades/repositórios.
+- CRUD de cardápios.
+- Estados DRAFT/PUBLISHED/ARCHIVED e transições permitidas.
+- CRUD de categorias, ativação e ordenação.
+- Aplicar autorização e isolamento multi-tenant.
+- Testes unitários e de integração para transições, duplicidade e ownership.
+
+**Critério de conclusão:** OWNER/MANAGER gerenciam cardápios e categorias; usuários sem permissão recebem 403; dados de outro restaurante nunca são acessíveis.
+
+### Etapa 2 — Backend: produtos, ingredientes e adicionais
+- CRUD de produtos.
+- Preço em centavos e validações.
+- Ingredientes e adicionais.
+- Ordenação e arquivamento.
+- Disponibilidade separada do estado de ciclo de vida.
+- STAFF pode alterar somente disponibilidade.
+- Testes de autorização, valores, vínculo entre recursos e operações inválidas.
+
+**Critério de conclusão:** um restaurante consegue montar um catálogo completo pela API, com regras de preço e permissão aplicadas no servidor.
+
+### Etapa 3 — Mídia de produto
+- Estender a solução ImageKit já usada pelo perfil, sem duplicar storage.
+- Definir associação de mídia com produto e validação de escopo.
+- Upload/troca/remoção e tratamento de falhas para evitar órfãos.
+- Testar limites, formato real, arquivo inválido e acesso cruzado.
+
+**Critério de conclusão:** imagem é enviada, associada, consultada e removida de forma consistente, sem expor credenciais.
+
+### Etapa 4 — Frontend administrativo (adiado; fora da PR #22)
+- Seguir o guia operacional [FRONTEND_CATALOG_IMPLEMENTATION.md](FRONTEND_CATALOG_IMPLEMENTATION.md), preparado para orientar o desenvolvimento Angular.
+- Listagem e criação de cardápios.
+- Gestão de categorias.
+- Lista e formulário de produtos.
+- Ingredientes, adicionais, imagem e preço.
+- Publicar/despublicar/arquivar.
+- Ação de disponibilidade para STAFF.
+- Estados loading/empty/error/success e responsividade.
+- Integração com API real, não apenas demo.
+
+**Critério de conclusão:** OWNER/MANAGER conseguem administrar o catálogo pelo painel e STAFF consegue alterar somente disponibilidade.
+
+### Etapa 5 — API pública e QR Code (backend na PR #22)
+- Endpoint público por slug, sem autenticação.
+- Retornar apenas restaurante publicado, cardápios publicados, categorias ativas e produtos não arquivados.
+- Exibir dados públicos de preços, ingredientes, adicionais ativos e disponibilidade no contrato da API.
+- Gerar QR Code principal apontando para a URL pública configurada do restaurante.
+- Manter o QR Code independente de um cardápio específico.
+
+**Critério de conclusão do backend:** consumidor consegue consultar os dados públicos pela API sem login e o restaurante consegue baixar um QR Code que aponta para sua rota pública. A página visual e sua navegação ficam para uma PR futura.
+
+### Etapa 6 — Validação integrada e endurecimento
+- Testes ponta a ponta em desktop e mobile.
+- Testes de isolamento multi-tenant.
+- Testes de publicação e conteúdo público.
+- Testes de upload e remoção no ImageKit real.
+- Verificação de cache, SEO básico, acessibilidade e desempenho.
+- Atualização de Swagger, API.md, DOMAIN_MODEL.md, SCREEN_FLOWS.md e ROADMAP.md.
+- Deploy controlado e validação no ambiente publicado.
+
+**Critério de conclusão:** todos os critérios de aceite da seção 9 passam; não marcar o módulo inteiro como implementado enquanto houver etapa crítica sem validação.
+
+## 8. Segurança, consistência e desempenho
+
+### Multi-tenancy e autorização
+- Toda operação privada deve derivar o usuário do JWT.
+- Validar membership ativo para o restaurante da rota.
+- Validar papel conforme ação.
+- Verificar que menu, categoria, produto, ingrediente, adicional e mídia pertencem ao mesmo restaurante.
+- Nunca confiar em IDs recebidos sem confirmar suas relações.
+- Não permitir IDOR por troca de UUID.
+- Testar explicitamente acesso cruzado entre dois restaurantes.
+
+### Integridade
+- Usar transações nas operações que alterem múltiplos recursos relacionados.
+- Constraints e índices para unicidade/relacionamentos importantes.
+- Reordenação deve validar a lista completa antes de persistir.
+- Exclusão/arquivamento não deve deixar referências inválidas.
+- Alterações em cardápio publicado entram no ar ao salvar, conforme D-03.
+- Garantir que uma publicação não exponha registros parcialmente gravados.
+
+### Consulta pública
+- DTOs públicos com allowlist explícita de campos.
+- Não expor dados internos de equipe, auditoria ou configuração.
+- Não revelar conteúdo de rascunhos/arquivados.
+- Cache com invalidação ou versionamento quando nome, preço, disponibilidade, imagem, categoria ou publicação mudarem.
+- Não confiar em cache para autorização de endpoints privados.
+
+### Observabilidade
+- Registrar eventos administrativos relevantes (criação, edição, publicação, arquivamento e alteração de disponibilidade) sem registrar segredos.
+- Métricas úteis: consultas públicas, erros, latência, falhas de mídia e operações administrativas.
+- Não armazenar dados pessoais desnecessários.
+
+## 9. Critérios de aceite do módulo
+
+- [ ] OWNER cria, edita, publica, despublica e arquiva cardápios.
+- [x] OWNER/MANAGER publica e despublica o perfil do restaurante; suspensão não pode ser revertida pelo painel.
+- [ ] MANAGER executa as mesmas operações de catálogo permitidas pela matriz D-07.
+- [ ] STAFF não cria nem edita conteúdo ou preço; altera somente disponibilidade.
+- [ ] Um restaurante consegue manter vários cardápios publicados simultaneamente.
+- [ ] Cada cardápio possui categorias e produtos próprios.
+- [ ] Categorias podem ser ordenadas e desativadas.
+- [ ] Produtos podem ser criados, editados e arquivados.
+- [ ] Ingredientes são itens livres, individuais e ordenáveis.
+- [ ] Adicionais têm preço explícito em centavos e podem ser ativados/desativados.
+- [ ] Preços negativos e valores monetários em ponto flutuante são rejeitados/não utilizados.
+- [ ] Produto indisponível é distinguido de produto arquivado.
+- [ ] Imagens de produto são armazenadas no ImageKit por meio do backend, com referência no PostgreSQL.
+- [ ] Usuário de outro restaurante não consegue consultar ou alterar recursos privados por troca de IDs.
+- [ ] Cardápio DRAFT ou ARCHIVED não aparece publicamente.
+- [ ] Restaurante não publicado/suspenso não expõe cardápio público.
+- [ ] Página pública lista somente cardápios publicados, categorias ativas e produtos não arquivados.
+- [ ] Produto indisponível continua identificável como indisponível.
+- [ ] Consumidor consulta sem login.
+- [x] QR Code principal leva à página do restaurante (endpoint backend implementado; prefixo público configurável).
+- [ ] Frontend contempla loading, erro, vazio, sucesso e responsividade.
+- [ ] Testes automatizados e validação ponta a ponta passam.
+- [ ] Swagger e documentação refletem somente endpoints efetivamente implementados.
+
+## 10. Fora do escopo deste módulo
+
+Não implementar nesta entrega:
+- Pedidos, carrinho, checkout ou pagamento.
+- Integração com PDV/ERP ou controle de estoque.
+- Reserva de mesas.
+- Tamanhos, combos ou composição avançada de produtos.
+- Promoções, cupons ou precificação por horário.
+- Alternância automática de cardápios conforme horário.
+- Publicação individual de produtos.
+- QR Code por mesa.
+- Descoberta global, avaliações e favoritos.
+- Assistente gastronômico/IA.
+- Modelos 3D/AR (o catálogo deve apenas preservar caminho de extensão futuro).
+- Fidelidade ou Boraê Club.
+- Aplicativos nativos.
+
+## 11. Dependências e próximos módulos
+
+O catálogo é a fonte de dados para:
+- **Assistente gastronômico:** recomendar somente produtos reais, publicados e disponíveis, respeitando as cotas e regras do módulo de IA.
+- **3D/AR:** associar modelo a produto em etapa posterior; não bloquear catálogo por isso.
+- **Descoberta:** apresentar restaurantes e cardápios públicos.
+- **Fidelidade:** usar dados de compras confirmadas quando esse módulo existir; catálogo não gera pontos.
+- **Pedidos:** fora do MVP atual e sujeito a decisão/planejamento próprio.
+
+## 12. Documentos relacionados
+
+- [PRD](PRD.md)
+- [Modelo de domínio](DOMAIN_MODEL.md)
+- [Desenho da API](API_DESIGN.md)
+- [Fluxos de tela](SCREEN_FLOWS.md)
+- [Roadmap](ROADMAP.md)
+- [Decisões aprovadas e pendências](OPEN_DECISIONS.md)
+- [Decisões comerciais e operacionais](DECISIONS_COMMERCIAL_AND_OPERATIONS.md)
+
+
+
+## 13. Estado da implementação — atualização da PR #22
+
+### Backend de publicação do perfil e consulta pública por slug — implementados na branch
+
+Endpoints de publicação do perfil:
+- `POST /api/v1/restaurants/{restaurantId}/publish` — OWNER/MANAGER; altera o estado para `PUBLISHED`.
+- `POST /api/v1/restaurants/{restaurantId}/unpublish` — OWNER/MANAGER; retorna o estado para `DRAFT` sem alterar cardápios.
+- Restaurante inativo retorna 404. Restaurante `SUSPENDED` retorna 409 e não pode ser reativado pela equipe do estabelecimento.
+
+Endpoint implementado:
+- `GET /api/v1/public/restaurants/{slug}/menu` — público, sem JWT.
+
+A resposta contém somente uma allowlist de dados públicos:
+- Identidade básica e contatos públicos do restaurante.
+- Cardápios em estado `PUBLISHED`, ordenados pela ordem configurada.
+- Categorias ativas, ordenadas.
+- Produtos com ciclo de vida `ACTIVE`, ordenados.
+- Preço em centavos, disponibilidade, ingredientes e imagem opcional.
+- Somente adicionais ativos, com acréscimo em centavos.
+
+O endpoint retorna 404 para restaurante inexistente, inativo ou cujo estado de publicação não seja `PUBLISHED`. Cardápios em rascunho/arquivados, categorias inativas, produtos arquivados e adicionais inativos não são expostos. Produto indisponível continua na resposta com `availability = UNAVAILABLE`.
+
+Os DTOs públicos são separados dos DTOs administrativos. A rota `/api/v1/public/**` foi liberada da autenticação JWT sem alterar a proteção dos demais endpoints.
+
+**Publicação do perfil implementada:** OWNER e MANAGER podem publicar ou despublicar o restaurante. A suspensão é reservada a um fluxo administrativo e não pode ser revertida pela equipe do estabelecimento. Despublicar o perfil não altera o estado individual dos cardápios.
+
+### Testes adicionados
+
+- Retorno de cardápio publicado, categoria ativa, produto ativo e somente adicionais ativos.
+- Restaurante inexistente/não publicado retorna 404 e não consulta o catálogo.
+- Cardápio sem categorias ativas não consulta produtos.
+
+### Auditoria de integridade e segurança
+
+- [x] Produto arquivado não pode ter disponibilidade alterada (retorna conflito HTTP 409).
+- [x] STAFF consegue consultar cardápios/categorias e alterar somente disponibilidade; operações administrativas continuam restritas a OWNER/MANAGER.
+- [x] Payload com item nulo em lista de adicionais é rejeitado com HTTP 400, sem erro interno 500.
+- [x] Duplicidade de ingredientes e adicionais ignora diferenças de acentuação, caixa e espaços repetidos.
+- [x] Verificação de isolamento multi-tenant nas rotas administrativas: recursos são buscados dentro do restaurante/cardápio informado; tentativas de usar IDs de outro restaurante não resolvem o recurso.
+- [x] Verificação de publicação pública: consulta somente restaurante ativo/publicado, cardápios publicados, categorias ativas, produtos não arquivados e adicionais ativos.
+- [x] Verificação de upload: papel OWNER/MANAGER, pertencimento do restaurante/cardápio/produto, limite de tamanho e validação do formato real da imagem.
+- [ ] Verificar no ambiente de produção CORS, `PUBLIC_RESTAURANT_URL_PREFIX`, credenciais ImageKit, JWT_SECRET e limites do proxy para multipart.
+- [ ] Executar testes integrados contra PostgreSQL real e validar migrations V6–V8 no banco de homologação.
+
+### Próximas pendências do backend na PR #22
+
+- Validar a variável `PUBLIC_RESTAURANT_URL_PREFIX` no ambiente de deploy.
+- Executar validação integrada do backend, revisão de segurança e testes de ponta a ponta da API.
+
+**Fora da PR #22:** página pública visual e painel administrativo Angular serão implementados em uma entrega futura, conforme orientação de escopo.
