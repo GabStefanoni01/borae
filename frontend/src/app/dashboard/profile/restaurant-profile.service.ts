@@ -120,6 +120,24 @@ export class RestaurantProfileService {
   deleteMedia(restaurantId: string, mediaId: string): Observable<void> {
     return this.http.delete<void>(`${this.base(restaurantId)}/media/${mediaId}`);
   }
+
+  /** POST /restaurants/{id}/publish — OWNER e MANAGER (PR #22). Restaurante suspenso: 409. */
+  publish(restaurantId: string): Observable<RestaurantProfile> {
+    return this.http.post<RestaurantProfile>(`${this.base(restaurantId)}/publish`, null);
+  }
+
+  /** POST /restaurants/{id}/unpublish — volta para DRAFT sem apagar conteúdo. */
+  unpublish(restaurantId: string): Observable<RestaurantProfile> {
+    return this.http.post<RestaurantProfile>(`${this.base(restaurantId)}/unpublish`, null);
+  }
+
+  /**
+   * GET /restaurants/{id}/qrcode — PNG gerado pelo backend apontando para a URL pública
+   * configurada em PUBLIC_RESTAURANT_URL_PREFIX. O frontend não gera QR Code próprio.
+   */
+  downloadQrCode(restaurantId: string): Observable<Blob> {
+    return this.http.get(`${this.base(restaurantId)}/qrcode`, { responseType: 'blob' });
+  }
 }
 
 /** A API não devolve o texto do erro (server.error.include-message=never); mensagens por status e contexto. */

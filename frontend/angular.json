@@ -40,6 +40,10 @@
             "demo": {"buildTarget": "borae-frontend:build:demo"}
           },
           "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {"buildTarget": "borae-frontend:build:development", "tsConfig": "tsconfig.spec.json", "runner": "vitest", "setupFiles": ["src/testing/test-setup.ts"]}
         }
       }
     }

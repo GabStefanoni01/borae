@@ -1,0 +1,26 @@
+/* Cardápio público — rodapé, painel de detalhes, carregamento e telas maiores */
+.pm-foot{display:grid;gap:8px;justify-items:center;padding:24px 16px 32px;border-top:1px solid #ECE7E1;text-align:center;font-size:12.5px;color:#707070}
+.pm-foot p{margin:0;max-width:60ch}
+.pm-foot a{color:#3D3D3D;text-decoration:none}
+
+.pm-sheet{width:min(520px,100vw);max-width:100vw;max-height:92vh;margin:auto auto 0;padding:0;border:0;border-radius:22px 22px 0 0;background:#fff;color:#191919}
+.pm-sheet::backdrop{background:rgba(25,25,25,.5)}
+.pm-sheet-inner{position:relative;padding:16px 18px 24px}
+.pm-sheet-close{position:absolute;right:26px;top:24px;z-index:2;display:grid;place-items:center;width:38px;height:38px;border:0;border-radius:50%;background:rgba(255,255,255,.92);color:#191919;box-shadow:0 2px 8px rgba(0,0,0,.15);cursor:pointer}
+
+.pm-skel{border-radius:16px;background:linear-gradient(90deg,#F3EEE8 0%,#FBF7F2 50%,#F3EEE8 100%);background-size:200% 100%;animation:pm-shimmer 1.2s linear infinite;margin-bottom:12px}
+.pm-skel-hero{height:120px}
+.pm-skel-chips{height:42px;width:70%}
+.pm-skel-row{height:96px}
+@keyframes pm-shimmer{to{background-position:-200% 0}}
+
+@media (min-width:720px){
+  .pm-main{padding:28px 24px 56px}
+  .pm-hero{flex-direction:row;padding:24px}
+  .pm-hero h1{font-size:30px}
+  .pm-avatar{width:76px;height:76px;font-size:26px}
+  .pm-list{grid-template-columns:1fr 1fr}
+  .pm-sheet{margin:auto;border-radius:22px}
+  .pm-cats,.pm-menus{margin-left:0;margin-right:0;padding-left:0;padding-right:0}
+}
+@media (prefers-reduced-motion:reduce){.pm-skel{animation:none}}

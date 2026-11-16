@@ -51,7 +51,7 @@ export function createDemoSeed(): DemoDatabase {
         description: 'Massas artesanais e cozinha italiana contemporânea.',
         phone: '(11) 3333-4444', whatsapp: '(11) 99999-0000', instagram: '@cantinabellavista', website: null,
         address: 'Rua das Oliveiras, 120 — Pinheiros, São Paulo/SP', latitude: -23.5614, longitude: -46.6820,
-        category: 'Italiana', publicationStatus: 'DRAFT',
+        category: 'Italiana', publicationStatus: 'PUBLISHED',
         hours: [
           { dayOfWeek: 'TUESDAY', intervals: [{ opensAt: '11:30', closesAt: '15:00' }, { opensAt: '18:30', closesAt: '23:00' }] },
           { dayOfWeek: 'WEDNESDAY', intervals: [{ opensAt: '11:30', closesAt: '15:00' }, { opensAt: '18:30', closesAt: '23:00' }] },

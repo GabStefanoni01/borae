@@ -9,8 +9,10 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const router = inject(Router);
   const isApiRequest = request.url.startsWith(API_URL);
   const isAuthenticationRequest = request.url.includes('/api/v1/auth/');
+  // Rotas públicas (ex.: cardápio por slug) nunca levam o JWT e não dependem da sessão.
+  const isPublicRequest = request.url.startsWith(`${API_URL}/api/v1/public/`);
 
-  const token = isApiRequest && !isAuthenticationRequest ? auth.accessToken : null;
+  const token = isApiRequest && !isAuthenticationRequest && !isPublicRequest ? auth.accessToken : null;
   const authenticatedRequest = token
     ? request.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
     : request;
@@ -21,7 +23,8 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
         error instanceof HttpErrorResponse &&
         error.status === 401 &&
         isApiRequest &&
-        !isAuthenticationRequest
+        !isAuthenticationRequest &&
+        !isPublicRequest
       ) {
         // Sessão expirada: limpa a sessão local e volta ao login com aviso (docs/SCREEN_FLOWS.md §2).
         auth.logout();

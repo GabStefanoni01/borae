@@ -48,6 +48,12 @@ export class RestaurantContext {
   readonly canManageTeam = computed(() => this.role() === 'OWNER');
   /** Perfil, horários e imagens — OWNER e MANAGER (API de perfil do restaurante). */
   readonly canEditProfile = computed(() => this.role() === 'OWNER' || this.role() === 'MANAGER');
+  /**
+   * Catálogo (PR #22): OWNER e MANAGER administram cardápios, categorias, produtos, imagens,
+   * publicação do restaurante e QR Code. STAFF consulta e altera somente a disponibilidade.
+   */
+  readonly canManageCatalog = computed(() => this.role() === 'OWNER' || this.role() === 'MANAGER');
+  readonly canChangeAvailability = computed(() => this.role() !== null);
 
   load(): void {
     this.status.set('loading');

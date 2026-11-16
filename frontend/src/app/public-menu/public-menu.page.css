@@ -1,0 +1,58 @@
+/* Cardápio digital público — mobile-first, identidade Boraê (laranja, creme e grafite) */
+:host{display:block;min-height:100vh;background:#FFF9F2;color:#191919;font-family:'Inter',system-ui,sans-serif}
+.pm{min-height:100vh;display:flex;flex-direction:column}
+.pm-bar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;background:rgba(255,249,242,.92);backdrop-filter:blur(10px);border-bottom:1px solid #ECE7E1}
+.pm-brand{display:flex}
+.pm-bar-tag{font-size:12px;font-weight:600;color:#666}
+.pm-main{flex:1;width:100%;max-width:880px;margin:0 auto;padding:16px 16px 40px}
+.pm-center{display:grid;justify-items:center;gap:10px;text-align:center;padding-top:56px}
+.pm-center h1,.pm-center h2{margin:0;font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:20px;font-weight:800;max-width:30ch}
+.pm-center p{margin:0;color:#666;max-width:42ch}
+.pm-empty{padding:40px 0 24px}
+.pm-state-icon{display:grid;place-items:center;width:56px;height:56px;border-radius:16px;background:#FFF0E3;color:#E85D00}
+.pm-btn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 18px;border:0;border-radius:12px;background:#FF7200;color:#fff;font:inherit;font-weight:700;cursor:pointer;text-decoration:none}
+.pm-btn:hover{background:#E85D00}
+.pm-btn-ghost{background:#fff;color:#191919;border:1px solid #ECE7E1}
+.pm-btn-ghost:hover{background:#FFF0E3}
+
+.pm-hero{display:flex;flex-direction:column;gap:14px;align-items:flex-start;padding:18px;border-radius:20px;background:#fff;border:1px solid #ECE7E1;box-shadow:0 8px 28px rgba(25,25,25,.05)}
+.pm-avatar{display:grid;place-items:center;width:56px;height:56px;flex-shrink:0;border-radius:18px;background:linear-gradient(140deg,#FF7200,#E85D00);color:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800}
+.pm-hero-text{min-width:0}
+.pm-kicker{display:inline-block;margin-bottom:4px;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#E85D00}
+.pm-hero h1{margin:0;font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:24px;font-weight:800;line-height:1.2;overflow-wrap:anywhere}
+.pm-hero p{margin:6px 0 0;color:#4D4D4D;line-height:1.55}
+.pm-contacts{list-style:none;display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 0;padding:0}
+.pm-contacts a{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 12px;border-radius:999px;border:1px solid #ECE7E1;background:#FFF9F2;color:#191919;font-size:13px;font-weight:600;text-decoration:none}
+.pm-contacts a:hover{border-color:#FF7200}
+
+.pm-menus{display:flex;gap:8px;margin:18px -16px 0;padding:0 16px 2px;overflow-x:auto;scrollbar-width:none}
+.pm-menu-tab{flex-shrink:0;min-height:42px;padding:0 18px;border:1px solid #ECE7E1;border-radius:12px;background:#fff;color:#191919;font:inherit;font-weight:700;cursor:pointer}
+.pm-menu-tab.active{background:#191919;border-color:#191919;color:#fff}
+.pm-menu-head{margin:20px 0 4px}
+.pm-menu-head h2{margin:0;font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:20px;font-weight:800}
+.pm-menu-head p{margin:4px 0 0;color:#666}
+
+.pm-cats{position:sticky;top:53px;z-index:10;display:flex;gap:6px;margin:12px -16px 0;padding:10px 16px;overflow-x:auto;scrollbar-width:none;background:rgba(255,249,242,.95);backdrop-filter:blur(8px)}
+.pm-cat{flex-shrink:0;padding:7px 14px;border-radius:999px;background:#fff;border:1px solid #ECE7E1;color:#3D3D3D;font-size:13.5px;font-weight:600;text-decoration:none}
+.pm-cat.active{background:#FFF0E3;border-color:#FF7200;color:#B34E00}
+
+.pm-section{scroll-margin-top:112px;padding-top:22px}
+.pm-section-title{margin:0;font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:18px;font-weight:800}
+.pm-section-desc{margin:4px 0 0;color:#666;font-size:14px}
+.pm-list{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:10px}
+.pm-item{display:flex;align-items:stretch;gap:12px;width:100%;padding:14px;border:1px solid #ECE7E1;border-radius:16px;background:#fff;color:inherit;font:inherit;text-align:left;cursor:pointer;transition:border-color .15s,box-shadow .2s}
+.pm-item:hover{border-color:#FFC79A;box-shadow:0 6px 18px rgba(25,25,25,.06)}
+.pm-item:focus-visible,.pm-menu-tab:focus-visible,.pm-cat:focus-visible,.pm-btn:focus-visible,.pm-contacts a:focus-visible{outline:2px solid #FF7200;outline-offset:2px}
+.pm-item-text{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}
+.pm-item-name{font-weight:700;font-size:15.5px;overflow-wrap:anywhere}
+.pm-item-desc{font-size:13.5px;color:#666;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pm-item-foot{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:auto;padding-top:4px}
+.pm-item-price{font-weight:800;color:#E85D00;font-variant-numeric:tabular-nums}
+.pm-item-extra{font-size:12px;color:#707070}
+.pm-off-tag{padding:3px 8px;border-radius:6px;background:#191919;color:#fff;font-size:11.5px;font-weight:700}
+.pm-item.off{background:#FBF8F5}
+.pm-item.off .pm-item-name{color:#4D4D4D}
+.pm-item.off .pm-item-price{color:#707070;text-decoration:line-through}
+.pm-item.off .pm-item-img{filter:grayscale(.85);opacity:.7}
+.pm-item-img{width:96px;height:96px;flex-shrink:0;border-radius:12px;object-fit:cover;background:#FFF0E3}
+
