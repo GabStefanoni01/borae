@@ -227,6 +227,35 @@ class Product3DModelServiceTest {
         }
     }
 
+    @Test
+    void removesNewlyUploadedAssetWhenTransactionCommitRollsBack() {
+        grantRole(RestaurantRole.OWNER);
+        when(menuRepository.findByIdAndRestaurant_Id(menu.getId(), restaurant.getId()))
+                .thenReturn(Optional.of(menu));
+        when(productRepository.findByIdAndCategory_Menu_Id(product.getId(), menu.getId()))
+                .thenReturn(Optional.of(product));
+        when(modelRepository.findByProduct_Id(product.getId())).thenReturn(Optional.empty());
+        when(storage.upload(any(), any(), any(), eq("model/gltf-binary")))
+                .thenReturn(new RestaurantObjectStorage.StoredObject("rollback-file",
+                        "https://ik.imagekit.io/demo/rollback.glb"));
+        when(modelRepository.saveAndFlush(any(Product3DModel.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        org.springframework.transaction.support.TransactionSynchronizationManager.initSynchronization();
+        try {
+            service.upload(restaurant.getId(), menu.getId(), product.getId(),
+                    validFile(), 120, 80, 60, actor);
+
+            verify(storage, never()).delete("rollback-file");
+            org.springframework.transaction.support.TransactionSynchronizationManager
+                    .getSynchronizations().forEach(sync ->
+                            sync.afterCompletion(org.springframework.transaction.support.TransactionSynchronization.STATUS_ROLLED_BACK));
+            verify(storage).delete("rollback-file");
+        } finally {
+            org.springframework.transaction.support.TransactionSynchronizationManager.clearSynchronization();
+        }
+    }
+
     private MockMultipartFile validFile() {
         byte[] json = "{\"asset\":{\"version\":\"2.0\"}}".getBytes(StandardCharsets.UTF_8);
         int paddedLength = (json.length + 3) & ~3;
