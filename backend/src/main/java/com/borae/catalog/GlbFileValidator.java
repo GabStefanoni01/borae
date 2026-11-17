@@ -16,6 +16,7 @@ public class GlbFileValidator {
     private static final int HEADER_SIZE = 12;
     private static final int CHUNK_HEADER_SIZE = 8;
     private static final int JSON_CHUNK = 0x4E4F534A;
+    private static final int BIN_CHUNK = 0x004E4942;
 
     private final ObjectMapper objectMapper;
 
@@ -34,11 +35,15 @@ public class GlbFileValidator {
         }
 
         int offset = HEADER_SIZE;
-        boolean jsonChunkFound = false;
+        int chunkIndex = 0;
+        int binChunkLength = -1;
+        JsonNode root = null;
+
         while (offset < bytes.length) {
             if (bytes.length - offset < CHUNK_HEADER_SIZE) {
                 throw invalid();
             }
+
             int chunkLength = buffer.getInt(offset);
             int chunkType = buffer.getInt(offset + 4);
             offset += CHUNK_HEADER_SIZE;
@@ -47,14 +52,19 @@ public class GlbFileValidator {
                 throw invalid();
             }
 
-            if (!jsonChunkFound) {
-                if (chunkType != JSON_CHUNK) {
+            chunkIndex++;
+            if (chunkIndex == 1 && chunkType != JSON_CHUNK) {
+                throw invalid();
+            }
+
+            if (chunkType == JSON_CHUNK) {
+                if (chunkIndex != 1 || root != null) {
                     throw invalid();
                 }
                 byte[] jsonBytes = new byte[chunkLength];
                 System.arraycopy(bytes, offset, jsonBytes, 0, chunkLength);
                 try {
-                    JsonNode root = objectMapper.readTree(new String(jsonBytes, StandardCharsets.UTF_8).strip());
+                    root = objectMapper.readTree(new String(jsonBytes, StandardCharsets.UTF_8).strip());
                     if (root == null || !root.isObject() || !root.path("asset").isObject()
                             || !"2.0".equals(root.path("asset").path("version").asText())) {
                         throw invalid();
@@ -65,13 +75,48 @@ public class GlbFileValidator {
                 } catch (Exception exception) {
                     throw invalid();
                 }
-                jsonChunkFound = true;
+            } else if (chunkType == BIN_CHUNK) {
+                // GLB permits at most one BIN chunk, immediately after the JSON chunk.
+                if (chunkIndex != 2 || binChunkLength >= 0) {
+                    throw invalid();
+                }
+                binChunkLength = chunkLength;
             }
 
             offset += chunkLength;
         }
 
-        if (!jsonChunkFound || offset != bytes.length) {
+        if (root == null || offset != bytes.length) {
+            throw invalid();
+        }
+        validateBinaryBuffer(root, binChunkLength);
+    }
+
+    private void validateBinaryBuffer(JsonNode root, int binChunkLength) {
+        JsonNode buffers = root.path("buffers");
+        if (!buffers.isMissingNode() && !buffers.isArray()) {
+            throw invalid();
+        }
+        if (buffers.isArray()) {
+            // A GLB contains at most one embedded buffer, stored in its BIN chunk.
+            if (buffers.size() > 1) {
+                throw invalid();
+            }
+            if (buffers.size() == 1) {
+                JsonNode buffer = buffers.get(0);
+                JsonNode byteLength = buffer.path("byteLength");
+                if (!buffer.isObject() || !byteLength.isIntegralNumber()
+                        || byteLength.asLong() <= 0 || binChunkLength < 0) {
+                    throw invalid();
+                }
+                long declaredLength = byteLength.asLong();
+                if (binChunkLength < declaredLength || binChunkLength - declaredLength > 3) {
+                    throw invalid();
+                }
+            } else if (binChunkLength >= 0) {
+                throw invalid();
+            }
+        } else if (binChunkLength >= 0) {
             throw invalid();
         }
     }
@@ -99,6 +144,8 @@ public class GlbFileValidator {
                     throw invalid();
                 }
             }
+        } else if (!images.isMissingNode()) {
+            throw invalid();
         }
     }
 
