@@ -3,6 +3,7 @@ package com.borae.catalog;
 import com.borae.identity.Restaurant;
 import com.borae.identity.RestaurantPublicationStatus;
 import com.borae.identity.RestaurantRepository;
+import com.borae.identity.UserAccount;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
