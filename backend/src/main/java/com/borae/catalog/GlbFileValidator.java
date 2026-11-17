@@ -55,10 +55,10 @@ public class GlbFileValidator {
                 System.arraycopy(bytes, offset, jsonBytes, 0, chunkLength);
                 try {
                     JsonNode root = objectMapper.readTree(new String(jsonBytes, StandardCharsets.UTF_8).strip());
-                    if (root == null || root.path("asset").path("version").asText().isBlank()
-                            || !"2.0".equals(root.path("asset").path("version").asText())) {
+                    if (root == null || !"2.0".equals(root.path("asset").path("version").asText())) {
                         throw invalid();
                     }
+                    rejectExternalResources(root);
                 } catch (ResponseStatusException exception) {
                     throw exception;
                 } catch (Exception exception) {
@@ -75,8 +75,31 @@ public class GlbFileValidator {
         }
     }
 
+    private void rejectExternalResources(JsonNode root) {
+        JsonNode buffers = root.path("buffers");
+        if (buffers.isArray()) {
+            for (JsonNode item : buffers) {
+                // A GLB buffer must be embedded in its BIN chunk, not fetched from a remote URL.
+                if (item.hasNonNull("uri")) {
+                    throw invalid();
+                }
+            }
+        }
+
+        JsonNode images = root.path("images");
+        if (images.isArray()) {
+            for (JsonNode item : images) {
+                String uri = item.path("uri").asText(null);
+                // Embedded data URIs are allowed; remote and relative references are not.
+                if (uri != null && !uri.startsWith("data:")) {
+                    throw invalid();
+                }
+            }
+        }
+    }
+
     private ResponseStatusException invalid() {
         return new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                "O arquivo enviado não é um GLB válido na versão 2.0.");
+                "O arquivo enviado não é um GLB 2.0 válido ou contém referências externas não permitidas.");
     }
 }
