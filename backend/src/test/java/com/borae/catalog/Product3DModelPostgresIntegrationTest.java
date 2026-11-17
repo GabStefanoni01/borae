@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @JdbcTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Testcontainers(disabledWithoutDocker = true)
+@Testcontainers
 class Product3DModelPostgresIntegrationTest {
 
     private static final UUID USER_ID = UUID.fromString("10000000-0000-0000-0000-000000000001");
