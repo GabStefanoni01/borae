@@ -67,18 +67,44 @@ class GlbFileValidatorTest {
         assertDoesNotThrow(() -> validator.validate(embeddedImage));
     }
 
+    @Test
+    void requiresAndValidatesBinChunkForEmbeddedBuffer() {
+        String json = "{\"asset\":{\"version\":\"2.0\"},\"buffers\":[{\"byteLength\":4}]}";
+
+        assertThrows(ResponseStatusException.class,
+                () -> validator.validate(validGlb(json)));
+        assertDoesNotThrow(() -> validator.validate(glbWithBin(json, new byte[4])));
+        assertThrows(ResponseStatusException.class,
+                () -> validator.validate(glbWithBin(json, new byte[8])));
+    }
+
     private byte[] validGlb(String jsonText) {
+        return glbWithBin(jsonText, null);
+    }
+
+    private byte[] glbWithBin(String jsonText, byte[] binBytes) {
         byte[] json = jsonText.getBytes(StandardCharsets.UTF_8);
-        int paddedLength = (json.length + 3) & ~3;
-        ByteBuffer buffer = ByteBuffer.allocate(12 + 8 + paddedLength).order(ByteOrder.LITTLE_ENDIAN);
+        int paddedJsonLength = (json.length + 3) & ~3;
+        int paddedBinLength = binBytes == null ? 0 : (binBytes.length + 3) & ~3;
+        int binChunkSize = binBytes == null ? 0 : 8 + paddedBinLength;
+        ByteBuffer buffer = ByteBuffer.allocate(12 + 8 + paddedJsonLength + binChunkSize)
+                .order(ByteOrder.LITTLE_ENDIAN);
         buffer.putInt(0x46546C67);
         buffer.putInt(2);
         buffer.putInt(buffer.capacity());
-        buffer.putInt(paddedLength);
+        buffer.putInt(paddedJsonLength);
         buffer.putInt(0x4E4F534A);
         buffer.put(json);
-        while (buffer.position() < buffer.capacity()) {
+        while (buffer.position() < 20 + paddedJsonLength) {
             buffer.put((byte) 0x20);
+        }
+        if (binBytes != null) {
+            buffer.putInt(paddedBinLength);
+            buffer.putInt(0x004E4942);
+            buffer.put(binBytes);
+            while (buffer.hasRemaining()) {
+                buffer.put((byte) 0);
+            }
         }
         return buffer.array();
     }
