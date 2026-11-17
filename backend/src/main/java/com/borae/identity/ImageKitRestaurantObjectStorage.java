@@ -1,6 +1,7 @@
 package com.borae.identity;
 
 import io.imagekit.client.ImageKitClient;
+import io.imagekit.core.MultipartField;
 import io.imagekit.client.okhttp.ImageKitOkHttpClient;
 import io.imagekit.models.files.FileDeleteParams;
 import io.imagekit.models.files.FileUploadParams;
@@ -28,7 +29,11 @@ public class ImageKitRestaurantObjectStorage implements RestaurantObjectStorage 
     @Override
     public StoredObject upload(String folder, String fileName, byte[] bytes, String contentType) {
         FileUploadParams params = FileUploadParams.builder()
-                .file(bytes)
+                .file(MultipartField.<byte[]>builder()
+                        .value(bytes)
+                        .filename(fileName)
+                        .contentType(contentType)
+                        .build())
                 .fileName(fileName)
                 .folder(folder)
                 .build();
