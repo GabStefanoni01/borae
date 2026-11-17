@@ -15,10 +15,13 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class Product3DModelService {
 
+    private static final Logger log = LoggerFactory.getLogger(Product3DModelService.class);
     private static final long MAX_MODEL_BYTES = 10L * 1024 * 1024;
     private static final String GLB_CONTENT_TYPE = "model/gltf-binary";
 
@@ -81,6 +84,10 @@ public class Product3DModelService {
             bytes = file.getBytes();
         } catch (IOException exception) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Não foi possível ler o arquivo enviado.");
+        }
+        if (bytes.length == 0 || bytes.length > MAX_MODEL_BYTES) {
+            throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE,
+                    "O modelo 3D pode ter no máximo 10 MB nesta primeira versão.");
         }
         glbValidator.validate(bytes);
 
@@ -194,8 +201,8 @@ public class Product3DModelService {
             public void afterCommit() {
                 try {
                     storage.delete(fileId);
-                } catch (RuntimeException ignored) {
-                    // The database remains consistent; remote cleanup can be retried operationally.
+                } catch (RuntimeException exception) {
+                    log.warn("Não foi possível remover o asset 3D antigo do ImageKit. fileId={}", fileId, exception);
                 }
             }
         });
