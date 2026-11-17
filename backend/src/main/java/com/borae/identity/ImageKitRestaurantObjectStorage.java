@@ -12,6 +12,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+
 @Component
 public class ImageKitRestaurantObjectStorage implements RestaurantObjectStorage {
 
@@ -29,9 +32,10 @@ public class ImageKitRestaurantObjectStorage implements RestaurantObjectStorage 
 
     @Override
     public StoredObject upload(String folder, String fileName, byte[] bytes, String contentType) {
+        InputStream inputStream = new ByteArrayInputStream(bytes);
         FileUploadParams params = FileUploadParams.builder()
-                .file(MultipartField.<byte[]>builder()
-                        .value(bytes)
+                .file(MultipartField.<InputStream>builder()
+                        .value(inputStream)
                         .filename(fileName)
                         .contentType(contentType)
                         .build())
