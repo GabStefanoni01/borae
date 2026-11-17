@@ -58,6 +58,36 @@ class Product3DModelServiceTest {
     }
 
     @Test
+    void rejectsMenuThatDoesNotBelongToRequestedRestaurantBeforeAccessingProductOrStorage() {
+        grantRole(RestaurantRole.OWNER);
+        when(menuRepository.findByIdAndRestaurant_Id(menu.getId(), restaurant.getId()))
+                .thenReturn(Optional.empty());
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> service.upload(restaurant.getId(), menu.getId(), product.getId(),
+                        validFile(), 120, 80, 60, actor));
+
+        assertEquals(404, exception.getStatusCode().value());
+        verifyNoInteractions(productRepository, storage, modelRepository, auditRepository);
+    }
+
+    @Test
+    void rejectsProductThatDoesNotBelongToRequestedMenuBeforeUploading() {
+        grantRole(RestaurantRole.OWNER);
+        when(menuRepository.findByIdAndRestaurant_Id(menu.getId(), restaurant.getId()))
+                .thenReturn(Optional.of(menu));
+        when(productRepository.findByIdAndCategory_Menu_Id(product.getId(), menu.getId()))
+                .thenReturn(Optional.empty());
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> service.upload(restaurant.getId(), menu.getId(), product.getId(),
+                        validFile(), 120, 80, 60, actor));
+
+        assertEquals(404, exception.getStatusCode().value());
+        verifyNoInteractions(storage, modelRepository, auditRepository);
+    }
+
+    @Test
     void ownerCanUploadValidGlbAndModelStartsAsReady() {
         grantRole(RestaurantRole.OWNER);
         when(menuRepository.findByIdAndRestaurant_Id(menu.getId(), restaurant.getId()))
