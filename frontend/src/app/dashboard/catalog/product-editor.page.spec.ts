@@ -17,7 +17,8 @@ function setup(role: RestaurantRole = 'OWNER', productId?: string, products: Pro
     createProduct: vi.fn((_r: string, _m: string, body: object) => of(product({ id: 'novo', ...body }))),
     updateProduct: vi.fn((_r: string, _m: string, id: string, body: object) => of(product({ id, ...body }))),
     uploadProductImage: vi.fn((_r: string, _m: string, id: string) => of(new HttpResponse({ body: product({ id, imageUrl: 'https://ik.imagekit.io/x.webp' }) }))),
-    removeProductImage: vi.fn(() => of(undefined))
+    removeProductImage: vi.fn(() => of(undefined)),
+    getModel3d: vi.fn(() => throwError(() => new HttpErrorResponse({ status: 404 })))
   };
   TestBed.configureTestingModule({
     imports: [ProductEditorPage],
@@ -115,7 +116,7 @@ describe('ProductEditorPage', () => {
     const { el, fixture, catalog, toast } = setup('OWNER', 'p1');
     await fixture.whenStable();
     fixture.detectChanges();
-    const input = el.querySelector<HTMLInputElement>('.c-file input')!;
+    const input = el.querySelector<HTMLInputElement>('.c-product-side .c-file input')!;
     const pick = (file: File) => {
       Object.defineProperty(input, 'files', { value: [file], configurable: true });
       input.dispatchEvent(new Event('change'));
@@ -133,7 +134,7 @@ describe('ProductEditorPage', () => {
     pick(new File(['z'], 'falha.jpg', { type: 'image/jpeg' }));
     expect(text(el.querySelector('.c-product-side .c-field-error'))).toBe('Não foi possível enviar a imagem. Confira o formato e o tamanho do arquivo.');
 
-    buttonByText(el, 'Remover')!.click();
+    buttonByText(el.querySelector('.c-product-side')!, 'Remover')!.click();
     fixture.detectChanges();
     expect(catalog.removeProductImage).toHaveBeenCalledWith('r1', 'm1', 'p1');
     expect(text(el.querySelector('.c-image-empty'))).toBe('Nenhuma imagem adicionada.');
@@ -158,7 +159,7 @@ describe('progresso do envio', () => {
     await fixture.whenStable();
     fixture.detectChanges();
     catalog.uploadProductImage.mockReturnValueOnce(of({ type: HttpEventType.UploadProgress, loaded: 50, total: 100 }) as never);
-    const input = el.querySelector<HTMLInputElement>('.c-file input')!;
+    const input = el.querySelector<HTMLInputElement>('.c-product-side .c-file input')!;
     Object.defineProperty(input, 'files', { value: [new File(['x'], 'a.png', { type: 'image/png' })], configurable: true });
     input.dispatchEvent(new Event('change'));
     fixture.detectChanges();
