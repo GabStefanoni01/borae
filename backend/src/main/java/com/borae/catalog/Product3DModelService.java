@@ -197,6 +197,9 @@ public class Product3DModelService {
     }
 
     private void deleteUploadedAssetIfTransactionRollsBack(String fileId) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            return;
+        }
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCompletion(int status) {
