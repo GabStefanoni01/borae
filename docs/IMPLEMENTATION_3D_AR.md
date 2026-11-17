@@ -1,6 +1,6 @@
 # Plano de implementação — Experiências 3D e realidade aumentada
 
-**Status:** backend MVP em implementação nesta PR. Upload, persistência, publicação, API pública e validação estrutural GLB já foram adicionados à branch; homologação ImageKit, testes de integração e frontend continuam pendentes.
+**Status:** backend MVP implementado na branch da PR #27. Upload, persistência, publicação, API pública, validação estrutural GLB e testes PostgreSQL com Testcontainers estão implementados. O Backend CI passou no commit atual; a execução Docker CI ainda está em andamento. Homologação real do ImageKit e frontend permanecem pendentes.
 
 ## 1. Auditoria da base e justificativa
 
