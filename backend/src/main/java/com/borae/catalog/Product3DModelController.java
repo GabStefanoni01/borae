@@ -41,9 +41,9 @@ public class Product3DModelController {
     public Product3DModelResponse upload(@PathVariable UUID restaurantId, @PathVariable UUID menuId,
                                          @PathVariable UUID productId,
                                          @RequestParam("file") MultipartFile file,
-                                         @RequestParam @Positive int widthMm,
-                                         @RequestParam @Positive int heightMm,
-                                         @RequestParam @Positive int depthMm,
+                                         @RequestParam("widthMm") @Positive int widthMm,
+                                         @RequestParam("heightMm") @Positive int heightMm,
+                                         @RequestParam("depthMm") @Positive int depthMm,
                                          Authentication authentication) {
         return modelService.upload(restaurantId, menuId, productId, file,
                 widthMm, heightMm, depthMm, currentUser(authentication));
