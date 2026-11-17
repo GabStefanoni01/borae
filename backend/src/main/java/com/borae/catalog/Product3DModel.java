@@ -52,6 +52,10 @@ public class Product3DModel {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Version
+    @Column(nullable = false)
+    private long version;
+
     protected Product3DModel() {}
 
     public Product3DModel(MenuProduct product, String providerFileId, String publicUrl,
