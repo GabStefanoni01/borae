@@ -166,4 +166,4 @@ Primeiro corte implementado nesta branch:
 - O validador GLB rejeita referências externas em buffers e URLs de imagens, reduzindo risco de carregamento de recursos remotos por consumidores do modelo.
 - Foram adicionados testes unitários para referências externas e data URI embutido.
 - `docs/MODULE_3D_AR.md` e `docs/API.md` foram alinhados ao escopo atual e à decisão de manter ImageKit.
-- Ainda não há confirmação de CI verde nem homologação de upload/entrega real no ImageKit. Não liberar produção nem iniciar frontend antes dessas validações.
+- Backend CI validado no commit atual; 78 testes executados, sem falhas, erros ou skips, incluindo os 6 cenários PostgreSQL/Testcontainers. Docker CI do mesmo commit ainda estava em execução na última consulta. Upload/entrega real no ImageKit segue sem homologação. Não liberar produção antes dessas validações.
