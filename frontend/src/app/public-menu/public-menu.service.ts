@@ -23,6 +23,16 @@ export interface PublicProduct {
   ingredients: string[];
   addons: PublicAddon[];
   imageUrl: string | null;
+  /** Presente somente quando o modelo 3D está publicado e o produto é elegível (PR #27). */
+  model3d?: PublicModel3d | null;
+}
+
+export interface PublicModel3d {
+  modelUrl: string;
+  contentType: string;
+  widthMm: number;
+  heightMm: number;
+  depthMm: number;
 }
 
 export interface PublicCategory {

@@ -123,6 +123,7 @@ type LoadState = 'loading' | 'ready' | 'not-found' | 'error';
                                     <span class="pm-item-price">{{ price(p.priceInCents) }}</span>
                                     @if (p.availability === 'UNAVAILABLE') { <span class="pm-off-tag">Indisponível no momento</span> }
                                     @else if (p.addons.length) { <span class="pm-item-extra">{{ p.addons.length }} {{ p.addons.length === 1 ? 'adicional' : 'adicionais' }}</span> }
+                                    @if (p.model3d) { <span class="pm-item-3d" title="Disponível em 3D">3D</span> }
                                   </span>
                                 </span>
                                 @if (p.imageUrl) {
@@ -263,6 +264,6 @@ export class PublicMenuPage {
   protected price(cents: number): string { return formatCents(cents); }
 
   protected itemLabel(p: PublicProduct): string {
-    return `${p.name}, ${formatCents(p.priceInCents)}${p.availability === 'UNAVAILABLE' ? ', indisponível no momento' : ''}. Ver detalhes`;
+    return `${p.name}, ${formatCents(p.priceInCents)}${p.availability === 'UNAVAILABLE' ? ', indisponível no momento' : ''}${p.model3d ? ', disponível em 3D' : ''}. Ver detalhes`;
   }
 }
