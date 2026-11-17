@@ -131,6 +131,72 @@ class Product3DModelServiceTest {
         verify(auditRepository, never()).save(any(Product3DModelAudit.class));
     }
 
+
+    @Test
+    void replacementResetsPublicationAndDeletesPreviousAssetOnlyAfterCommit() {
+        grantRole(RestaurantRole.OWNER);
+        when(menuRepository.findByIdAndRestaurant_Id(menu.getId(), restaurant.getId()))
+                .thenReturn(Optional.of(menu));
+        when(productRepository.findByIdAndCategory_Menu_Id(product.getId(), menu.getId()))
+                .thenReturn(Optional.of(product));
+        Product3DModel existing = new Product3DModel(product, "old-file",
+                "https://ik.imagekit.io/demo/old.glb", "model/gltf-binary", 2048L,
+                100, 70, 50, actor.getId());
+        existing.publish(actor.getId());
+        when(modelRepository.findByProduct_Id(product.getId())).thenReturn(Optional.of(existing));
+        when(storage.upload(any(), any(), any(), eq("model/gltf-binary")))
+                .thenReturn(new RestaurantObjectStorage.StoredObject("new-file",
+                        "https://ik.imagekit.io/demo/new.glb"));
+
+        org.springframework.transaction.support.TransactionSynchronizationManager.initSynchronization();
+        try {
+            Product3DModelResponse response = service.upload(restaurant.getId(), menu.getId(), product.getId(),
+                    validFile(), 120, 80, 60, actor);
+
+            assertEquals(Product3DModelStatus.READY, response.status());
+            assertEquals("https://ik.imagekit.io/demo/new.glb", response.modelUrl());
+            verify(modelRepository).flush();
+            verify(storage, never()).delete("old-file");
+            verify(auditRepository).save(argThat(audit -> true));
+
+            org.springframework.transaction.support.TransactionSynchronizationManager
+                    .getSynchronizations().forEach(
+                            org.springframework.transaction.support.TransactionSynchronization::afterCommit);
+            verify(storage).delete("old-file");
+        } finally {
+            org.springframework.transaction.support.TransactionSynchronizationManager.clearSynchronization();
+        }
+    }
+
+    @Test
+    void deletingModelRemovesDatabaseRecordAndSchedulesImageKitDeletionAfterCommit() {
+        grantRole(RestaurantRole.OWNER);
+        when(menuRepository.findByIdAndRestaurant_Id(menu.getId(), restaurant.getId()))
+                .thenReturn(Optional.of(menu));
+        when(productRepository.findByIdAndCategory_Menu_Id(product.getId(), menu.getId()))
+                .thenReturn(Optional.of(product));
+        Product3DModel existing = new Product3DModel(product, "delete-file",
+                "https://ik.imagekit.io/demo/delete.glb", "model/gltf-binary", 2048L,
+                100, 70, 50, actor.getId());
+        when(modelRepository.findByProduct_Id(product.getId())).thenReturn(Optional.of(existing));
+
+        org.springframework.transaction.support.TransactionSynchronizationManager.initSynchronization();
+        try {
+            service.delete(restaurant.getId(), menu.getId(), product.getId(), actor);
+
+            verify(modelRepository).delete(existing);
+            verify(auditRepository).save(any(Product3DModelAudit.class));
+            verify(storage, never()).delete("delete-file");
+
+            org.springframework.transaction.support.TransactionSynchronizationManager
+                    .getSynchronizations().forEach(
+                            org.springframework.transaction.support.TransactionSynchronization::afterCommit);
+            verify(storage).delete("delete-file");
+        } finally {
+            org.springframework.transaction.support.TransactionSynchronizationManager.clearSynchronization();
+        }
+    }
+
     private MockMultipartFile validFile() {
         byte[] json = "{\"asset\":{\"version\":\"2.0\"}}".getBytes(StandardCharsets.UTF_8);
         int paddedLength = (json.length + 3) & ~3;
