@@ -9,6 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class PublicRestaurantMenuService {
@@ -17,15 +21,18 @@ public class PublicRestaurantMenuService {
     private final MenuRepository menuRepository;
     private final MenuCategoryRepository categoryRepository;
     private final MenuProductRepository productRepository;
+    private final Product3DModelRepository modelRepository;
 
     public PublicRestaurantMenuService(RestaurantRepository restaurantRepository,
                                        MenuRepository menuRepository,
                                        MenuCategoryRepository categoryRepository,
-                                       MenuProductRepository productRepository) {
+                                       MenuProductRepository productRepository,
+                                       Product3DModelRepository modelRepository) {
         this.restaurantRepository = restaurantRepository;
         this.menuRepository = menuRepository;
         this.categoryRepository = categoryRepository;
         this.productRepository = productRepository;
+        this.modelRepository = modelRepository;
     }
 
     @Transactional(readOnly = true)
@@ -44,29 +51,38 @@ public class PublicRestaurantMenuService {
                             .findAllByMenu_IdAndActiveTrueOrderByDisplayOrderAscNameAsc(menu.getId())
                             .stream()
                             .map(category -> {
-                                List<PublicRestaurantMenuResponse.PublicProduct> products = productRepository
+                                List<MenuProduct> products = productRepository
                                         .findAllByCategory_IdAndLifecycleStatusOrderByDisplayOrderAscNameAsc(
-                                                category.getId(), ProductLifecycleStatus.ACTIVE)
-                                        .stream()
-                                        .map(product -> new PublicRestaurantMenuResponse.PublicProduct(
-                                                product.getId(),
-                                                product.getName(),
-                                                product.getDescription(),
-                                                product.getPriceInCents(),
-                                                product.getAvailability(),
-                                                product.getDisplayOrder(),
-                                                product.getIngredients(),
-                                                product.getAddons().stream()
-                                                        .filter(MenuProductAddon::isActive)
-                                                        .map(addon -> new PublicRestaurantMenuResponse.PublicAddon(
-                                                                addon.getName(), addon.getPriceDeltaInCents()))
-                                                        .toList(),
-                                                product.getImage() == null ? null : product.getImage().getPublicUrl()
-                                        ))
+                                                category.getId(), ProductLifecycleStatus.ACTIVE);
+                                Map<UUID, Product3DModel> publishedModels = products.isEmpty() ? Map.of()
+                                        : modelRepository.findAllByProduct_IdInAndStatus(
+                                                products.stream().map(MenuProduct::getId).toList(),
+                                                Product3DModelStatus.PUBLISHED).stream()
+                                        .collect(Collectors.toMap(
+                                                model -> model.getProduct().getId(), Function.identity()));
+                                List<PublicRestaurantMenuResponse.PublicProduct> publicProducts = products.stream()
+                                        .map(product -> {
+                                            Product3DModel model = publishedModels.get(product.getId());
+                                            PublicRestaurantMenuResponse.Public3DModel publicModel = model == null ? null
+                                                    : new PublicRestaurantMenuResponse.Public3DModel(
+                                                            model.getPublicUrl(), model.getContentType(),
+                                                            model.getWidthMm(), model.getHeightMm(), model.getDepthMm());
+                                            return new PublicRestaurantMenuResponse.PublicProduct(
+                                                    product.getId(), product.getName(), product.getDescription(),
+                                                    product.getPriceInCents(), product.getAvailability(),
+                                                    product.getDisplayOrder(), product.getIngredients(),
+                                                    product.getAddons().stream()
+                                                            .filter(MenuProductAddon::isActive)
+                                                            .map(addon -> new PublicRestaurantMenuResponse.PublicAddon(
+                                                                    addon.getName(), addon.getPriceDeltaInCents()))
+                                                            .toList(),
+                                                    product.getImage() == null ? null : product.getImage().getPublicUrl(),
+                                                    publicModel);
+                                        })
                                         .toList();
                                 return new PublicRestaurantMenuResponse.PublicCategory(
                                         category.getId(), category.getName(), category.getDescription(),
-                                        category.getDisplayOrder(), products);
+                                        category.getDisplayOrder(), publicProducts);
                             })
                             .toList();
                     return new PublicRestaurantMenuResponse.PublicMenu(
