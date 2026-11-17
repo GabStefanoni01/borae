@@ -51,7 +51,7 @@ O restaurante informa largura, altura e profundidade em milímetros. Esses valor
 - [x] OWNER/MANAGER podem gerenciar o modelo; STAFF é bloqueado.
 - [x] API pública só inclui modelo publicado de produto elegível.
 - [ ] Upload e entrega GLB homologados com a conta ImageKit.
-- [ ] Testes de integração com PostgreSQL e falhas de storage concluídos.
+- [x] Testes de integração com PostgreSQL concluídos no CI com Testcontainers (6 testes, sem falhas ou skips). Falhas reais do storage ImageKit ainda dependem de homologação.
 - [ ] Visualizador 3D e AR progressiva implementados no frontend.
 - [ ] Imagem convencional permanece como fallback em falhas/incompatibilidade.
 - [ ] Testes em dispositivos móveis representativos e acessibilidade concluídos.
