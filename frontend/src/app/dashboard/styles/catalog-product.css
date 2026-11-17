@@ -56,3 +56,20 @@
 .c-qr-box img{width:100%;height:100%;image-rendering:pixelated}
 .c-qr-empty{display:grid;justify-items:center;gap:8px;padding:12px;text-align:center;font-size:13px;color:#707070}
 .c-qr-error{color:#9F1F16}
+
+/* Experiência 3D no formulário de produto */
+.c-model .d-card-head{flex-wrap:wrap}
+.c-model-status{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--d-warning-soft);color:var(--d-warning-ink)}
+.c-model-status[data-status=PUBLISHED]{background:var(--d-success-soft);color:var(--d-success-ink)}
+.c-model-info{display:grid;gap:6px;margin:0 0 10px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+.c-model-info div{padding:8px 10px;border-radius:10px;background:var(--d-head);border:1px solid var(--d-border-soft)}
+.c-model-info dt{font-size:11.5px;color:var(--d-muted)}
+.c-model-info dd{margin:0;font-weight:600;font-size:13px}
+.c-model-actions{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.c-model-upload{display:grid;gap:10px;margin:0;padding:14px;border:1px dashed var(--d-border-strong);border-radius:12px}
+.c-model-upload legend{padding:0 6px;font-weight:600;font-size:13px}
+.c-model-upload > .d-btn{justify-self:start}
+.c-model-dims{display:grid;gap:10px;grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:480px){.c-model-dims{grid-template-columns:minmax(0,1fr)}}
+.c-model-file{font-size:12.5px;color:var(--d-muted);align-self:center;overflow-wrap:anywhere}
+.c-upload-inline{position:static}

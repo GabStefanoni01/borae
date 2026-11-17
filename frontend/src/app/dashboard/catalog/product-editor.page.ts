@@ -11,6 +11,7 @@ import { ConfirmDialogComponent, StateComponent } from '../ui/ui.components';
 import { catalogErrorMessage, httpStatus } from './catalog-errors';
 import { CATALOG_LIMITS, Category, Menu, Product, ProductSaveRequest, moveItem, nextDisplayOrder, optionalText } from './catalog.models';
 import { CatalogService } from './catalog.service';
+import { ProductModel3dComponent } from './product-model-3d.component';
 
 interface AddonRow { key: number; name: string; price: string; active: boolean; }
 interface IngredientRow { key: number; name: string; }
@@ -20,7 +21,7 @@ interface IngredientRow { key: number; name: string; }
   selector: 'bo-product-editor-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, IconComponent, StateComponent, ConfirmDialogComponent],
+  imports: [FormsModule, RouterLink, IconComponent, StateComponent, ConfirmDialogComponent, ProductModel3dComponent],
   template: `
     <nav class="d-breadcrumb c-crumb" aria-label="Você está em">
       <a routerLink="/app/cardapios">Cardápios</a><span aria-hidden="true">/</span>
@@ -159,6 +160,8 @@ interface IngredientRow { key: number; name: string; }
             <button type="button" class="d-btn d-btn-secondary d-btn-sm" (click)="addAddon()" [disabled]="addons().length >= limits.maxAddons"><bo-icon name="plus" [size]="15" /> Adicionar adicional</button>
             <p class="d-hint"><span>Adicionais inativos ficam salvos, mas não aparecem no cardápio público. O cliente apenas visualiza as opções; não há seleção nem pedido.</span></p>
           </section>
+
+          <bo-product-model-3d [menuId]="menuId()" [product]="product()" />
         </div>
 
         <aside class="c-product-side">

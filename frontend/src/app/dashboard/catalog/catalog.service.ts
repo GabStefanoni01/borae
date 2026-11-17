@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { API_URL } from '../../auth.service';
 import {
   Category, CategoryCreateRequest, CategoryUpdateRequest, Menu, MenuCreateRequest, MenuUpdateRequest,
-  Product, ProductAvailability, ProductSaveRequest
+  Model3dDimensions, Product, Product3dModel, ProductAvailability, ProductSaveRequest
 } from './catalog.models';
 
 /**
@@ -119,5 +119,33 @@ export class CatalogService {
 
   removeProductImage(restaurantId: string, menuId: string, productId: string): Observable<void> {
     return this.http.delete<void>(`${this.productsUrl(restaurantId, menuId)}/${productId}/image`);
+  }
+
+  // ---------- Modelo 3D do produto (PR #27) ----------
+  private modelUrl(restaurantId: string, menuId: string, productId: string): string {
+    return `${this.productsUrl(restaurantId, menuId)}/${productId}/model-3d`;
+  }
+
+  /** Somente OWNER/MANAGER. 404 = o produto ainda não tem modelo 3D. */
+  getModel3d(restaurantId: string, menuId: string, productId: string): Observable<Product3dModel> {
+    return this.http.get<Product3dModel>(this.modelUrl(restaurantId, menuId, productId));
+  }
+
+  /** Envia ou substitui o GLB (multipart: file, widthMm, heightMm, depthMm), com progresso. */
+  uploadModel3d(restaurantId: string, menuId: string, productId: string, file: File, size: Model3dDimensions): Observable<HttpEvent<Product3dModel>> {
+    const form = new FormData();
+    form.append('file', file, file.name);
+    form.append('widthMm', String(size.widthMm));
+    form.append('heightMm', String(size.heightMm));
+    form.append('depthMm', String(size.depthMm));
+    return this.http.post<Product3dModel>(this.modelUrl(restaurantId, menuId, productId), form, { reportProgress: true, observe: 'events' });
+  }
+
+  setModel3dPublication(restaurantId: string, menuId: string, productId: string, published: boolean): Observable<Product3dModel> {
+    return this.http.patch<Product3dModel>(`${this.modelUrl(restaurantId, menuId, productId)}/publication`, { published });
+  }
+
+  deleteModel3d(restaurantId: string, menuId: string, productId: string): Observable<void> {
+    return this.http.delete<void>(this.modelUrl(restaurantId, menuId, productId));
   }
 }
