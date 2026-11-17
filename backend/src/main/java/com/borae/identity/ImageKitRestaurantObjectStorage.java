@@ -1,6 +1,8 @@
 package com.borae.identity;
 
 import io.imagekit.client.ImageKitClient;
+import io.imagekit.core.MultipartField;
+import io.imagekit.core.JsonValue;
 import io.imagekit.client.okhttp.ImageKitOkHttpClient;
 import io.imagekit.models.files.FileDeleteParams;
 import io.imagekit.models.files.FileUploadParams;
@@ -9,6 +11,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 
 @Component
 public class ImageKitRestaurantObjectStorage implements RestaurantObjectStorage {
@@ -27,10 +32,17 @@ public class ImageKitRestaurantObjectStorage implements RestaurantObjectStorage 
 
     @Override
     public StoredObject upload(String folder, String fileName, byte[] bytes, String contentType) {
+        InputStream inputStream = new ByteArrayInputStream(bytes);
         FileUploadParams params = FileUploadParams.builder()
-                .file(bytes)
+                .file(MultipartField.<InputStream>builder()
+                        .value(inputStream)
+                        .filename(fileName)
+                        .contentType(contentType)
+                        .build())
                 .fileName(fileName)
                 .folder(folder)
+                .putAdditionalBodyProperty("fileType", JsonValue.from(
+                        contentType != null && contentType.startsWith("image/") ? "image" : "non-image"))
                 .build();
 
         FileUploadResponse response = client().files().upload(params);

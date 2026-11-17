@@ -24,7 +24,10 @@ public record PublicRestaurantMenuResponse(
 
     public record PublicProduct(UUID id, String name, String description, long priceInCents,
                                 ProductAvailability availability, int displayOrder,
-                                List<String> ingredients, List<PublicAddon> addons, String imageUrl) {}
+                                List<String> ingredients, List<PublicAddon> addons, String imageUrl, Public3DModel model3d) {}
+
+    public record Public3DModel(String modelUrl, String contentType,
+                                int widthMm, int heightMm, int depthMm) {}
 
     public record PublicAddon(String name, long priceDeltaInCents) {}
 

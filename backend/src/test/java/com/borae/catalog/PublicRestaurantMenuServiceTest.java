@@ -3,6 +3,7 @@ package com.borae.catalog;
 import com.borae.identity.Restaurant;
 import com.borae.identity.RestaurantPublicationStatus;
 import com.borae.identity.RestaurantRepository;
+import com.borae.identity.UserAccount;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,6 +17,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -27,6 +29,7 @@ class PublicRestaurantMenuServiceTest {
     @Mock private MenuRepository menuRepository;
     @Mock private MenuCategoryRepository categoryRepository;
     @Mock private MenuProductRepository productRepository;
+    @Mock private Product3DModelRepository modelRepository;
 
     private PublicRestaurantMenuService service;
     private Restaurant restaurant;
@@ -34,7 +37,7 @@ class PublicRestaurantMenuServiceTest {
     @BeforeEach
     void setUp() {
         service = new PublicRestaurantMenuService(
-                restaurantRepository, menuRepository, categoryRepository, productRepository);
+                restaurantRepository, menuRepository, categoryRepository, productRepository, modelRepository);
         restaurant = new Restaurant("Restaurante Teste", "restaurante-teste", "Descrição pública");
         ReflectionTestUtils.setField(restaurant, "publicationStatus", RestaurantPublicationStatus.PUBLISHED);
     }
@@ -70,7 +73,43 @@ class PublicRestaurantMenuServiceTest {
         assertEquals(ProductAvailability.AVAILABLE, publicProduct.availability());
         assertEquals(List.of("Arroz", "Feijão"), publicProduct.ingredients());
         assertEquals(1, publicProduct.addons().size());
+        assertNull(publicProduct.model3d());
         assertEquals("Suco", publicProduct.addons().get(0).name());
+    }
+
+
+    @Test
+    void exposesOnlyPublishedProduct3dModelInPublicMenu() {
+        Menu menu = new Menu(restaurant, "Almoço", null, 0);
+        menu.publish();
+        MenuCategory category = new MenuCategory(menu, "Pratos", null, 0);
+        MenuProduct product = new MenuProduct(category, "Prato 3D", null, 2590L, 0, List.of(), List.of());
+        UserAccount actor = new UserAccount("Owner", "owner@example.com", "hash");
+        Product3DModel model = new Product3DModel(product, "imagekit-file-id",
+                "https://ik.imagekit.io/demo/prato.glb", "model/gltf-binary", 4096L,
+                120, 80, 60, actor.getId());
+        model.publish(actor.getId());
+
+        when(restaurantRepository.findBySlugAndActiveTrueAndPublicationStatus(
+                "restaurante-teste", RestaurantPublicationStatus.PUBLISHED)).thenReturn(Optional.of(restaurant));
+        when(menuRepository.findAllByRestaurant_IdAndStatusOrderByDisplayOrderAscNameAsc(
+                restaurant.getId(), MenuStatus.PUBLISHED)).thenReturn(List.of(menu));
+        when(categoryRepository.findAllByMenu_IdAndActiveTrueOrderByDisplayOrderAscNameAsc(menu.getId()))
+                .thenReturn(List.of(category));
+        when(productRepository.findAllByCategory_IdAndLifecycleStatusOrderByDisplayOrderAscNameAsc(
+                category.getId(), ProductLifecycleStatus.ACTIVE)).thenReturn(List.of(product));
+        when(modelRepository.findAllByProduct_IdInAndStatus(
+                org.mockito.ArgumentMatchers.anyList(), org.mockito.ArgumentMatchers.eq(Product3DModelStatus.PUBLISHED)))
+                .thenReturn(List.of(model));
+
+        PublicRestaurantMenuResponse response = service.getBySlug("restaurante-teste");
+        PublicRestaurantMenuResponse.Public3DModel publicModel =
+                response.menus().get(0).categories().get(0).products().get(0).model3d();
+
+        assertEquals("https://ik.imagekit.io/demo/prato.glb", publicModel.modelUrl());
+        assertEquals(120, publicModel.widthMm());
+        assertEquals(80, publicModel.heightMm());
+        assertEquals(60, publicModel.depthMm());
     }
 
     @Test

@@ -31,9 +31,9 @@ Os valores trimestral e anual correspondem ao preço mensal multiplicado pelo pe
 - Se a emissão pelo Asaas não atender à situação fiscal da empresa, a integração fiscal deverá ser reavaliada antes da cobrança em produção.
 - A emissão e seu status devem ser rastreáveis; falhas fiscais não podem ser silenciosamente tratadas como notas emitidas.
 
-## 2. Mídia e armazenamento — complemento de D-09
+## 2. Mídia e armazenamento — revisão de D-09
 
-Cloudflare R2 permanece como object storage aprovado.
+**ImageKit permanece como provedor oficial de armazenamento e entrega de mídia do Boraê.** Esta decisão substitui a escolha anterior por Cloudflare R2 registrada em D-09. Não haverá migração dos arquivos existentes nem implementação de um segundo provedor nesta etapa.
 
 | Tipo | Limite |
 |---|---:|
@@ -44,9 +44,9 @@ Cloudflare R2 permanece como object storage aprovado.
 - Formatos de imagem aceitos: JPEG, PNG e WebP.
 - Aplicar otimização automática das imagens antes ou durante a persistência, preservando qualidade adequada e orientação.
 - Validar tamanho, extensão e MIME type no backend; não confiar apenas na validação do navegador.
-- Armazenar binários no R2 e metadados/referências no PostgreSQL.
+- Utilizar ImageKit para armazenamento e entrega dos arquivos de mídia; manter no PostgreSQL apenas metadados e referências necessários à aplicação.
 - O limite de 100 refere-se às imagens do restaurante; não representa limite global de armazenamento da plataforma.
-- Outros formatos de mídia (por exemplo, modelos 3D) precisam respeitar a especificação própria do módulo correspondente; não inferir que GLB/glTF esteja liberado pelo conjunto JPEG/PNG/WebP.
+- Outros formatos de mídia (por exemplo, modelos 3D) precisam respeitar a especificação própria do módulo correspondente; não inferir que GLB/glTF esteja liberado pelo conjunto JPEG/PNG/WebP. O suporte do ImageKit a GLB deverá ser validado em homologação antes da liberação.
 
 ## 3. Equipe e convites — complemento de D-08
 
