@@ -96,6 +96,41 @@ class Product3DModelServiceTest {
         verifyNoInteractions(storage, modelRepository, auditRepository);
     }
 
+
+    @Test
+    void rejectsNonPositivePhysicalDimensionsBeforeUploading() {
+        grantRole(RestaurantRole.OWNER);
+        when(menuRepository.findByIdAndRestaurant_Id(menu.getId(), restaurant.getId()))
+                .thenReturn(Optional.of(menu));
+        when(productRepository.findByIdAndCategory_Menu_Id(product.getId(), menu.getId()))
+                .thenReturn(Optional.of(product));
+
+        assertThrows(ResponseStatusException.class, () -> service.upload(restaurant.getId(), menu.getId(),
+                product.getId(), validFile(), 0, 80, 60, actor));
+        verifyNoInteractions(storage, modelRepository, auditRepository);
+    }
+
+    @Test
+    void removesNewlyUploadedAssetWhenDatabasePersistenceFails() {
+        grantRole(RestaurantRole.OWNER);
+        when(menuRepository.findByIdAndRestaurant_Id(menu.getId(), restaurant.getId()))
+                .thenReturn(Optional.of(menu));
+        when(productRepository.findByIdAndCategory_Menu_Id(product.getId(), menu.getId()))
+                .thenReturn(Optional.of(product));
+        when(modelRepository.findByProduct_Id(product.getId())).thenReturn(Optional.empty());
+        when(storage.upload(any(), any(), any(), eq("model/gltf-binary")))
+                .thenReturn(new RestaurantObjectStorage.StoredObject("orphan-file",
+                        "https://ik.imagekit.io/demo/orphan.glb"));
+        when(modelRepository.saveAndFlush(any(Product3DModel.class)))
+                .thenThrow(new IllegalStateException("database unavailable"));
+
+        assertThrows(IllegalStateException.class, () -> service.upload(restaurant.getId(), menu.getId(),
+                product.getId(), validFile(), 120, 80, 60, actor));
+
+        verify(storage).delete("orphan-file");
+        verify(auditRepository, never()).save(any(Product3DModelAudit.class));
+    }
+
     private MockMultipartFile validFile() {
         byte[] json = "{\"asset\":{\"version\":\"2.0\"}}".getBytes(StandardCharsets.UTF_8);
         int paddedLength = (json.length + 3) & ~3;
