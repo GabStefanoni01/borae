@@ -112,6 +112,7 @@ public class Product3DModelService {
                 action = "REPLACED";
             }
             auditRepository.save(new Product3DModelAudit(productId, actor.getId(), action, uploaded.fileId()));
+            deleteUploadedAssetIfTransactionRollsBack(uploaded.fileId());
             if (previousFileId != null) {
                 deleteFromStorageAfterCommit(previousFileId);
             }
@@ -193,6 +194,22 @@ public class Product3DModelService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Seu papel não permite administrar modelos 3D.");
         }
+    }
+
+    private void deleteUploadedAssetIfTransactionRollsBack(String fileId) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status == TransactionSynchronization.STATUS_ROLLED_BACK) {
+                    try {
+                        storage.delete(fileId);
+                    } catch (RuntimeException exception) {
+                        log.warn("Não foi possível remover do ImageKit o novo asset 3D após rollback. fileId={}",
+                                fileId, exception);
+                    }
+                }
+            }
+        });
     }
 
     private void deleteFromStorageAfterCommit(String fileId) {
