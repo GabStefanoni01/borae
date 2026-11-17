@@ -13,6 +13,7 @@ CREATE TABLE menu_product_3d_model (
     updated_by_user_id UUID NOT NULL REFERENCES user_account(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    version BIGINT NOT NULL DEFAULT 0,
     CONSTRAINT ck_product_3d_model_status CHECK (status IN ('READY', 'PUBLISHED')),
     CONSTRAINT ck_product_3d_model_file_size CHECK (file_size > 0),
     CONSTRAINT ck_product_3d_model_dimensions CHECK (width_mm > 0 AND height_mm > 0 AND depth_mm > 0)
