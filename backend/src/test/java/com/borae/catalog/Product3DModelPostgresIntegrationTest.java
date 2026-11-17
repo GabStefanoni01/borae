@@ -28,6 +28,7 @@ class Product3DModelPostgresIntegrationTest {
     private static final UUID MENU_ID = UUID.fromString("30000000-0000-0000-0000-000000000001");
     private static final UUID CATEGORY_ID = UUID.fromString("40000000-0000-0000-0000-000000000001");
     private static final UUID PRODUCT_ID = UUID.fromString("50000000-0000-0000-0000-000000000001");
+    private static final UUID SECOND_PRODUCT_ID = UUID.fromString("50000000-0000-0000-0000-000000000002");
     private static final UUID MODEL_ID = UUID.fromString("60000000-0000-0000-0000-000000000001");
 
     @Container
@@ -55,8 +56,8 @@ class Product3DModelPostgresIntegrationTest {
                 MENU_ID, RESTAURANT_ID, "Menu Test", "PUBLISHED", 0);
         jdbc.update("INSERT INTO menu_category (id, menu_id, name, active, display_order) VALUES (?, ?, ?, ?, ?)",
                 CATEGORY_ID, MENU_ID, "Category Test", true, 0);
-        jdbc.update("INSERT INTO menu_product (id, category_id, name, price_in_cents, lifecycle_status, availability, display_order) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                PRODUCT_ID, CATEGORY_ID, "Product Test", 2590L, "ACTIVE", "AVAILABLE", 0);
+        insertProduct(PRODUCT_ID, "Product Test");
+        insertProduct(SECOND_PRODUCT_ID, "Second Product Test");
     }
 
     @Test
@@ -72,21 +73,31 @@ class Product3DModelPostgresIntegrationTest {
     }
 
     @Test
-    void enforcesOneModelPerProductAndUniqueImageKitFileId() {
-        insertModel(MODEL_ID, PRODUCT_ID, "imagekit-file-unique", 120, 80, 60);
+    void enforcesOneModelPerProduct() {
+        insertModel(MODEL_ID, PRODUCT_ID, "imagekit-file-first", 120, 80, 60);
 
         assertThrows(DataIntegrityViolationException.class,
                 () -> insertModel(UUID.randomUUID(), PRODUCT_ID, "imagekit-file-second", 120, 80, 60));
-        assertThrows(DataIntegrityViolationException.class,
-                () -> insertModel(UUID.randomUUID(), PRODUCT_ID, "imagekit-file-unique", 120, 80, 60));
     }
 
     @Test
-    void rejectsInvalidDimensionsAndUnknownProductReferences() {
+    void enforcesUniqueImageKitFileIdAcrossProducts() {
+        insertModel(MODEL_ID, PRODUCT_ID, "imagekit-file-shared", 120, 80, 60);
+
+        assertThrows(DataIntegrityViolationException.class,
+                () -> insertModel(UUID.randomUUID(), SECOND_PRODUCT_ID, "imagekit-file-shared", 120, 80, 60));
+    }
+
+    @Test
+    void rejectsInvalidDimensions() {
         assertThrows(DataIntegrityViolationException.class,
                 () -> insertModel(MODEL_ID, PRODUCT_ID, "imagekit-invalid-dimensions", 0, 80, 60));
+    }
+
+    @Test
+    void rejectsUnknownProductReferences() {
         assertThrows(DataIntegrityViolationException.class,
-                () -> insertModel(UUID.randomUUID(), UUID.randomUUID(), "imagekit-orphan", 120, 80, 60));
+                () -> insertModel(MODEL_ID, UUID.randomUUID(), "imagekit-orphan", 120, 80, 60));
     }
 
     @Test
@@ -99,6 +110,11 @@ class Product3DModelPostgresIntegrationTest {
 
         assertEquals(0, count("SELECT COUNT(*) FROM menu_product_3d_model WHERE product_id = ?", PRODUCT_ID));
         assertEquals(1, count("SELECT COUNT(*) FROM menu_product_3d_model_audit WHERE product_id = ?", PRODUCT_ID));
+    }
+
+    private void insertProduct(UUID productId, String name) {
+        jdbc.update("INSERT INTO menu_product (id, category_id, name, price_in_cents, lifecycle_status, availability, display_order) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                productId, CATEGORY_ID, name, 2590L, "ACTIVE", "AVAILABLE", 0);
     }
 
     private void insertModel(UUID modelId, UUID productId, String fileId,
