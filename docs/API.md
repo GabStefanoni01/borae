@@ -58,7 +58,7 @@ Regras da resposta pública:
 - Produtos com ciclo de vida `ARCHIVED` são omitidos; produtos `UNAVAILABLE` permanecem visíveis com seu estado explícito.
 - Somente adicionais ativos são incluídos.
 - A resposta usa DTOs públicos próprios e não inclui dados de equipe, membership, credenciais ou configurações internas.
-- A imagem é representada pela URL pública do ImageKit quando houver imagem associada.
+- A imagem é representada pela URL pública do ImageKit quando houver imagem associada.\n- O produto inclui `model3d` somente quando há modelo publicado; o objeto contém URL pública, MIME e dimensões em milímetros. Sem modelo publicado, `model3d` é `null`.
 - O caminho `/api/v1/public/**` é liberado da autenticação JWT; os demais endpoints continuam protegidos conforme suas regras.
 
 **Publicação do perfil:** OWNER ou MANAGER pode publicar e despublicar o perfil pelos endpoints autenticados. Restaurante suspenso não pode ser publicado nem ter seu estado alterado pelo painel da equipe. Despublicar não arquiva cardápios nem apaga o catálogo.
