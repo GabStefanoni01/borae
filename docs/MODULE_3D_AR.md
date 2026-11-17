@@ -1,6 +1,6 @@
 # Especificação de módulo — Experiência 3D e realidade aumentada
 
-**Status:** backend inicial em implementação na PR #27. O painel Angular, visualizador público e AR ainda não foram implementados.
+**Status:** backend MVP implementado na branch da PR #27. Testes PostgreSQL reais com Testcontainers passaram no Backend CI; Docker CI do último commit ainda está em execução. Homologação ImageKit e frontend (painel Angular, visualizador público e AR) ainda não foram concluídos.
 
 ## 1. Objetivo
 
