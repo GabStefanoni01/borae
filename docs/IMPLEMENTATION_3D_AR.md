@@ -157,7 +157,7 @@ Primeiro corte implementado nesta branch:
 
 **Limite provisório:** o primeiro corte limita o GLB a 10 MB, acompanhando o limite multipart já configurado no backend. Esse valor ainda precisa ser confrontado com modelos reais e com os limites da conta ImageKit antes da decisão final.
 
-**Pendente antes da homologação:** executar testes reais de upload/entrega de GLB no ImageKit, ampliar testes de integração/transação e confirmar os limites e o comportamento do CDN para o tipo de arquivo.
+**Pendente antes da homologação:** executar testes reais de upload/entrega de GLB no ImageKit e confirmar os limites e o comportamento do CDN para o tipo de arquivo. Os testes de integração/transação com PostgreSQL real foram executados no CI (6 cenários, sem falhas ou skips).
 
 
 ## Atualização da implementação — segurança e contratos
