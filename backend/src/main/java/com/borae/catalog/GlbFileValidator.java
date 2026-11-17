@@ -55,7 +55,8 @@ public class GlbFileValidator {
                 System.arraycopy(bytes, offset, jsonBytes, 0, chunkLength);
                 try {
                     JsonNode root = objectMapper.readTree(new String(jsonBytes, StandardCharsets.UTF_8).strip());
-                    if (root == null || !"2.0".equals(root.path("asset").path("version").asText())) {
+                    if (root == null || !root.isObject() || !root.path("asset").isObject()
+                            || !"2.0".equals(root.path("asset").path("version").asText())) {
                         throw invalid();
                     }
                     rejectExternalResources(root);
@@ -80,7 +81,7 @@ public class GlbFileValidator {
         if (buffers.isArray()) {
             for (JsonNode item : buffers) {
                 // A GLB buffer must be embedded in its BIN chunk, not fetched from a remote URL.
-                if (item.hasNonNull("uri")) {
+                if (!item.isObject() || item.has("uri")) {
                     throw invalid();
                 }
             }
@@ -89,9 +90,12 @@ public class GlbFileValidator {
         JsonNode images = root.path("images");
         if (images.isArray()) {
             for (JsonNode item : images) {
-                String uri = item.path("uri").asText(null);
+                if (!item.isObject()) {
+                    throw invalid();
+                }
+                JsonNode uriNode = item.get("uri");
                 // Embedded data URIs are allowed; remote and relative references are not.
-                if (uri != null && !uri.startsWith("data:")) {
+                if (uriNode != null && (!uriNode.isTextual() || !uriNode.asText().startsWith("data:"))) {
                     throw invalid();
                 }
             }
