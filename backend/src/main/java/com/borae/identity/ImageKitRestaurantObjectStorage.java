@@ -2,6 +2,7 @@ package com.borae.identity;
 
 import io.imagekit.client.ImageKitClient;
 import io.imagekit.core.MultipartField;
+import io.imagekit.core.JsonValue;
 import io.imagekit.client.okhttp.ImageKitOkHttpClient;
 import io.imagekit.models.files.FileDeleteParams;
 import io.imagekit.models.files.FileUploadParams;
@@ -36,6 +37,8 @@ public class ImageKitRestaurantObjectStorage implements RestaurantObjectStorage 
                         .build())
                 .fileName(fileName)
                 .folder(folder)
+                .putAdditionalBodyProperty("fileType", JsonValue.from(
+                        contentType != null && contentType.startsWith("image/") ? "image" : "non-image"))
                 .build();
 
         FileUploadResponse response = client().files().upload(params);
