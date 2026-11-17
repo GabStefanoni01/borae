@@ -140,3 +140,21 @@ Pedidos, carrinho, checkout, pagamentos, reservas, QR Code por mesa, PDV/ERP, ed
 6. Validar dispositivos compatíveis, fallback, desempenho e segurança antes de habilitar em produção.
 
 A implementação deve ocorrer em etapas revisáveis. Não fazer merge automático; aprovação humana é obrigatória. A especificação original em `docs/MODULE_3D_AR.md` continua sendo a referência de produto, e este documento detalha o plano de engenharia.
+
+
+## Status da implementação do backend
+
+Primeiro corte implementado nesta branch:
+
+- Migration V9 com tabela de modelo 3D por produto e tabela de auditoria de eventos.
+- Entidade com status READY/PUBLISHED, referência ImageKit, MIME, tamanho, dimensões físicas em milímetros e identificação dos usuários responsáveis pela criação/última alteração.
+- Validador estrutural GLB 2.0 (magic, versão, comprimento declarado, chunks e `asset.version`).
+- Endpoints autenticados de consulta, upload/substituição, publicação/despublicação e remoção.
+- Escrita restrita a OWNER/MANAGER; STAFF não administra modelos.
+- A troca do arquivo preserva o anterior até o commit do banco; a exclusão remota ocorre após commit.
+- DTO público expõe somente URL e dimensões do modelo publicado, junto de produto e cardápio já elegíveis para exibição.
+- Testes unitários iniciais para GLB inválido/válido, permissão e contrato público.
+
+**Limite provisório:** o primeiro corte limita o GLB a 10 MB, acompanhando o limite multipart já configurado no backend. Esse valor ainda precisa ser confrontado com modelos reais e com os limites da conta ImageKit antes da decisão final.
+
+**Pendente antes da homologação:** executar testes reais de upload/entrega de GLB no ImageKit, ampliar testes de integração/transação e confirmar os limites e o comportamento do CDN para o tipo de arquivo.
