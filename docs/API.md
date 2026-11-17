@@ -44,7 +44,12 @@ Consulte a documentação OpenAPI/Swagger publicada para obter os contratos comp
 | POST | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/restore` | OWNER ou MANAGER | Reativa produto arquivado. |
 | PUT | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/order` | OWNER ou MANAGER | Reordena os produtos de uma categoria; o corpo informa `categoryId` e a lista completa de `productIds`. |
 | POST | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/image` | OWNER ou MANAGER | Envia ou substitui imagem do produto (JPEG, PNG ou WebP, até 10 MB), processada no backend e armazenada no ImageKit. |
-| DELETE | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/image` | OWNER ou MANAGER | Remove a imagem associada ao produto e agenda a remoção do arquivo remoto após commit.\n| GET | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/model-3d` | OWNER ou MANAGER | Consulta metadados do modelo 3D associado ao produto.\n| POST | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/model-3d` | OWNER ou MANAGER | Envia/substitui GLB 2.0 via multipart (`file`, `widthMm`, `heightMm`, `depthMm`); limite provisório de 10 MB.\n| PATCH | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/model-3d/publication` | OWNER ou MANAGER | Publica/despublica o modelo com body `published: true/false`.\n| DELETE | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/model-3d` | OWNER ou MANAGER | Remove a associação e agenda a exclusão do asset remoto após commit.\n
+| DELETE | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/image` | OWNER ou MANAGER | Remove a imagem associada ao produto e agenda a remoção do arquivo remoto após commit.
+| GET | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/model-3d` | OWNER ou MANAGER | Consulta metadados do modelo 3D associado ao produto.
+| POST | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/model-3d` | OWNER ou MANAGER | Envia/substitui GLB 2.0 via multipart (`file`, `widthMm`, `heightMm`, `depthMm`); limite provisório de 10 MB.
+| PATCH | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/model-3d/publication` | OWNER ou MANAGER | Publica/despublica o modelo com body `published: true/false`.
+| DELETE | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/model-3d` | OWNER ou MANAGER | Remove a associação e agenda a exclusão do asset remoto após commit.
+
 ## 3. Consulta pública do cardápio
 
 | Método | Caminho | Acesso | Descrição |
@@ -58,7 +63,8 @@ Regras da resposta pública:
 - Produtos com ciclo de vida `ARCHIVED` são omitidos; produtos `UNAVAILABLE` permanecem visíveis com seu estado explícito.
 - Somente adicionais ativos são incluídos.
 - A resposta usa DTOs públicos próprios e não inclui dados de equipe, membership, credenciais ou configurações internas.
-- A imagem é representada pela URL pública do ImageKit quando houver imagem associada.\n- O produto inclui `model3d` somente quando há modelo publicado; o objeto contém URL pública, MIME e dimensões em milímetros. Sem modelo publicado, `model3d` é `null`.
+- A imagem é representada pela URL pública do ImageKit quando houver imagem associada.
+- O produto inclui `model3d` somente quando há modelo publicado; o objeto contém URL pública, MIME e dimensões em milímetros. Sem modelo publicado, `model3d` é `null`.
 - O caminho `/api/v1/public/**` é liberado da autenticação JWT; os demais endpoints continuam protegidos conforme suas regras.
 
 **Publicação do perfil:** OWNER ou MANAGER pode publicar e despublicar o perfil pelos endpoints autenticados. Restaurante suspenso não pode ser publicado nem ter seu estado alterado pelo painel da equipe. Despublicar não arquiva cardápios nem apaga o catálogo.
@@ -114,4 +120,4 @@ Os detalhes completos de DTOs, validações, status HTTP e exemplos devem ser co
 4. Atualizar o frontend consumidor do contrato no mesmo PR, quando aplicável.
 
 ## 8. Funcionalidades ainda não disponíveis na API
-Modelos 3D, IA, fidelidade, Boraê Club, descoberta, pedidos, pagamentos e administração global ainda não estão disponíveis. Não tratar esses itens como endpoints implementados.
+O visualizador 3D/AR no frontend, IA, fidelidade, Boraê Club, descoberta, pedidos, pagamentos e administração global ainda não estão disponíveis. O backend de gestão de modelos 3D está em implementação na PR #27 e depende de CI verde, homologação do upload/entrega no ImageKit e aprovação antes da integração à `main`.
