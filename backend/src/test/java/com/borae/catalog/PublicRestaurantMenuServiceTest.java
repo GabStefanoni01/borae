@@ -27,6 +27,7 @@ class PublicRestaurantMenuServiceTest {
     @Mock private MenuRepository menuRepository;
     @Mock private MenuCategoryRepository categoryRepository;
     @Mock private MenuProductRepository productRepository;
+    @Mock private Product3DModelRepository modelRepository;
 
     private PublicRestaurantMenuService service;
     private Restaurant restaurant;
@@ -34,7 +35,7 @@ class PublicRestaurantMenuServiceTest {
     @BeforeEach
     void setUp() {
         service = new PublicRestaurantMenuService(
-                restaurantRepository, menuRepository, categoryRepository, productRepository);
+                restaurantRepository, menuRepository, categoryRepository, productRepository, modelRepository);
         restaurant = new Restaurant("Restaurante Teste", "restaurante-teste", "Descrição pública");
         ReflectionTestUtils.setField(restaurant, "publicationStatus", RestaurantPublicationStatus.PUBLISHED);
     }
@@ -70,6 +71,7 @@ class PublicRestaurantMenuServiceTest {
         assertEquals(ProductAvailability.AVAILABLE, publicProduct.availability());
         assertEquals(List.of("Arroz", "Feijão"), publicProduct.ingredients());
         assertEquals(1, publicProduct.addons().size());
+        assertEquals(null, publicProduct.model3d());
         assertEquals("Suco", publicProduct.addons().get(0).name());
     }
 
