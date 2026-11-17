@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { text } from '../../testing/catalog-fixtures';
+import { MODEL_VIEWER_LOADER } from '../shared/model-3d-viewer.component';
 import { PublicMenuPage } from './public-menu.page';
 import { PublicMenuService, PublicRestaurantMenu } from './public-menu.service';
 
@@ -14,7 +15,8 @@ const DATA: PublicRestaurantMenu = {
     {
       id: 'm1', name: 'Almoço', description: 'Ao meio-dia', displayOrder: 0, categories: [
         { id: 'c1', name: 'Massas', description: null, displayOrder: 0, products: [
-          { id: 'p1', name: 'Carbonara', description: 'Guanciale e pecorino', priceInCents: 5890, availability: 'AVAILABLE', displayOrder: 0, ingredients: ['Spaghetti', 'Guanciale'], addons: [{ name: 'Pecorino extra', priceDeltaInCents: 600 }], imageUrl: null },
+          { id: 'p1', name: 'Carbonara', description: 'Guanciale e pecorino', priceInCents: 5890, availability: 'AVAILABLE', displayOrder: 0, ingredients: ['Spaghetti', 'Guanciale'], addons: [{ name: 'Pecorino extra', priceDeltaInCents: 600 }], imageUrl: 'https://ik.imagekit.io/borae/carbonara.webp',
+            model3d: { modelUrl: 'https://ik.imagekit.io/borae/carbonara.glb', contentType: 'model/gltf-binary', widthMm: 280, heightMm: 70, depthMm: 280 } },
           { id: 'p2', name: 'Ragu', description: null, priceInCents: 6490, availability: 'UNAVAILABLE', displayOrder: 1, ingredients: [], addons: [], imageUrl: null }
         ] },
         { id: 'c2', name: 'Sem produtos', description: null, displayOrder: 1, products: [] }
@@ -30,11 +32,12 @@ const DATA: PublicRestaurantMenu = {
 
 function setup(response = of(DATA)) {
   const api = { getRestaurantMenu: vi.fn(() => response) };
-  TestBed.configureTestingModule({ imports: [PublicMenuPage], providers: [provideRouter([]), { provide: PublicMenuService, useValue: api }] });
+  const loader = vi.fn(() => Promise.resolve());
+  TestBed.configureTestingModule({ imports: [PublicMenuPage], providers: [provideRouter([]), { provide: PublicMenuService, useValue: api }, { provide: MODEL_VIEWER_LOADER, useValue: loader }] });
   const fixture = TestBed.createComponent(PublicMenuPage);
   fixture.componentRef.setInput('slug', 'cantina');
   fixture.detectChanges();
-  return { fixture, api, el: fixture.nativeElement as HTMLElement };
+  return { fixture, api, loader, el: fixture.nativeElement as HTMLElement };
 }
 
 describe('PublicMenuPage', () => {
@@ -78,7 +81,9 @@ describe('PublicMenuPage', () => {
     expect(text(sheet)).toContain('Spaghetti, Guanciale');
     expect(text(sheet)).toContain('Ingredientes informados pelo restaurante.');
     expect(text(sheet.querySelector('.mp-addons li'))).toMatch(/^Pecorino extra\s*\+ R\$ 6,00$/);
-    expect([...sheet.querySelectorAll('button')].map(b => b.getAttribute('aria-label'))).toEqual(['Fechar detalhes']);
+    const buttons = [...sheet.querySelectorAll('button')].map(b => b.getAttribute('aria-label') ?? text(b));
+    expect(buttons).toEqual(['Fechar detalhes', 'Ver em 3D']);
+    expect(buttons.some(b => /pedi|comprar|carrinho|adicionar/i.test(b))).toBe(false);
   });
 
   it('restaurante inexistente ou não publicado (404)', () => {
@@ -99,5 +104,38 @@ describe('PublicMenuPage', () => {
     [...el.querySelectorAll('button')].find(b => text(b).includes('Tentar novamente'))!.click();
     fixture.detectChanges();
     expect(text(el.querySelector('h1'))).toBe('Cantina Bella Vista');
+  });
+
+  it('produto com modelo publicado: selo 3D na lista e visualizador só sob demanda', async () => {
+    const { el, fixture, loader } = setup();
+    const [withModel, withoutModel] = Array.from(el.querySelectorAll<HTMLButtonElement>('.pm-item'));
+    expect(text(withModel.querySelector('.pm-item-3d'))).toBe('3D');
+    expect(withModel.getAttribute('aria-label')).toContain('disponível em 3D');
+    expect(withoutModel.querySelector('.pm-item-3d')).toBeNull();
+
+    withModel.click();
+    fixture.detectChanges();
+    expect(loader).not.toHaveBeenCalled();
+    expect(el.querySelector('.pm-sheet model-viewer')).toBeNull();
+    [...el.querySelectorAll<HTMLButtonElement>('.pm-sheet button')].find(b => text(b) === 'Ver em 3D')!.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(loader).toHaveBeenCalledTimes(1);
+    const mv = el.querySelector('.pm-sheet model-viewer')!;
+    expect(mv.getAttribute('src')).toContain('carbonara.glb');
+    expect(mv.getAttribute('poster')).toContain('carbonara.webp');
+    expect(mv.hasAttribute('ar')).toBe(true);
+
+    mv.dispatchEvent(new Event('error'));
+    fixture.detectChanges();
+    expect(el.querySelector<HTMLImageElement>('.pm-sheet .mv-fallback img')!.src).toContain('carbonara.webp');
+  });
+
+  it('produto sem modelo não oferece 3D', () => {
+    const { el, fixture } = setup();
+    el.querySelectorAll<HTMLButtonElement>('.pm-item')[1].click();
+    fixture.detectChanges();
+    expect([...el.querySelectorAll('.pm-sheet button')].some(b => text(b) === 'Ver em 3D')).toBe(false);
   });
 });

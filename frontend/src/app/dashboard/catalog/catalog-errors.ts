@@ -5,7 +5,8 @@ export type CatalogAction =
   | 'save-category' | 'reorder-categories'
   | 'load-products' | 'save-product' | 'availability' | 'archive-product' | 'restore-product' | 'reorder-products'
   | 'upload-image' | 'remove-image'
-  | 'publish-restaurant' | 'unpublish-restaurant' | 'qrcode';
+  | 'publish-restaurant' | 'unpublish-restaurant' | 'qrcode'
+  | 'load-model' | 'upload-model' | 'publish-model' | 'delete-model';
 
 export const FORBIDDEN_MESSAGE = 'Você não tem permissão para realizar esta ação.';
 
@@ -27,12 +28,14 @@ export function catalogErrorMessage(error: unknown, action: CatalogAction): stri
   if (status === 403) return FORBIDDEN_MESSAGE;
   if (status === 404) {
     if (action === 'remove-image') return 'Este produto já não possui imagem.';
+    if (action === 'publish-model' || action === 'delete-model') return 'Este produto não possui mais um modelo 3D.';
     return 'Este conteúdo não está mais disponível.';
   }
-  if (status === 413) return 'A imagem do produto pode ter no máximo 10 MB.';
+  if (status === 413) return action === 'upload-model' ? 'O modelo 3D pode ter no máximo 10 MB.' : 'A imagem do produto pode ter no máximo 10 MB.';
   if (status >= 500) {
     if (action === 'upload-image') return 'Não foi possível enviar a imagem. Confira o formato e o tamanho do arquivo.';
     if (action === 'qrcode') return 'Não foi possível gerar o QR Code agora. Tente novamente em instantes.';
+    if (action === 'upload-model') return 'Não foi possível armazenar o modelo 3D agora. Tente novamente em instantes.';
     return 'O servidor encontrou um problema. Tente novamente em instantes.';
   }
 
@@ -45,6 +48,10 @@ export function catalogErrorMessage(error: unknown, action: CatalogAction): stri
       case 'save-product':
       case 'availability':
       case 'upload-image':
+      case 'upload-model':
+      case 'publish-model':
+      case 'delete-model':
+      case 'load-model':
         return 'Este produto está arquivado ou o cardápio foi arquivado. Restaure o produto para alterá-lo.';
       case 'publish-restaurant':
       case 'unpublish-restaurant':
@@ -63,6 +70,8 @@ export function catalogErrorMessage(error: unknown, action: CatalogAction): stri
         return 'A ordem não foi aceita porque a lista mudou. Atualizamos os dados; tente novamente.';
       case 'upload-image':
         return 'Não foi possível enviar a imagem. Confira o formato e o tamanho do arquivo.';
+      case 'upload-model':
+        return 'O arquivo não foi aceito. Envie um modelo GLB 2.0 válido, sem recursos externos, e dimensões maiores que zero.';
       default:
         return 'Confira as informações e tente novamente.';
     }

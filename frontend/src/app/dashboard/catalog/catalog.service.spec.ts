@@ -92,4 +92,24 @@ describe('CatalogService — contratos da PR #22', () => {
     service.removeProductImage('r1', 'm1', 'p1').subscribe();
     http.expectOne({ method: 'DELETE', url: `${BASE}/m1/products/p1/image` });
   });
+
+  it('modelo 3D: consultar, enviar com dimensões, publicar e remover (PR #27)', () => {
+    const url = `${BASE}/m1/products/p1/model-3d`;
+    service.getModel3d('r1', 'm1', 'p1').subscribe();
+    http.expectOne({ method: 'GET', url });
+
+    const file = new File(['glb'], 'prato.glb', { type: 'model/gltf-binary' });
+    service.uploadModel3d('r1', 'm1', 'p1', file, { widthMm: 280, heightMm: 70, depthMm: 280 }).subscribe();
+    const upload = http.expectOne({ method: 'POST', url });
+    const form = upload.request.body as FormData;
+    expect(form.get('file')).toBeInstanceOf(File);
+    expect([form.get('widthMm'), form.get('heightMm'), form.get('depthMm')]).toEqual(['280', '70', '280']);
+    expect(upload.request.reportProgress).toBe(true);
+
+    service.setModel3dPublication('r1', 'm1', 'p1', true).subscribe();
+    expect(http.expectOne({ method: 'PATCH', url: `${url}/publication` }).request.body).toEqual({ published: true });
+
+    service.deleteModel3d('r1', 'm1', 'p1').subscribe();
+    http.expectOne({ method: 'DELETE', url });
+  });
 });

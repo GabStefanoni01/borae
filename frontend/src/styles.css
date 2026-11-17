@@ -365,3 +365,7 @@ button {
 .mp-addons{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 .mp-addons li{display:flex;justify-content:space-between;gap:12px;padding:8px 10px;border-radius:9px;background:var(--d-hover,#FFF9F2)}
 .mp-delta{font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+.mp-3d-btn{position:absolute;right:12px;bottom:12px;display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;border:0;border-radius:999px;background:#fff;color:#191919;font:inherit;font-size:13.5px;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.18);cursor:pointer}
+.mp-3d-btn:focus-visible,.mp-3d-toggle:focus-visible{outline:2px solid #FF7200;outline-offset:2px}
+.mp-3d{display:grid;gap:8px}
+.mp-3d-toggle{justify-self:start;display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border:1px solid var(--d-border,#ECE7E1);border-radius:999px;background:transparent;color:inherit;font:inherit;font-size:13px;font-weight:600;cursor:pointer}

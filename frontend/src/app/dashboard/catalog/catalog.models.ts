@@ -142,3 +142,39 @@ export function optionalText(value: string | null | undefined): string | null {
   const trimmed = (value ?? '').trim();
   return trimmed ? trimmed : null;
 }
+
+/*
+ * Modelo 3D do produto — PR #27 (branch feat/3d-ar-experiences): Product3DModelResponse,
+ * UpdateProduct3DModelPublicationRequest e Product3DModelController.
+ */
+export type Model3dStatus = 'READY' | 'PUBLISHED';
+
+export interface Product3dModel {
+  id: string;
+  productId: string;
+  status: Model3dStatus;
+  /** URL pública do GLB no ImageKit (o identificador interno do arquivo não é exposto). */
+  modelUrl: string;
+  contentType: string;
+  fileSize: number;
+  widthMm: number;
+  heightMm: number;
+  depthMm: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Model3dDimensions { widthMm: number; heightMm: number; depthMm: number; }
+
+/** Limites do primeiro corte do backend (GLB 2.0 até 10 MB, provisório). */
+export const MODEL_3D_LIMITS = {
+  bytes: 10 * 1024 * 1024,
+  extension: 'glb',
+  /** Teto só para orientar a digitação (5 m); o backend exige apenas valores positivos. */
+  maxDimensionMm: 5000
+} as const;
+
+export const MODEL_3D_STATUS_LABEL: Record<Model3dStatus, string> = {
+  READY: 'Pronto, não publicado',
+  PUBLISHED: 'Publicado'
+};
