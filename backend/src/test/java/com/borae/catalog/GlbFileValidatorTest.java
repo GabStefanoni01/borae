@@ -23,19 +23,17 @@ class GlbFileValidatorTest {
 
     @Test
     void rejectsWrongMagicVersionAndDeclaredLength() {
-        byte[] bytes = validGlb();
-        bytes[0] = 0;
+        byte[] wrongMagic = validGlb();
+        wrongMagic[0] = 0;
         assertEquals(400, assertThrows(ResponseStatusException.class,
-                () -> validator.validate(bytes)).getStatusCode().value());
+                () -> validator.validate(wrongMagic)).getStatusCode().value());
 
-        bytes = validGlb();
-        bytes[4] = 1;
-        byte[] wrongVersion = bytes;
+        byte[] wrongVersion = validGlb();
+        wrongVersion[4] = 1;
         assertThrows(ResponseStatusException.class, () -> validator.validate(wrongVersion));
 
-        bytes = validGlb();
-        bytes[8] = 0;
-        byte[] wrongLength = bytes;
+        byte[] wrongLength = validGlb();
+        wrongLength[8] = 0;
         assertThrows(ResponseStatusException.class, () -> validator.validate(wrongLength));
     }
 
