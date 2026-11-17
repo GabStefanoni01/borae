@@ -1,6 +1,7 @@
 import { HttpRequest, HttpResponse } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, from, switchMap } from 'rxjs';
 import { DemoDatabase, DemoRestaurant, DemoUser } from './demo-data';
+import { createDemoPlateGlb } from './demo-glb';
 
 /**
  * MODO DEMONSTRAÇÃO — simulação do catálogo (PR #22) para `npm run start:demo`.
@@ -25,11 +26,20 @@ export interface DemoProduct {
   id: string; categoryId: string; name: string; description: string | null; priceInCents: number;
   lifecycleStatus: 'ACTIVE' | 'ARCHIVED'; availability: 'AVAILABLE' | 'UNAVAILABLE'; displayOrder: number;
   ingredients: string[]; addons: DemoAddon[]; imageUrl: string | null;
+  model3d?: DemoModel3d | null;
+}
+export interface DemoModel3d {
+  id: string; status: 'READY' | 'PUBLISHED'; url: string; fileSize: number;
+  widthMm: number; heightMm: number; depthMm: number; createdAt: string; updatedAt: string;
 }
 export interface DemoCatalog { menus: DemoMenu[]; categories: DemoCategory[]; products: DemoProduct[]; }
 
 /** Imagens enviadas no modo demonstração ficam só na memória da aba (object URLs). */
 const LIVE_IMAGES = new Set<string>();
+/** Marcador do modelo 3D de exemplo (gerado em memória na primeira consulta). */
+const SEED_MODEL = 'demo:prato';
+let seedModelUrl: string | null = null;
+let seedModelBytes = 0;
 
 export function createDemoCatalog(restaurantId: string): DemoCatalog {
   const menu = (id: string, name: string, description: string | null, status: DemoMenu['status'], displayOrder: number): DemoMenu =>
@@ -64,7 +74,8 @@ export function createDemoCatalog(restaurantId: string): DemoCatalog {
         ['Burrata', 'Pesto de manjericão', 'Tomate assado'], [], { availability: 'UNAVAILABLE' }),
       prod('demo-p-carbonara', 'demo-cat-massas', 'Spaghetti alla carbonara', 'Massa fresca, guanciale crocante, gema e pecorino romano.', 5890, 0,
         ['Spaghetti fresco', 'Guanciale', 'Gema de ovo', 'Pecorino romano', 'Pimenta-do-reino'],
-        [{ name: 'Guanciale extra', priceDeltaInCents: 900, active: true }, { name: 'Pecorino extra', priceDeltaInCents: 600, active: true }, { name: 'Trufa negra', priceDeltaInCents: 2500, active: false }]),
+        [{ name: 'Guanciale extra', priceDeltaInCents: 900, active: true }, { name: 'Pecorino extra', priceDeltaInCents: 600, active: true }, { name: 'Trufa negra', priceDeltaInCents: 2500, active: false }],
+        { model3d: { id: 'demo-model-carbonara', status: 'PUBLISHED', url: SEED_MODEL, fileSize: 0, widthMm: 280, heightMm: 68, depthMm: 280, createdAt: '2026-11-17T12:00:00Z', updatedAt: '2026-11-17T12:00:00Z' } }),
       prod('demo-p-ragu', 'demo-cat-massas', 'Pappardelle ao ragu', 'Ragu de costela cozido por oito horas.', 6490, 1,
         ['Pappardelle', 'Ragu de costela', 'Parmesão'], [{ name: 'Burrata', priceDeltaInCents: 1800, active: true }]),
       prod('demo-p-lasanha', 'demo-cat-massas', 'Lasanha da nonna', 'Receita antiga, fora do cardápio.', 5490, 2, [], [], { lifecycleStatus: 'ARCHIVED' }),
@@ -94,7 +105,10 @@ export function handlePublicCatalog(method: string, path: string, db: DemoDataba
         id: p.id, name: p.name, description: p.description, priceInCents: p.priceInCents, availability: p.availability,
         displayOrder: p.displayOrder, ingredients: [...p.ingredients],
         addons: p.addons.filter(a => a.active).map(a => ({ name: a.name, priceDeltaInCents: a.priceDeltaInCents })),
-        imageUrl: liveImage(p.imageUrl)
+        imageUrl: liveImage(p.imageUrl),
+        model3d: p.model3d?.status === 'PUBLISHED' && modelUrl(p.model3d)
+          ? { modelUrl: modelUrl(p.model3d)!, contentType: 'model/gltf-binary', widthMm: p.model3d.widthMm, heightMm: p.model3d.heightMm, depthMm: p.model3d.depthMm }
+          : null
       }))
     }))
   }));
@@ -124,11 +138,11 @@ export function handleCatalog(req: HttpRequest<unknown>, path: string, db: DemoD
     return h.ok(profileView(restaurant));
   }
 
-  const route = path.match(/^\/restaurants\/([^/]+)\/menus(?:\/([^/]+)(?:\/(publish|unpublish|archive|categories|products)(?:\/([^/]+)(?:\/([^/]+))?)?)?)?$/);
+  const route = path.match(/^\/restaurants\/([^/]+)\/menus(?:\/([^/]+)(?:\/(publish|unpublish|archive|categories|products)(?:\/([^/]+)(?:\/([^/]+)(?:\/(publication))?)?)?)?)?$/);
   if (!route) return null;
-  const [, restaurantId, menuId, section, itemId, itemAction] = route;
+  const [, restaurantId, menuId, section, itemId, itemAction, subAction] = route;
   const c = catalog(db);
-  const needsManager = method !== 'GET' && !(section === 'products' && itemAction === 'availability');
+  const needsManager = (method !== 'GET' && !(section === 'products' && itemAction === 'availability')) || itemAction === 'model-3d';
   const denied = requireRole(db, user, restaurantId, needsManager, h);
   if (denied) return denied;
 
@@ -272,6 +286,7 @@ export function handleCatalog(req: HttpRequest<unknown>, path: string, db: DemoD
       h.save(db);
       return h.ok(productView(menu.id, product));
     }
+    if (itemAction === 'model-3d') return handleModel3d(req, method, subAction, product, db, h);
     if (itemAction === 'image' && method === 'POST') {
       if (product.lifecycleStatus === 'ARCHIVED') return h.fail(409, 'Produto arquivado não pode receber imagens.');
       const file = req.body instanceof FormData ? req.body.get('file') : null;
@@ -294,6 +309,73 @@ export function handleCatalog(req: HttpRequest<unknown>, path: string, db: DemoD
     }
   }
   return null;
+}
+
+// ---------- modelo 3D (PR #27) ----------
+function handleModel3d(req: HttpRequest<unknown>, method: string, subAction: string | undefined, product: DemoProduct, db: DemoDatabase, h: DemoHelpers): Reply | null {
+  const view = (m: DemoModel3d) => ({
+    id: m.id, productId: product.id, status: m.status, modelUrl: modelUrl(m), contentType: 'model/gltf-binary',
+    fileSize: m.url === SEED_MODEL ? seedModelBytes : m.fileSize, widthMm: m.widthMm, heightMm: m.heightMm, depthMm: m.depthMm,
+    createdAt: m.createdAt, updatedAt: m.updatedAt
+  });
+  const current = product.model3d && modelUrl(product.model3d) ? product.model3d : null;
+  if (product.lifecycleStatus === 'ARCHIVED') return h.fail(409, 'Produto arquivado não pode ser alterado.');
+  if (subAction === 'publication') {
+    if (method !== 'PATCH') return null;
+    if (!current) return h.fail(404, 'Este produto ainda não possui modelo 3D.');
+    const published = (req.body as { published?: unknown } | null)?.published;
+    if (typeof published !== 'boolean') return h.fail(400, 'Dados inválidos.');
+    current.status = published ? 'PUBLISHED' : 'READY';
+    current.updatedAt = new Date().toISOString();
+    h.save(db);
+    return h.ok(view(current));
+  }
+  if (method === 'GET') return current ? h.ok(view(current)) : h.fail(404, 'Este produto ainda não possui modelo 3D.');
+  if (method === 'DELETE') {
+    if (!current) return h.fail(404, 'Este produto ainda não possui modelo 3D.');
+    if (current.url !== SEED_MODEL) { URL.revokeObjectURL(current.url); LIVE_IMAGES.delete(current.url); }
+    product.model3d = null;
+    h.save(db);
+    return h.ok(null, 204);
+  }
+  if (method === 'POST') {
+    const form = req.body instanceof FormData ? req.body : null;
+    const file = form?.get('file');
+    const dims = ['widthMm', 'heightMm', 'depthMm'].map(k => Number(form?.get(k)));
+    if (!(file instanceof File) || file.size === 0) return h.fail(400, 'Selecione um arquivo GLB.');
+    if (file.size > 10 * 1024 * 1024) return h.fail(413, 'O modelo 3D pode ter no máximo 10 MB.');
+    if (!file.name.toLowerCase().endsWith('.glb')) return h.fail(400, 'Envie um arquivo com extensão .glb.');
+    if (dims.some(d => !Number.isInteger(d) || d <= 0)) return h.fail(400, 'Informe largura, altura e profundidade em milímetros.');
+    return from(file.slice(0, 12).arrayBuffer()).pipe(switchMap(header => {
+      const v = new DataView(header);
+      if (header.byteLength < 12 || v.getUint32(0, true) !== 0x46546c67 || v.getUint32(4, true) !== 2) return h.fail(400, 'Arquivo GLB inválido.');
+      const now = new Date().toISOString();
+      if (current && current.url !== SEED_MODEL) { URL.revokeObjectURL(current.url); LIVE_IMAGES.delete(current.url); }
+      // A substituição mantém o estado de publicação, como a entidade do backend.
+      const url = URL.createObjectURL(file);
+      LIVE_IMAGES.add(url);
+      product.model3d = {
+        id: current?.id ?? h.uid('model'), status: current?.status ?? 'READY', url, fileSize: file.size,
+        widthMm: dims[0], heightMm: dims[1], depthMm: dims[2], createdAt: current?.createdAt ?? now, updatedAt: now
+      };
+      h.save(db);
+      return h.ok(view(product.model3d), 201);
+    }));
+  }
+  return null;
+}
+
+/** URL utilizável do modelo (object URL vivo ou o prato de exemplo gerado em memória). */
+function modelUrl(m: DemoModel3d): string | null {
+  if (m.url === SEED_MODEL) {
+    if (!seedModelUrl) {
+      const bytes = createDemoPlateGlb();
+      seedModelBytes = bytes.byteLength;
+      seedModelUrl = URL.createObjectURL(new Blob([bytes], { type: 'model/gltf-binary' }));
+    }
+    return seedModelUrl;
+  }
+  return LIVE_IMAGES.has(m.url) ? m.url : null;
 }
 
 // ---------- utilidades ----------
