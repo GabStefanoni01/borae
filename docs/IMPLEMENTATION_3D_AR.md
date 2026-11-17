@@ -1,6 +1,6 @@
 # Plano de implementação — Experiências 3D e realidade aumentada
 
-**Status:** planejamento técnico para a próxima etapa do produto. Esta PR não implementa o módulo; define o trabalho de backend e frontend antes da implementação funcional.
+**Status:** backend MVP em implementação nesta PR. Upload, persistência, publicação, API pública e validação estrutural GLB já foram adicionados à branch; homologação ImageKit, testes de integração e frontend continuam pendentes.
 
 ## 1. Auditoria da base e justificativa
 
@@ -158,3 +158,12 @@ Primeiro corte implementado nesta branch:
 **Limite provisório:** o primeiro corte limita o GLB a 10 MB, acompanhando o limite multipart já configurado no backend. Esse valor ainda precisa ser confrontado com modelos reais e com os limites da conta ImageKit antes da decisão final.
 
 **Pendente antes da homologação:** executar testes reais de upload/entrega de GLB no ImageKit, ampliar testes de integração/transação e confirmar os limites e o comportamento do CDN para o tipo de arquivo.
+
+
+## Atualização da implementação — segurança e contratos
+
+- O upload ImageKit usa `MultipartField<InputStream>` com `ByteArrayInputStream`, compatível com a assinatura multipart do SDK adotado.
+- O validador GLB rejeita referências externas em buffers e URLs de imagens, reduzindo risco de carregamento de recursos remotos por consumidores do modelo.
+- Foram adicionados testes unitários para referências externas e data URI embutido.
+- `docs/MODULE_3D_AR.md` e `docs/API.md` foram alinhados ao escopo atual e à decisão de manter ImageKit.
+- Ainda não há confirmação de CI verde nem homologação de upload/entrega real no ImageKit. Não liberar produção nem iniciar frontend antes dessas validações.
