@@ -123,7 +123,7 @@ A experiência deve ser progressiva: o cardápio continua funcional mesmo sem mo
 - [ ] AR aparece somente em dispositivos/navegadores compatíveis.
 - [ ] Imagem convencional permanece como fallback em todos os cenários de falha/incompatibilidade.
 - [ ] Assets são carregados sob demanda e não prejudicam o carregamento inicial do cardápio.
-- [ ] Testes backend/frontend, PostgreSQL e storage de homologação passam.
+- [ ] Testes de frontend e storage de homologação passam. Os testes backend e PostgreSQL com Testcontainers passaram no CI da branch; a validação Docker CI do commit mais recente ainda está em andamento.
 - [ ] Swagger, documentação e parâmetros operacionais são atualizados.
 
 ## 6. Fora do escopo
