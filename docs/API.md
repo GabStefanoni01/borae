@@ -44,11 +44,11 @@ Consulte a documentação OpenAPI/Swagger publicada para obter os contratos comp
 | POST | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/restore` | OWNER ou MANAGER | Reativa produto arquivado. |
 | PUT | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/order` | OWNER ou MANAGER | Reordena os produtos de uma categoria; o corpo informa `categoryId` e a lista completa de `productIds`. |
 | POST | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/image` | OWNER ou MANAGER | Envia ou substitui imagem do produto (JPEG, PNG ou WebP, até 10 MB), processada no backend e armazenada no ImageKit. |
-| DELETE | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/image` | OWNER ou MANAGER | Remove a imagem associada ao produto e agenda a remoção do arquivo remoto após commit.
-| GET | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/model-3d` | OWNER ou MANAGER | Consulta metadados do modelo 3D associado ao produto.
-| POST | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/model-3d` | OWNER ou MANAGER | Envia/substitui GLB 2.0 via multipart (`file`, `widthMm`, `heightMm`, `depthMm`); limite provisório de 10 MB.
-| PATCH | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/model-3d/publication` | OWNER ou MANAGER | Publica/despublica o modelo com body `published: true/false`.
-| DELETE | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/model-3d` | OWNER ou MANAGER | Remove a associação e agenda a exclusão do asset remoto após commit.
+| DELETE | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/image` | OWNER ou MANAGER | Remove a imagem associada ao produto e agenda a remoção do arquivo remoto após commit. |
+| GET | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/model-3d` | OWNER ou MANAGER | Consulta metadados do modelo 3D associado ao produto. |
+| POST | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/model-3d` | OWNER ou MANAGER | Envia/substitui GLB 2.0 via multipart (`file`, `widthMm`, `heightMm`, `depthMm`); limite provisório de 10 MB. |
+| PATCH | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/model-3d/publication` | OWNER ou MANAGER | Publica/despublica o modelo com body `published: true/false`. |
+| DELETE | `/api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/model-3d` | OWNER ou MANAGER | Remove a associação e agenda a exclusão do asset remoto após commit. |
 
 ## 3. Consulta pública do cardápio
 
