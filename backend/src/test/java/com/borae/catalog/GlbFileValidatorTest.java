@@ -18,40 +18,57 @@ class GlbFileValidatorTest {
 
     @Test
     void acceptsStructurallyValidGlb2File() {
-        assertDoesNotThrow(() -> validator.validate(validGlb()));
+        assertDoesNotThrow(() -> validator.validate(validGlb("{\"asset\":{\"version\":\"2.0\"}}")));
     }
 
     @Test
     void rejectsWrongMagicVersionAndDeclaredLength() {
-        byte[] wrongMagic = validGlb();
+        byte[] wrongMagic = validGlb("{\"asset\":{\"version\":\"2.0\"}}");
         wrongMagic[0] = 0;
         assertEquals(400, assertThrows(ResponseStatusException.class,
                 () -> validator.validate(wrongMagic)).getStatusCode().value());
 
-        byte[] wrongVersion = validGlb();
+        byte[] wrongVersion = validGlb("{\"asset\":{\"version\":\"2.0\"}}");
         wrongVersion[4] = 1;
         assertThrows(ResponseStatusException.class, () -> validator.validate(wrongVersion));
 
-        byte[] wrongLength = validGlb();
+        byte[] wrongLength = validGlb("{\"asset\":{\"version\":\"2.0\"}}");
         wrongLength[8] = 0;
         assertThrows(ResponseStatusException.class, () -> validator.validate(wrongLength));
     }
 
     @Test
     void rejectsInvalidJsonChunkAndTruncatedChunk() {
-        byte[] bytes = validGlb();
+        byte[] bytes = validGlb("{\"asset\":{\"version\":\"2.0\"}}");
         bytes[20] = (byte) '{';
         bytes[21] = (byte) 'x';
         bytes[22] = (byte) '}';
-        byte[] invalidJson = bytes;
-        assertThrows(ResponseStatusException.class, () -> validator.validate(invalidJson));
+        assertThrows(ResponseStatusException.class, () -> validator.validate(bytes));
 
         byte[] truncated = new byte[15];
         assertThrows(ResponseStatusException.class, () -> validator.validate(truncated));
     }
 
-    private byte[] validGlb() {
-        byte[] json = "{\"asset\":{\"version\":\"2.0\"}}".getBytes(StandardCharsets.UTF_8);
+    @Test
+    void rejectsExternalBufferAndImageReferences() {
+        byte[] externalBuffer = validGlb(
+                "{\"asset\":{\"version\":\"2.0\"},\"buffers\":[{\"uri\":\"https://example.com/model.bin\",\"byteLength\":4}]}");
+        assertThrows(ResponseStatusException.class, () -> validator.validate(externalBuffer));
+
+        byte[] externalImage = validGlb(
+                "{\"asset\":{\"version\":\"2.0\"},\"images\":[{\"uri\":\"//example.com/image.png\"}]}");
+        assertThrows(ResponseStatusException.class, () -> validator.validate(externalImage));
+    }
+
+    @Test
+    void acceptsEmbeddedDataUriImageReference() {
+        byte[] embeddedImage = validGlb(
+                "{\"asset\":{\"version\":\"2.0\"},\"images\":[{\"uri\":\"data:image/png;base64,AA==\"}]}");
+        assertDoesNotThrow(() -> validator.validate(embeddedImage));
+    }
+
+    private byte[] validGlb(String jsonText) {
+        byte[] json = jsonText.getBytes(StandardCharsets.UTF_8);
         int paddedLength = (json.length + 3) & ~3;
         ByteBuffer buffer = ByteBuffer.allocate(12 + 8 + paddedLength).order(ByteOrder.LITTLE_ENDIAN);
         buffer.putInt(0x46546C67);
