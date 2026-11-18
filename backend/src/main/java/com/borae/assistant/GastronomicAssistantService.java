@@ -13,6 +13,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -24,7 +25,7 @@ import java.util.stream.Collectors;
 public class GastronomicAssistantService {
 
     private static final int MAX_CATALOG_PRODUCTS = 80;
-    private static final int MAX_CATALOG_CONTEXT_CHARS = 18_000;
+    private static final int MAX_CATALOG_CONTEXT_CHARS = 6_000;
 
     private final PublicRestaurantMenuService publicMenuService;
     private final AnonymousAssistantSessionService sessionService;
@@ -119,7 +120,7 @@ public class GastronomicAssistantService {
         }
 
         Set<UUID> categoryIds = filters == null || filters.categoryIds() == null
-                ? Set.of() : Set.copyOf(filters.categoryIds());
+                ? Set.of() : new HashSet<>(filters.categoryIds());
         List<String> excluded = filters == null || filters.excludedIngredients() == null
                 ? List.of() : filters.excludedIngredients().stream()
                 .map(value -> value.trim().toLowerCase(java.util.Locale.ROOT))
