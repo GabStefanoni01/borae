@@ -21,8 +21,8 @@ public class AssistantMetricsService {
 
     public AssistantMetricsService(
             JdbcTemplate jdbcTemplate,
-            @Value("${app.assistant.gemini.input-price-per-million-usd:0.25}") double inputPricePerMillionUsd,
-            @Value("${app.assistant.gemini.output-price-per-million-usd:1.50}") double outputPricePerMillionUsd
+            @Value("${app.assistant.gemini.input-price-per-million-usd:0.30}") double inputPricePerMillionUsd,
+            @Value("${app.assistant.gemini.output-price-per-million-usd:2.50}") double outputPricePerMillionUsd
     ) {
         this.jdbcTemplate = jdbcTemplate;
         this.inputPricePerMillionUsd = Math.max(0, inputPricePerMillionUsd);
