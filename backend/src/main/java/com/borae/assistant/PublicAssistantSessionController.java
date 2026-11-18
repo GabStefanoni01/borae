@@ -26,7 +26,7 @@ public class PublicAssistantSessionController {
     @PostMapping("/sessions")
     @Operation(
             summary = "Iniciar sessão anônima do assistente",
-            description = "Emite cookie HttpOnly assinado com validade de 24 horas. Uma sessão válida existente é reutilizada."
+            description = "Emite cookie HttpOnly assinado com validade de 30 dias. Uma sessão válida existente é reutilizada."
     )
     public ResponseEntity<Void> createSession(
             @CookieValue(name = AnonymousAssistantSessionService.COOKIE_NAME, required = false) String existingCookie
