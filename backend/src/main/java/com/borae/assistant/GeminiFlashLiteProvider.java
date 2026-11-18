@@ -48,7 +48,7 @@ public class GeminiFlashLiteProvider {
             RestClient.Builder builder,
             ObjectMapper objectMapper,
             @Value("${app.assistant.gemini.api-key:}") String apiKey,
-            @Value("${app.assistant.gemini.model:gemini-3.1-flash-lite}") String model,
+            @Value("${app.assistant.gemini.model:gemini-3.5-flash-lite}") String model,
             @Value("${app.assistant.gemini.enabled:false}") boolean enabled,
             @Value("${app.assistant.gemini.data-processing-approved:false}") boolean dataProcessingApproved,
             @Value("${app.assistant.gemini.timeout-seconds:12}") long timeoutSeconds,
