@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import logging
 import os
-import re
 import shlex
 import struct
 import subprocess
@@ -133,7 +132,6 @@ def _validate_glb(path: str) -> int:
     return size
 
 
-@spaces.GPU(duration=GPU_FUNCTION_TIMEOUT_SECONDS)
 def _generate_glb(prepared_image: Image.Image) -> str:
     with torch.inference_mode():
         scene_codes = model(prepared_image, device=DEVICE)
@@ -152,6 +150,7 @@ def _generate_glb(prepared_image: Image.Image) -> str:
     return output_path
 
 
+@spaces.GPU(duration=GPU_FUNCTION_TIMEOUT_SECONDS)
 def generate_model(
     image: Image.Image | None,
     generation_id: str,
