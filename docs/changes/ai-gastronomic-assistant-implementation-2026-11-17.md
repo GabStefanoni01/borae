@@ -59,7 +59,7 @@ Manter o monólito modular existente. Criar o domínio `com.borae.assistant`; n�
 - `AiProvider`: interface interna independente do SDK/provedor.
 - `GeminiFlashLiteProvider`: adaptador REST stateless para a API Interactions do Gemini Flash-Lite, `store=false`, `response_format` JSON Schema efetivamente enviado, timeout, limite de tokens de saída e captura de uso de tokens; ativação exige `GEMINI_ENABLED=true`, chave e aprovação explícita de tratamento de dados.
 - `AssistantIpRateLimitService`: limite distribuído de 30 solicitações/minuto por IP, com HMAC no banco, sem persistir endereço bruto e `Retry-After` em 429.
-- `AssistantMetricsService`: agregados diários por restaurante para interações, fallback, sem resultado, latência, tokens, recomendações por produto e cliques; retenção de 180 dias.
+- `AssistantMetricsService`: agregados diários por restaurante para interações, fallback, sem resultado, erros do provedor, latência, tokens, custo estimado, recomendações por produto e cliques; retenção de 180 dias.
 - `AssistantRecommendationClickService`: valida sessão e disponibilidade atual do produto antes de registrar clique agregado.
 - `AssistantQuotaService`: consumo diário atômico por restaurante e sessão anônima, com janela `America/Sao_Paulo`.
 - `AssistantMetricsService`: grava somente métricas/eventos agregados permitidos por D-11.
