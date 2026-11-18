@@ -188,6 +188,7 @@ class AssistantQuotaPostgresIntegrationTest {
         metricsService.recordInteractionOutcome(
                 RESTAURANT_ID, 145, true, false, java.util.List.of(PRODUCT_ID), 120, 45
         );
+        metricsService.recordProviderError(RESTAURANT_ID);
         metricsService.recordProductClick(RESTAURANT_ID, PRODUCT_ID);
 
         assertEquals(1, metric("INTERACTIONS"));
@@ -195,6 +196,8 @@ class AssistantQuotaPostgresIntegrationTest {
         assertEquals(145, metric("LATENCY_TOTAL_MS"));
         assertEquals(120, metric("INPUT_TOKENS"));
         assertEquals(45, metric("OUTPUT_TOKENS"));
+        assertEquals(1, metric("PROVIDER_ERRORS"));
+        assertEquals(98, metric("ESTIMATED_COST_MICRO_USD"));
 
         var productCounts = jdbc.query("""
                 SELECT recommendation_count, click_count
