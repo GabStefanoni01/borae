@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.crypto.Mac;
@@ -61,10 +62,6 @@ public class AssistantIpRateLimitService {
         Instant now = Instant.now();
         Instant windowStart = now.truncatedTo(ChronoUnit.MINUTES);
 
-        // Keep only a short operational window; old pseudonymous identifiers are purged on requests.
-        jdbcTemplate.update("DELETE FROM assistant_ip_rate_limit WHERE window_start < ?",
-                Timestamp.from(now.minus(Duration.ofHours(2))));
-
         var consumed = jdbcTemplate.query(
                 CONSUME_SQL,
                 (resultSet, rowNumber) -> resultSet.getInt(1),
@@ -75,6 +72,13 @@ public class AssistantIpRateLimitService {
                     Math.floorMod(now.toEpochMilli(), WINDOW.toMillis())).toSeconds());
             throw new AssistantIpRateLimitExceededException(retryAfter);
         }
+    }
+
+    @Scheduled(cron = "0 */15 * * * *")
+    @Transactional
+    public void purgeExpiredBuckets() {
+        jdbcTemplate.update("DELETE FROM assistant_ip_rate_limit WHERE window_start < ?",
+                Timestamp.from(Instant.now().minus(Duration.ofHours(2))));
     }
 
     private String resolveClientAddress(HttpServletRequest request) {
