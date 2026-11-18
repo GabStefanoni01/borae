@@ -364,3 +364,162 @@ As decisões abaixo não devem ser inventadas pelo desenvolvimento. Devem ser re
 8. **AR e calibração física:** confirmar se o MVP exige posicionamento em escala aproximada ou se a primeira versão oferece AR sem promessa de dimensão real. Não solicitar dimensões técnicas ao restaurante sem necessidade comprovada.
 
 **Recomendação inicial:** começar com uma prova de conceito de fotos guiadas e comparar com vídeo apenas se o fornecedor escolhido demonstrar vantagem. Manter aprovação explícita, cotas por restaurante e exclusão programada dos arquivos brutos após o período operacional definido.
+
+
+## 13. Estratégia de geração própria com custo próximo de zero
+
+### 13.1 Diretriz de produto e custo
+
+A prioridade do Boraê é não depender de uma API comercial paga por geração. A solução deve ser desenvolvida com modelos open source/self-hosted sempre que a licença permitir uso comercial, mantendo o custo operacional inicial o mais próximo possível de zero.
+
+Isso não significa prometer geração ilimitada e gratuita em produção. Inferência 3D exige GPU, memória, armazenamento e disponibilidade. Cotas gratuitas de GPU são compartilhadas, limitadas, sujeitas a filas e podem mudar. Portanto:
+
+- Não assumir API comercial paga como dependência obrigatória do produto.
+- Não habilitar geração ilimitada.
+- Não apresentar cotas gratuitas de terceiros como SLA de produção.
+- Medir custo, duração, taxa de sucesso, consumo de GPU e qualidade antes de liberar para restaurantes.
+- Manter o serviço de geração desacoplado para trocar de modelo ou infraestrutura sem alterar o domínio do Boraê.
+- Se a infraestrutura gratuita não suportar a demanda, limitar/colocar gerações em fila e só propor custo pago mediante decisão explícita de produto.
+
+### 13.2 Arquitetura proposta: Render como API/orquestrador e GPU externa
+
+O Render pode hospedar o serviço leve de coordenação em Python/FastAPI, mas não deve executar os modelos de geração 3D no plano gratuito.
+
+Responsabilidades propostas:
+
+**Render — FastAPI/orquestração**
+- Receber chamadas autenticadas do backend Spring Boot ou atuar como worker/orquestrador interno.
+- Validar contrato e metadados da tarefa; não duplicar autorização de negócio do backend Java.
+- Criar/consultar tarefas, persistir ou delegar o estado ao mecanismo durável definido pelo Boraê.
+- Encaminhar a inferência ao worker de GPU.
+- Normalizar estados, erros e metadados do resultado.
+- Não armazenar arquivos temporários no filesystem efêmero como se fossem persistentes.
+- Não carregar modelos de IA pesados no serviço web gratuito.
+
+**Hugging Face Spaces/ZeroGPU — execução experimental**
+- Hospedar um Space com o modelo open source selecionado e executar inferência em GPU compartilhada, quando houver cota disponível.
+- Expor uma interface de inferência autenticada ao orquestrador, sem colocar tokens no Angular.
+- Tratar fila, limite diário, indisponibilidade, timeout e resposta 429/5xx.
+- O ZeroGPU é adequado para prova de conceito e experimentação; não é garantia de disponibilidade, latência ou capacidade contínua para produção.
+- Confirmar as regras atuais de uso, cota, elegibilidade, licença do modelo e condições comerciais antes de qualquer liberação pública.
+
+**ImageKit — armazenamento de mídia**
+- Continuar como destino do GLB final após validar upload, MIME, tamanho, entrega e compatibilidade com o visualizador.
+- Capturas originais devem ficar em armazenamento temporário apropriado, com política de retenção e exclusão.
+- Não presumir que o armazenamento temporário ou persistência de jobs esteja coberto pelo filesystem do Render Free.
+
+**Google model-viewer — apresentação 3D/AR**
+- Usar a biblioteca open source model-viewer no frontend para carregar o GLB aprovado, oferecer visualização 3D e solicitar AR quando o navegador/dispositivo suportar.
+- model-viewer não gera modelos 3D: ele somente apresenta assets 3D já existentes.
+- Não requer API paga de geração para a camada de visualização; continuam existindo custos de entrega/armazenamento do GLB e requisitos de compatibilidade de dispositivo.
+
+Fluxo lógico:
+
+1. Angular captura as fotos guiadas e envia ao backend Spring Boot.
+2. Spring Boot autentica, autoriza, valida produto/restaurante, cria geração durável e registra a tarefa.
+3. Spring Boot/worker chama o serviço FastAPI hospedado no Render.
+4. FastAPI encaminha a inferência para o Space/worker GPU do Hugging Face.
+5. O worker executa o modelo e retorna um GLB ou artefato que possa ser convertido de forma reproduzível para GLB.
+6. O backend valida o arquivo com GlbFileValidator e limites adicionais; armazena o GLB final no ImageKit.
+7. O restaurante confere a prévia e aprova explicitamente.
+8. O cardápio público expõe apenas o modelo publicado; model-viewer oferece 3D e AR compatível.
+
+A comunicação entre componentes deve ser autenticada, limitada por timeout e protegida contra repetição. O identificador interno da geração pertence ao Boraê; identificadores externos não devem ser expostos na API pública.
+
+### 13.3 Limitações do Render Free
+
+O Render Free é adequado para um serviço HTTP leve de coordenação, não para inferência 3D pesada. O plano gratuito tem recursos computacionais limitados, pode suspender serviços inativos e não oferece GPU dedicada. Portanto:
+
+- Não executar Stable Fast 3D, TripoSR ou TRELLIS.2 diretamente no Render Free.
+- Não assumir que 512 MB de RAM e CPU compartilhada sejam suficientes para carregar modelos 3D de IA.
+- Usar Render apenas para API/orquestração, se os limites atuais do plano forem compatíveis com o volume de testes.
+- Verificar novamente limites, suspensão, disco e condições do plano no momento da implantação, pois podem mudar.
+- Jobs duráveis não podem depender apenas do processo web gratuito ou de memória local.
+
+### 13.4 Modelos open source candidatos
+
+A prova de conceito deve comparar ao menos:
+
+**TripoSR**
+- Candidato inicial por ser relativamente leve para inferência em GPU comparado a modelos maiores e possuir licença MIT no repositório.
+- Entrada principal: uma imagem.
+- Avaliar qualidade de alimentos, reconstrução de partes ocultas, textura, geometria, GLB exportado e necessidade de pós-processamento.
+- Não presumir que uma imagem seja suficiente para fidelidade de prato; testar captura multiângulo e definir como as vistas adicionais serão utilizadas pelo pipeline.
+
+**Stable Fast 3D**
+- Candidato para reconstrução a partir de imagem única, com pipeline de geometria e textura.
+- Conferir cuidadosamente a licença e os termos de uso comercial do código e dos pesos antes de incluir em produto comercial.
+- Validar requisitos de GPU e qualidade em alimentos reais.
+
+**TRELLIS.2**
+- Candidato experimental de maior exigência computacional, com suporte a representação 3D e materiais.
+- Requer GPU com memória elevada; não é candidato para Render Free ou execução gratuita garantida.
+- Avaliar somente se houver acesso temporário a GPU compatível e se os resultados justificarem a complexidade.
+
+**COLMAP/fotogrametria**
+- Alternativa complementar baseada em múltiplas fotografias sobrepostas, não em geração generativa de uma única imagem.
+- Pode reconstruir geometria a partir de imagens com sobreposição e textura suficiente, mas pratos podem ser difíceis por superfícies brilhantes, ingredientes deformáveis, oclusão, reflexos e falta de textura.
+- Avaliar em paralelo com IA, sem assumir que fotogrametria produzirá automaticamente um modelo pronto para AR.
+
+As licenças devem ser verificadas nos repositórios e nos arquivos de pesos específicos, na versão efetivamente utilizada. Licença do código não garante automaticamente que os pesos tenham os mesmos termos.
+
+### 13.5 Prova de conceito obrigatória
+
+Antes de escolher o modelo e implementar integração definitiva, executar um benchmark reproduzível com pratos reais e autorização para uso das imagens.
+
+Conjunto mínimo sugerido:
+- Hambúrguer/sanduíche com camadas.
+- Massa ou prato com molho brilhante.
+- Prato feito com componentes distintos.
+- Um prato com elementos de pouca textura ou superfícies reflexivas.
+
+Comparar:
+- Uma foto versus sequência de fotos guiadas.
+- TripoSR versus Stable Fast 3D; incluir COLMAP como baseline multi-view se viável.
+- TRELLIS.2 somente se houver GPU adequada disponível sem custo relevante para o experimento.
+
+Registrar por execução:
+- Modelo/versão, licença e configuração.
+- Quantidade, resolução e ângulos das imagens.
+- GPU utilizada, VRAM, tempo de inferência e falhas.
+- Fidelidade visual avaliada por pessoas, especialmente ingredientes, formato e apresentação.
+- Geometria, textura, materiais e partes inventadas/ausentes.
+- Validade do GLB, tamanho, número de polígonos, tamanho de texturas e desempenho em celular.
+- Resultado no model-viewer e compatibilidade de AR em dispositivos reais.
+- Custo efetivo e limites da cota gratuita.
+
+Critérios de aprovação do PoC:
+- Resultado reconhecível e suficientemente fiel ao prato fotografado.
+- GLB validado e com desempenho aceitável em celular.
+- Processo repetível sem intervenção de modelagem manual.
+- Licença compatível com uso comercial do Boraê.
+- Custo e capacidade dentro de limites explicitamente aprovados.
+- Falhas e baixa qualidade devem ser comunicadas ao restaurante; não publicar automaticamente.
+
+### 13.6 Segurança, operação e limites
+
+- O frontend nunca chama diretamente Hugging Face nem recebe token privado.
+- Tokens e secrets ficam no backend/orquestrador.
+- Limitar tamanho, resolução e quantidade de imagens.
+- Aplicar cotas por restaurante, concorrência máxima e fila.
+- Usar timeout, retry limitado, backoff e idempotência.
+- Não repetir inferência automaticamente em erros permanentes ou sem controlar consumo de cota.
+- Não registrar imagens de pratos, URLs privadas ou tokens em logs.
+- Definir retenção e exclusão de imagens originais.
+- Persistir jobs e estados em armazenamento durável; não confiar em memória do Render ou no filesystem efêmero.
+- Implementar fallback: se a geração estiver indisponível, o produto continua com a foto convencional e o módulo 3D não fica em estado inconsistente.
+- Manter o modelo 3D publicado anteriormente até aprovação de nova geração.
+
+### 13.7 Decisão técnica proposta para a primeira prova de conceito
+
+- Serviço de orquestração: Python/FastAPI no Render Free, apenas para coordenação leve, sujeito à validação dos limites atuais.
+- GPU experimental: Hugging Face Spaces/ZeroGPU, sem promessa de SLA ou geração ilimitada.
+- Primeiro modelo: TripoSR, comparado com Stable Fast 3D após checagem de licença e requisitos.
+- Baseline alternativo: COLMAP para sequência de fotos, caso a captura multiângulo seja viável.
+- Formato de saída: GLB validado pelo backend.
+- Storage final: ImageKit, após homologação.
+- Visualização e AR: Google model-viewer no frontend.
+- Backend Java/Spring Boot permanece como autoridade de negócio, autorização, jobs e publicação.
+- Nenhum fornecedor comercial pago será dependência obrigatória do MVP.
+- Esta arquitetura é uma hipótese de PoC, não uma decisão de produção. A escolha final depende dos resultados de qualidade, custo, licença e disponibilidade.
+
