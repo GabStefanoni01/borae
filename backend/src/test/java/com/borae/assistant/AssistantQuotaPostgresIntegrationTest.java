@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -25,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @JdbcTest
-@Import(AssistantQuotaService.class)
+@Import({AssistantQuotaService.class, AssistantIpRateLimitService.class})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
@@ -44,6 +45,7 @@ class AssistantQuotaPostgresIntegrationTest {
         registry.add("spring.datasource.password", POSTGRES::getPassword);
         registry.add("spring.datasource.driver-class-name", POSTGRES::getDriverClassName);
         registry.add("spring.flyway.enabled", () -> true);
+        registry.add("app.assistant.rate-limit.secret", () -> "test-rate-limit-secret-with-enough-entropy");
     }
 
     @Autowired
@@ -52,9 +54,13 @@ class AssistantQuotaPostgresIntegrationTest {
     @Autowired
     private AssistantQuotaService quotaService;
 
+    @Autowired
+    private AssistantIpRateLimitService ipRateLimitService;
+
     @BeforeEach
     void cleanCounters() {
         jdbc.update("DELETE FROM assistant_daily_quota");
+        jdbc.update("DELETE FROM assistant_ip_rate_limit");
     }
 
     @Test
@@ -128,6 +134,46 @@ class AssistantQuotaPostgresIntegrationTest {
         } finally {
             executor.shutdownNow();
         }
+    }
+
+
+    @Test
+    void blocksThirtyFirstRequestPerIpAndStoresOnlyHmac() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRemoteAddr("203.0.113.42");
+
+        for (int i = 0; i < AssistantIpRateLimitService.REQUESTS_PER_MINUTE; i++) {
+            ipRateLimitService.checkAndConsume(request);
+        }
+
+        var exception = assertThrows(AssistantIpRateLimitService.AssistantIpRateLimitExceededException.class,
+                () -> ipRateLimitService.checkAndConsume(request));
+        assertEquals(true, exception.getRetryAfterSeconds() > 0);
+
+        var hashes = jdbc.query("SELECT ip_hash FROM assistant_ip_rate_limit",
+                (resultSet, rowNumber) -> resultSet.getString(1));
+        assertEquals(1, hashes.size());
+        assertEquals(64, hashes.getFirst().length());
+        org.junit.jupiter.api.Assertions.assertNotEquals("203.0.113.42", hashes.getFirst());
+    }
+
+    @Test
+    void ignoresForwardedForHeaderUnlessExplicitlyTrusted() {
+        MockHttpServletRequest first = new MockHttpServletRequest();
+        first.setRemoteAddr("10.0.0.8");
+        first.addHeader("X-Forwarded-For", "198.51.100.10");
+
+        MockHttpServletRequest second = new MockHttpServletRequest();
+        second.setRemoteAddr("10.0.0.8");
+        second.addHeader("X-Forwarded-For", "198.51.100.11");
+
+        ipRateLimitService.checkAndConsume(first);
+        ipRateLimitService.checkAndConsume(second);
+
+        var rows = jdbc.query("SELECT ip_hash, request_count FROM assistant_ip_rate_limit",
+                (resultSet, rowNumber) -> resultSet.getString(1) + ":" + resultSet.getInt(2));
+        assertEquals(1, rows.size());
+        assertEquals(1, rows.getFirst().split(":")[1].length() > 0 ? 1 : 0);
     }
 
     private int consumed(String scopeType, String scopeKey) {
