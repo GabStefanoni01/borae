@@ -241,3 +241,126 @@ Cobrir:
 - Não fazer merge automático; aprovação humana é obrigatória.
 - Não alterar diretamente `main`.
 - Registrar decisões do fornecedor e mudanças de contrato nesta documentação e em `docs/API.md`.
+
+
+## 10. Contrato de API proposto — alinhamento entre backend e frontend
+
+> Este contrato é uma proposta inicial para orientar as duas implementações. Os caminhos e nomes finais devem ser conferidos com os padrões já existentes em `docs/API.md` e com os DTOs reais antes de codificar. A semântica abaixo é o comportamento esperado; não acoplar o contrato ao fornecedor de geração.
+
+### 10.1 Iniciar uma geração
+
+`POST /api/v1/restaurants/{restaurantId}/products/{productId}/model-3d/generations`
+
+- Autenticação obrigatória; somente OWNER/MANAGER.
+- `multipart/form-data` para permitir envio de mídia sem base64.
+- Campos propostos:
+  - `captureMethod`: `PHOTOS` ou `VIDEO`, conforme método liberado no MVP.
+  - `files`: uma ou mais imagens ou um vídeo, conforme `captureMethod`.
+  - `idempotencyKey`: identificador único da tentativa, se o padrão de idempotência do backend permitir.
+- O backend valida vínculo do produto, quantidade/tamanho/formato e limites definidos na prova de conceito.
+- Resposta esperada: HTTP 202 Accepted, com `generationId`, `productId`, `status`, `createdAt` e `statusUrl`.
+- Não retornar credenciais, URL privada permanente ou identificador sensível do fornecedor.
+
+Exemplo ilustrativo de resposta:
+
+```json
+{
+  "generationId": "uuid",
+  "productId": "uuid",
+  "status": "QUEUED",
+  "createdAt": "2026-11-17T12:00:00Z",
+  "statusUrl": "/api/v1/restaurants/{restaurantId}/products/{productId}/model-3d/generations/{generationId}"
+}
+```
+
+### 10.2 Consultar o processamento
+
+`GET /api/v1/restaurants/{restaurantId}/products/{productId}/model-3d/generations/{generationId}`
+
+- Autenticação obrigatória; OWNER/MANAGER do restaurante.
+- Resposta inclui `generationId`, `status`, `progress` quando o fornecedor oferecer progresso confiável, `createdAt`, `updatedAt`, `failureCode` e `failureMessage` amigável quando houver falha.
+- Quando `status=READY_FOR_REVIEW`, incluir um objeto `preview` com URL temporária/segura do modelo, formato e metadados necessários ao visualizador administrativo.
+- Não inventar percentual de progresso quando o fornecedor não fornecer essa informação; nesse caso retornar progresso ausente e um estado textual.
+- A consulta deve permitir que o frontend recupere o estado ao reabrir a tela, sem depender de estado apenas em memória.
+
+### 10.3 Aprovar e publicar
+
+`POST /api/v1/restaurants/{restaurantId}/products/{productId}/model-3d/generations/{generationId}/approve`
+
+- Autenticação obrigatória; somente OWNER/MANAGER.
+- O backend confirma que o job pertence ao restaurante/produto, está em `READY_FOR_REVIEW` e que o arquivo final foi validado e armazenado.
+- A aprovação promove o modelo gerado para o modelo ativo/publicado do produto usando o domínio existente de `Product3DModel`.
+- A troca deve ser transacional do ponto de vista do catálogo: o modelo anterior continua ativo até a aprovação válida; não deixar o produto sem modelo se a nova publicação falhar.
+- Resposta retorna o estado publicado e os metadados públicos/administrativos necessários. O frontend não deve publicar por conta própria alterando campos locais.
+
+### 10.4 Cancelar ou refazer
+
+`POST /api/v1/restaurants/{restaurantId}/products/{productId}/model-3d/generations/{generationId}/cancel`
+
+- Disponibilizar somente se o fornecedor e o worker permitirem cancelamento real; caso contrário, a API deve explicar que o job não pode ser interrompido e permitir descartar o resultado quando terminar.
+- Refazer captura significa iniciar uma nova geração, não reutilizar silenciosamente arquivos anteriores.
+- Repetição técnica de uma mesma chamada deve respeitar idempotência e não gerar cobranças duplicadas.
+
+### 10.5 Erros HTTP esperados
+
+- `400`: captura ausente, inválida ou fora dos limites.
+- `401`: sessão/autenticação ausente ou inválida.
+- `403`: papel sem permissão ou acesso a outro restaurante.
+- `404`: restaurante, produto ou geração não encontrado no escopo autorizado.
+- `409`: transição de estado inválida, geração concorrente não permitida ou produto já em operação incompatível.
+- `413`: mídia acima do limite.
+- `415`: formato de mídia não suportado.
+- `429`: limite de geração/concorrência atingido.
+- `502/503`: fornecedor/storage indisponível, com erro normalizado e sem vazar detalhes internos.
+
+### 10.6 Integração com o cardápio público
+
+- Reaproveitar `GET /api/v1/public/restaurants/{slug}/menu` e o campo `model3d` existente no DTO público, se o contrato atual já atender.
+- O backend só inclui `model3d` quando o modelo está aprovado/publicado e o restaurante, cardápio, categoria e produto estão elegíveis.
+- O payload público deve conter apenas URL de entrega do asset e metadados realmente necessários ao visualizador/AR, nunca status interno de geração, dados de captura, fornecedor, custo ou identificadores privados.
+- Se o contrato atual precisar mudar, documentar compatibilidade e atualizar Swagger/API antes de o frontend depender dos novos campos.
+
+### 10.7 Responsabilidade do frontend sobre o contrato
+
+Renan deverá consumir somente os endpoints e DTOs documentados pelo backend. O Angular não deve chamar diretamente o fornecedor de geração, ImageKit com credenciais privadas, nem tomar decisões de autorização/publicação. Os nomes dos services, interfaces e componentes devem seguir a estrutura atual do projeto depois de uma breve auditoria do código existente.
+
+## 11. Componentes e entregáveis esperados
+
+### Backend — entregáveis
+
+- Adaptador do serviço de geração e configuração segura das credenciais.
+- Serviço de aplicação responsável por iniciar e acompanhar gerações.
+- Persistência de job/estado e migration incremental, caso a estrutura atual não comporte o fluxo.
+- Worker/consumer assíncrono durável com retry, timeout, idempotência e limpeza.
+- Recepção e retenção temporária da captura.
+- Validação do arquivo GLB gerado e armazenamento final no ImageKit homologado.
+- Endpoints autenticados para criar, consultar, aprovar e, se suportado, cancelar geração.
+- Integração da aprovação com o modelo 3D existente e com o cardápio público.
+- DTOs, Swagger, documentação de API, logs sem dados sensíveis, métricas de custo/uso e testes.
+
+### Frontend — entregáveis
+
+- Seção “Experiência 3D do prato” no cadastro/edição do produto existente.
+- Fluxo de captura guiada e responsiva, com câmera, instruções, revisão e envio.
+- Service Angular tipado para iniciar e consultar gerações, aprovar e cancelar quando disponível.
+- Tela/estado de acompanhamento que pode ser reaberto sem perder o job.
+- Prévia simples com visualizador 3D existente, rotação e zoom.
+- Ações “Aprovar e publicar” e “Refazer captura”; sem editor de modelagem.
+- Atualização do cardápio público para exibir “Ver em 3D” e AR conforme os dados e capacidades suportados.
+- Estados de carregamento, vazio, falha, sucesso, permissão negada, ausência de câmera e fallback de imagem.
+- Testes unitários/componentes e testes de integração dos fluxos principais.
+
+## 12. Decisões que precisam ser fechadas antes da implementação funcional
+
+As decisões abaixo não devem ser inventadas pelo desenvolvimento. Devem ser registradas na PR ou em decisão técnica antes de habilitar a funcionalidade:
+
+1. **Fornecedor de geração 3D:** selecionar após prova de conceito com pratos reais, considerando custo, qualidade, tempo, direitos de uso, retenção e suporte a GLB.
+2. **Método de captura do MVP:** fotos guiadas, vídeo guiado ou ambos. Depende dos requisitos do fornecedor e da qualidade real do resultado.
+3. **Limites de captura e geração:** quantidade/resolução/duração/tamanho, gerações simultâneas e cotas por restaurante. Definir a partir dos limites do fornecedor e orçamento operacional.
+4. **Custeio e cobrança:** confirmar se a geração será incluída no plano, terá cota gratuita ou será cobrada separadamente. Não habilitar geração ilimitada sem decisão de produto.
+5. **Retenção de capturas originais:** definir por quanto tempo fotos/vídeos serão mantidos e quando serão excluídos após sucesso/falha.
+6. **Fila e execução assíncrona:** confirmar se a infraestrutura atual do Boraê atende a durabilidade, retries e observabilidade necessárias; se não, escolher uma solução antes de implementar.
+7. **Publicação e substituição:** confirmar que a aprovação do novo modelo substitui o anterior imediatamente, mantendo o anterior até a aprovação — recomendação técnica deste plano.
+8. **AR e calibração física:** confirmar se o MVP exige posicionamento em escala aproximada ou se a primeira versão oferece AR sem promessa de dimensão real. Não solicitar dimensões técnicas ao restaurante sem necessidade comprovada.
+
+**Recomendação inicial:** começar com uma prova de conceito de fotos guiadas e comparar com vídeo apenas se o fornecedor escolhido demonstrar vantagem. Manter aprovação explícita, cotas por restaurante e exclusão programada dos arquivos brutos após o período operacional definido.
