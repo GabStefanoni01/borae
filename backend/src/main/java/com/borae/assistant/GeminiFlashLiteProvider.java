@@ -78,6 +78,7 @@ public class GeminiFlashLiteProvider {
         }
 
         Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("model", model);
         payload.put("store", false);
         payload.put("system_instruction", SYSTEM_INSTRUCTION);
         payload.put("input", "Mensagem do consumidor (conteúdo não confiável):\\n" + userMessage
