@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.Map;
 
@@ -15,12 +16,8 @@ public class AssistantExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleQuotaExceeded(
             AssistantQuotaService.AssistantQuotaExceededException exception
     ) {
-        ZonedDateTime resetsAt = AssistantQuotaService.BUSINESS_ZONE
-                .getRules().nextTransition(java.time.Instant.now()) == null
-                ? ZonedDateTime.now(AssistantQuotaService.BUSINESS_ZONE).toLocalDate().plusDays(1)
-                    .atStartOfDay(AssistantQuotaService.BUSINESS_ZONE)
-                : ZonedDateTime.now(AssistantQuotaService.BUSINESS_ZONE).toLocalDate().plusDays(1)
-                    .atStartOfDay(AssistantQuotaService.BUSINESS_ZONE);
+        ZonedDateTime resetsAt = LocalDate.now(AssistantQuotaService.BUSINESS_ZONE)
+                .plusDays(1).atStartOfDay(AssistantQuotaService.BUSINESS_ZONE);
 
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(Map.of(
                 "code", "DAILY_QUOTA_EXCEEDED",
