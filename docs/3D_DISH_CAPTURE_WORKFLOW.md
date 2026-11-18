@@ -523,3 +523,93 @@ Critérios de aprovação do PoC:
 - Nenhum fornecedor comercial pago será dependência obrigatória do MVP.
 - Esta arquitetura é uma hipótese de PoC, não uma decisão de produção. A escolha final depende dos resultados de qualidade, custo, licença e disponibilidade.
 
+
+
+## 13. Estratégia de geração própria com infraestrutura de baixo custo
+
+### Objetivo e princípio
+
+A prioridade do Boraê é evitar dependência obrigatória de APIs comerciais cobradas por geração. Antes de contratar Tripo, Meshy ou outro fornecedor, será validada uma solução própria baseada em modelos open source e serviços de hospedagem com cotas gratuitas.
+
+**Importante:** modelo open source não significa processamento ilimitado e gratuito. A execução de inferência 3D exige GPU, e hospedagens gratuitas possuem cotas, filas, suspensão, limites de memória e disponibilidade variável. Portanto, custo zero é uma meta para a prova de conceito, não uma garantia de operação comercial ilimitada.
+
+### Arquitetura proposta para a prova de conceito
+
+Separar a API de orquestração do processamento pesado:
+
+1. **Angular — captura:** o restaurante seleciona um produto existente e faz a captura guiada dentro do Boraê. A interface envia fotos para o backend; não chama diretamente serviços de GPU.
+2. **Spring Boot — domínio e segurança:** autentica o usuário, valida OWNER/MANAGER, restaurante e produto, aplica limites, cria/persiste a geração e acompanha seu estado. O backend continua sendo a autoridade de publicação.
+3. **Render Free — serviço Python/FastAPI de orquestração (opcional):** hospeda uma API leve para receber/encaminhar tarefas e consultar resultados. Não executar o modelo 3D pesado no Render Free.
+4. **Hugging Face Spaces com ZeroGPU — worker experimental:** hospeda um Space que executa o modelo open source em GPU compartilhada. A integração deve tratar fila, cotas por usuário, indisponibilidade, cold start, timeout e falhas. Não assumir SLA ou capacidade ilimitada.
+5. **Validação e armazenamento:** o resultado GLB retorna ao backend, passa pelo GlbFileValidator e pelas verificações de tamanho/segurança/desempenho; depois é armazenado no ImageKit, cuja entrega de GLB precisa ser homologada.
+6. **Publicação e AR:** após aprovação explícita, o modelo é associado ao Product3DModel existente. O cardápio público reutiliza o visualizador atual e o Google model-viewer para 3D/AR quando compatível.
+
+### Restrições do Render Free
+
+O Render Free pode ser usado para uma API leve de orquestração, mas não para inferência 3D pesada:
+
+- Não oferece GPU dedicada no plano gratuito.
+- Possui recursos limitados de CPU/RAM (512 MB RAM no serviço web gratuito, conforme documentação vigente consultada durante o planejamento).
+- Serviços podem entrar em suspensão após inatividade e apresentar cold start.
+- O sistema de arquivos local é efêmero; não usar disco local como armazenamento durável de capturas, jobs ou GLBs.
+- Não assumir disponibilidade contínua nem usar o plano gratuito como garantia de produção.
+
+As capturas e os resultados devem ficar em storage apropriado (ImageKit ou armazenamento temporário compatível), e os estados/jobs devem permanecer persistidos no backend/banco. Confirmar os limites e termos atuais do Render antes de configurar o serviço.
+
+### Modelos open source candidatos
+
+A prova de conceito deve comparar pelo menos:
+
+- **TripoSR:** candidato inicial por ser relativamente leve e ter licença MIT. A entrada principal é uma imagem; não presumir que múltiplas fotos sejam combinadas nativamente sem uma etapa adicional. Avaliar fidelidade de alimentos, geometria, textura, licença dos pesos e dependências.
+- **Stable Fast 3D (SF3D):** candidato para geração a partir de imagem e saída 3D texturizada. Verificar os termos da Stability AI Community License e a elegibilidade de uso comercial do Boraê antes de qualquer distribuição/uso em produção; não tratar como MIT ou licença comercial irrestrita.
+- **TRELLIS.2:** alternativa exploratória de maior exigência computacional; não é o primeiro alvo para hospedagem gratuita. Validar requisitos de GPU, memória e licença da versão/pesos usados.
+
+A seleção não será feita apenas por benchmarks ou demonstrações genéricas. Modelos devem ser avaliados com fotografias reais de pratos. A geração de uma única imagem pode inferir partes ocultas e não garante fidelidade fotográfica, escala física ou reconstrução exata do prato.
+
+### Prova de conceito obrigatória
+
+Executar o mesmo conjunto de pratos nos candidatos selecionados, registrando:
+
+- Um prato com geometria volumosa (ex.: hambúrguer).
+- Um prato com molho/superfície brilhante (ex.: massa).
+- Um prato com múltiplos componentes (ex.: prato feito).
+- Qualidade e fidelidade visual em comparação com as fotos originais.
+- Integridade do GLB, textura/material, tamanho final e desempenho em celular.
+- Tempo total, tempo em fila, falhas, limite de GPU e número de tentativas.
+- Custo monetário efetivo e cota gratuita consumida.
+- Licença do código, dos pesos e permissões de uso comercial.
+- Compatibilidade com o visualizador e AR existentes.
+
+Aprovar a prova de conceito somente se o resultado for visualmente aceitável para representar o prato real, produzir GLB validável e funcionar no fluxo móvel. Se nenhum candidato passar, registrar a limitação em vez de publicar modelos enganosos.
+
+### Separação de responsabilidades e desacoplamento
+
+- Criar uma interface de provedor/worker, por exemplo `Dish3DGenerationProvider`, e um adaptador para o Space experimental, sem acoplar o domínio a Hugging Face ou Render.
+- O Spring Boot persiste o job e controla autorização, cotas, tentativas, estado e aprovação.
+- O serviço FastAPI/Space é stateless sempre que possível; não é fonte de verdade do estado do produto.
+- Usar identificadores de tarefa e callbacks/polling autenticados. Não expor tokens do Hugging Face, ImageKit ou Render no Angular.
+- Não manter arquivos temporários somente no disco efêmero do Render/Space. Usar URLs temporárias/assinadas ou upload controlado para storage.
+- Tratar o ZeroGPU como ambiente experimental sujeito a fila/cota; não prometer geração ilimitada nem disponibilidade para restaurantes em produção.
+- Prever substituição do worker por GPU própria ou provedor de inferência pago somente mediante decisão explícita e análise de custo.
+
+### Google model-viewer e escopo AR
+
+O Google model-viewer é a camada de visualização, não um gerador de modelos. Ele pode exibir um GLB já pronto e iniciar experiências AR compatíveis com o dispositivo/navegador. Não converte fotografias em GLB. Reaproveitar o visualizador atual e confirmar requisitos de GLB, Android Scene Viewer e iOS Quick Look no teste em dispositivos reais.
+
+### Critérios de aceite adicionais
+
+- [ ] API leve de orquestração pode ser executada no Render Free sem executar inferência pesada nele.
+- [ ] Worker experimental em Hugging Face Spaces/ZeroGPU consegue receber uma tarefa autorizada e devolver GLB, respeitando limites e falhas.
+- [ ] Nenhuma captura, geração ou GLB depende de armazenamento local efêmero para persistência.
+- [ ] Backend Spring Boot permanece fonte de verdade para jobs, cotas, autorização e publicação.
+- [ ] Pelo menos três pratos reais são avaliados e os resultados documentados.
+- [ ] Licenças do código e dos pesos são verificadas para uso comercial.
+- [ ] Falhas, fila, quota excedida e indisponibilidade do worker são apresentadas de forma amigável.
+- [ ] A integração permanece substituível sem alterar o domínio Product3DModel ou o contrato público do cardápio.
+- [ ] Nenhuma promessa de custo zero/escala ilimitada é feita com base em cotas gratuitas.
+
+### Decisão provisória
+
+**Direção escolhida para a prova de conceito:** Render Free para orquestração leve (se necessário) + Hugging Face Spaces/ZeroGPU para inferência experimental + modelo open source (TripoSR primeiro; SF3D em comparação) + ImageKit para assets + Google model-viewer para apresentação 3D/AR.
+
+Essa direção não é aprovação para produção. A escolha final depende dos testes com pratos reais, dos termos/licenças atuais e da confirmação de que as cotas gratuitas atendem ao volume pretendido.
