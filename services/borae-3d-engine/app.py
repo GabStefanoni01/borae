@@ -58,7 +58,7 @@ def _prepare_triposr_source() -> None:
     subprocess.run(
         shlex.split(
             f"{sys.executable} -m pip install --no-build-isolation "
-            "git+https://github.com/tatsy/torchmcubes.git"
+            "git+https://github.com/tatsy/torchmcubes.git@a9ac95aa329957ba646e7bb057f825f5dfa77f38"
         ),
         env=env,
         check=True,
