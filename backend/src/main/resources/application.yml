@@ -33,6 +33,12 @@ app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
   public-restaurant-url-prefix: ${PUBLIC_RESTAURANT_URL_PREFIX:http://localhost:4200/r/}
+  assistant:
+    session:
+      # Use a dedicated high-entropy secret in production. JWT_SECRET is a development fallback only.
+      secret: ${ASSISTANT_SESSION_SECRET:${JWT_SECRET:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}}
+      cookie-secure: ${ASSISTANT_SESSION_COOKIE_SECURE:false}
+      cookie-same-site: ${ASSISTANT_SESSION_COOKIE_SAME_SITE:Lax}
   storage:
     imagekit:
       private-key: ${IMAGEKIT_PRIVATE_KEY:}
