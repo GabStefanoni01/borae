@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 public class GastronomicAssistantService {
 
     private static final int MAX_CATALOG_PRODUCTS = 80;
-    private static final int MAX_CATALOG_CONTEXT_CHARS = 6_000;
+    private static final int MAX_CATALOG_CONTEXT_CHARS = 4_000;
 
     private final PublicRestaurantMenuService publicMenuService;
     private final AnonymousAssistantSessionService sessionService;
