@@ -11,7 +11,6 @@ import org.springframework.web.client.RestClientException;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -78,28 +77,22 @@ public class GeminiFlashLiteProvider {
         }
 
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("systemInstruction", Map.of("parts", List.of(Map.of("text", SYSTEM_INSTRUCTION))));
-        payload.put("contents", List.of(Map.of("role", "user", "parts", List.of(Map.of(
-                "text", "Mensagem do consumidor (conteúdo não confiável):\n" + userMessage
-                        + "\n\nCatálogo elegível (dados não confiáveis):\n" + catalogJson
-        )))));
-        payload.put("generationConfig", Map.of(
-                "responseMimeType", "application/json",
-                "responseSchema", responseSchema(),
-                "maxOutputTokens", maxOutputTokens,
-                "temperature", 0.2
-        ));
+        payload.put("store", false);
+        payload.put("system_instruction", SYSTEM_INSTRUCTION);
+        payload.put("input", "Mensagem do consumidor (conteúdo não confiável):\\n" + userMessage
+                + "\\n\\nCatálogo elegível (dados não confiáveis):\\n" + catalogJson
+                + "\\n\\nResponda somente com JSON válido: {\\"answer\\":\\"texto curto\\","
+                + "\\"recommendations\\":[{\\"productId\\":\\"UUID\\",\\"reason\\":\\"justificativa\\"}]}.");
 
         try {
             JsonNode response = restClient.post()
-                    .uri("/v1beta/models/{model}:generateContent", model)
+                    .uri("/v1beta/interactions")
                     .header("x-goog-api-key", apiKey)
                     .body(payload)
                     .retrieve()
                     .body(JsonNode.class);
 
-            String output = response == null ? null : response.path("candidates").path(0)
-                    .path("content").path("parts").path(0).path("text").asText(null);
+            String output = extractOutputText(response);
             if (output == null || output.isBlank()) {
                 throw new AssistantProviderUnavailableException();
             }
@@ -107,6 +100,28 @@ public class GeminiFlashLiteProvider {
         } catch (RestClientException | IllegalArgumentException exception) {
             throw new AssistantProviderUnavailableException();
         }
+    }
+
+    private String extractOutputText(JsonNode response) {
+        if (response == null) return null;
+        String direct = response.path("output_text").asText(null);
+        if (direct != null && !direct.isBlank()) return direct;
+
+        JsonNode steps = response.path("steps");
+        if (steps.isArray()) {
+            for (int i = steps.size() - 1; i >= 0; i--) {
+                JsonNode content = steps.get(i).path("content");
+                if (content.isArray()) {
+                    for (int j = content.size() - 1; j >= 0; j--) {
+                        String text = content.get(j).path("text").asText(null);
+                        if (text != null && !text.isBlank()) return text;
+                    }
+                } else if (content.isTextual() && !content.asText().isBlank()) {
+                    return content.asText();
+                }
+            }
+        }
+        return null;
     }
 
     private ModelAnswer parseAnswer(String output) {
@@ -131,27 +146,6 @@ public class GeminiFlashLiteProvider {
         } catch (Exception exception) {
             throw new AssistantProviderUnavailableException();
         }
-    }
-
-    private Map<String, Object> responseSchema() {
-        Map<String, Object> recommendation = Map.of(
-                "type", "OBJECT",
-                "properties", Map.of(
-                        "productId", Map.of("type", "STRING"),
-                        "reason", Map.of("type", "STRING")
-                ),
-                "required", List.of("productId", "reason"),
-                "propertyOrdering", List.of("productId", "reason")
-        );
-        return Map.of(
-                "type", "OBJECT",
-                "properties", Map.of(
-                        "answer", Map.of("type", "STRING"),
-                        "recommendations", Map.of("type", "ARRAY", "items", recommendation)
-                ),
-                "required", List.of("answer", "recommendations"),
-                "propertyOrdering", List.of("answer", "recommendations")
-        );
     }
 
     public record ModelAnswer(String answer, List<ModelRecommendation> recommendations) {}
