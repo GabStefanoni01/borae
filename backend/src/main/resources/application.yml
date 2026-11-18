@@ -52,6 +52,8 @@ app:
       model: ${GEMINI_MODEL:gemini-3.1-flash-lite}
       timeout-seconds: ${GEMINI_TIMEOUT_SECONDS:12}
       max-output-tokens: ${GEMINI_MAX_OUTPUT_TOKENS:500}
+      input-price-per-million-usd: ${GEMINI_INPUT_PRICE_PER_MILLION_USD:0.25}
+      output-price-per-million-usd: ${GEMINI_OUTPUT_PRICE_PER_MILLION_USD:1.50}
   storage:
     imagekit:
       private-key: ${IMAGEKIT_PRIVATE_KEY:}
