@@ -190,7 +190,7 @@ Renan (`@renancristianobn-del`) revisa o contrato e lidera a implementação Ang
 - Painel analítico completo; apenas instrumentação agregada para futura visualização.
 
 
-## 9. Decisão aprovada — sessão anônima assinada (17/11/2026)
+## 9. Decisão aprovada — sessão anônima assinada e cotas (17/11/2026)
 
 A estratégia de sessão anônima por cookie assinada pelo backend foi aprovada pelo responsável pelo produto.
 
@@ -217,3 +217,14 @@ Sem cadastro ou outro mecanismo de identidade forte, o limite de 20 interações
 - Se frontend e API estiverem em sites diferentes, configurar `ASSISTANT_SESSION_COOKIE_SAME_SITE=None` junto com `ASSISTANT_SESSION_COOKIE_SECURE=true`; manter CORS com origens explícitas, nunca curingas.
 - Para frontend/API same-site, manter `SameSite=Lax`.
 - A cota diária ainda precisa ser implementada com contador atômico e chave HMAC; o bootstrap de sessão, sozinho, não implementa as cotas.
+
+
+### Cotas diárias — primeira implementação
+
+- Migration `V10__create_assistant_daily_quotas.sql` cria tabela de contadores diários com chave única por data, escopo e chave do escopo.
+- `AssistantQuotaService` aplica a cota de sessão (20/dia) e restaurante (100/dia) na mesma transação.
+- Cada incremento é feito por PostgreSQL `INSERT ... ON CONFLICT ... DO UPDATE ... WHERE consumed < limit RETURNING`, garantindo concorrência atômica sem ultrapassar o limite.
+- Se qualquer um dos dois escopos estiver esgotado, a exceção provoca rollback do incremento do outro escopo.
+- A data é calculada no backend com `America/Sao_Paulo`; a resposta inclui saldos restantes e próximo reset.
+- A tabela armazena apenas a chave HMAC da sessão e o UUID do restaurante, nunca o cookie ou o identificador aleatório original.
+- Ainda faltam testes de integração PostgreSQL para concorrência/rollback, endpoint de interação, rate limit por IP e integração com Gemini.
