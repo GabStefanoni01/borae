@@ -30,6 +30,7 @@ public class GastronomicAssistantService {
     private final PublicRestaurantMenuService publicMenuService;
     private final AnonymousAssistantSessionService sessionService;
     private final AssistantQuotaService quotaService;
+    private final AssistantMetricsService metricsService;
     private final GeminiFlashLiteProvider aiProvider;
     private final ObjectMapper objectMapper;
 
@@ -37,18 +38,21 @@ public class GastronomicAssistantService {
             PublicRestaurantMenuService publicMenuService,
             AnonymousAssistantSessionService sessionService,
             AssistantQuotaService quotaService,
+            AssistantMetricsService metricsService,
             GeminiFlashLiteProvider aiProvider,
             ObjectMapper objectMapper
     ) {
         this.publicMenuService = publicMenuService;
         this.sessionService = sessionService;
         this.quotaService = quotaService;
+        this.metricsService = metricsService;
         this.aiProvider = aiProvider;
         this.objectMapper = objectMapper;
     }
 
     public AssistantInteractionResponse interact(String slug, String sessionCookie,
                                                    AssistantInteractionRequest request) {
+        long startedAt = System.nanoTime();
         String quotaKey = sessionService.quotaKey(sessionCookie);
         if (quotaKey == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Inicie uma sessão do assistente.");
@@ -57,6 +61,8 @@ public class GastronomicAssistantService {
         PublicRestaurantMenuResponse menu = publicMenuService.getBySlug(slug);
         List<CatalogProduct> eligible = eligibleProducts(menu, request);
         if (eligible.isEmpty()) {
+            metricsService.recordInteractionOutcome(menu.id(), elapsedMillis(startedAt),
+                    false, true, List.of(), 0, 0);
             return new AssistantInteractionResponse(
                     "Não encontrei opções disponíveis com esses filtros. Tente ajustar o orçamento ou a categoria.",
                     List.of(), null, false, null
@@ -77,6 +83,8 @@ public class GastronomicAssistantService {
         }
 
         if (!aiProvider.isAvailable()) {
+            metricsService.recordInteractionOutcome(menu.id(), elapsedMillis(startedAt),
+                    true, false, List.of(), 0, 0);
             return new AssistantInteractionResponse(
                     "O assistente está temporariamente indisponível. Você ainda pode explorar o cardápio normalmente.",
                     List.of(), null, true, "AI_UNAVAILABLE"
@@ -109,8 +117,15 @@ public class GastronomicAssistantService {
             String answer = modelAnswer.answer() == null || modelAnswer.answer().isBlank()
                     ? "Separei algumas opções do cardápio para você."
                     : modelAnswer.answer().substring(0, Math.min(modelAnswer.answer().length(), 500));
+            metricsService.recordInteractionOutcome(
+                    menu.id(), elapsedMillis(startedAt), false, recommendations.isEmpty(),
+                    recommendations.stream().map(AssistantInteractionResponse.Recommendation::productId).toList(),
+                    modelAnswer.inputTokens(), modelAnswer.outputTokens()
+            );
             return new AssistantInteractionResponse(answer, List.copyOf(recommendations), quotaDto, false, null);
         } catch (AssistantProviderUnavailableException exception) {
+            metricsService.recordInteractionOutcome(menu.id(), elapsedMillis(startedAt),
+                    true, false, List.of(), 0, 0);
             return new AssistantInteractionResponse(
                     "Não consegui consultar o assistente agora. Você ainda pode explorar o cardápio normalmente.",
                     List.of(), quotaDto, true, "AI_UNAVAILABLE"
@@ -155,6 +170,10 @@ public class GastronomicAssistantService {
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Não foi possível preparar o catálogo do assistente.", exception);
         }
+    }
+
+    private long elapsedMillis(long startedAt) {
+        return Math.max(0, (System.nanoTime() - startedAt) / 1_000_000);
     }
 
     private String safeReason(String reason) {
