@@ -125,6 +125,7 @@ public class GastronomicAssistantService {
             );
             return new AssistantInteractionResponse(answer, List.copyOf(recommendations), quotaDto, false, null);
         } catch (AssistantProviderUnavailableException exception) {
+            metricsService.recordProviderError(menu.id());
             metricsService.recordInteractionOutcome(menu.id(), elapsedMillis(startedAt),
                     true, false, List.of(), 0, 0);
             return new AssistantInteractionResponse(
