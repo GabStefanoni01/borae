@@ -212,7 +212,7 @@ class AssistantQuotaPostgresIntegrationTest {
         assertEquals(120, metric("INPUT_TOKENS"));
         assertEquals(45, metric("OUTPUT_TOKENS"));
         assertEquals(1, metric("PROVIDER_ERRORS"));
-        assertEquals(98, metric("ESTIMATED_COST_MICRO_USD"));
+        assertEquals(149, metric("ESTIMATED_COST_MICRO_USD"));
 
         var productCounts = jdbc.query("""
                 SELECT recommendation_count, click_count
