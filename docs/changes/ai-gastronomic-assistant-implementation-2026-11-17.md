@@ -28,10 +28,10 @@ O assistente é uma camada de descoberta. Não cria pedidos, não adiciona itens
 ## 3. Provedor e limites aprovados
 
 - Provedor: Google Gemini.
-- Modelo: Gemini Flash-Lite, com identificador estável exato configurado após validação da versão disponível no momento da integração.
+- Modelo: Gemini Flash-Lite; identificador configurável (`GEMINI_MODEL`), com padrão inicial `gemini-3.1-flash-lite` conforme a lista de modelos compatíveis com Interactions API.
 - Integração exclusivamente no backend Java/Spring Boot.
 - Chave em variável/secret do backend (proposta: `GEMINI_API_KEY`); nunca no Angular, no bundle, no Git ou em logs.
-- Limite por interação: até **2.000 tokens de entrada** e **500 tokens de saída**.
+- Limite por interação: contexto do catálogo limitado a **4.000 caracteres** e mensagem a 500 caracteres; saída limitada a **500 tokens**. A contagem exata de tokens de entrada ainda precisa ser validada antes de produção.
 - Cotas simultâneas: até **20 interações por consumidor/dia** e **100 por restaurante/dia**.
 - Renovação diária à meia-noite no fuso `America/Sao_Paulo`.
 - Atingir qualquer uma das cotas bloqueia novas interações de IA no escopo correspondente até a renovação. O cardápio permanece utilizável.
@@ -57,7 +57,7 @@ Manter o monólito modular existente. Criar o domínio `com.borae.assistant`; n�
 - `GastronomicAssistantService`: resolve o restaurante pelo slug, carrega catálogo elegível, aplica cotas e revalida a saída.
 - `AssistantCatalogContextService`: monta contexto mínimo do restaurante e dos produtos publicados/disponíveis.
 - `AiProvider`: interface interna independente do SDK/provedor.
-- `GeminiFlashLiteProvider`: adaptador REST stateless para Gemini Flash-Lite, JSON estruturado, timeout e limite de tokens de saída; ativação exige `GEMINI_ENABLED=true`, chave e aprovação explícita de tratamento de dados.
+- `GeminiFlashLiteProvider`: adaptador REST stateless para a API Interactions do Gemini Flash-Lite, `store=false`, `response_format` JSON, timeout e limite de tokens de saída; ativação exige `GEMINI_ENABLED=true`, chave e aprovação explícita de tratamento de dados.
 - `AssistantQuotaService`: consumo diário atômico por restaurante e sessão anônima, com janela `America/Sao_Paulo`.
 - `AssistantMetricsService`: grava somente métricas/eventos agregados permitidos por D-11.
 - `AssistantRecommendationValidator`: valida IDs, remove duplicidades e recarrega dados autoritativos do catálogo.
