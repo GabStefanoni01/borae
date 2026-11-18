@@ -23,7 +23,7 @@ import java.util.UUID;
 public class AnonymousAssistantSessionService {
 
     public static final String COOKIE_NAME = "BORA_ASSISTANT_SESSION";
-    private static final Duration SESSION_TTL = Duration.ofHours(24);
+    private static final Duration SESSION_TTL = Duration.ofDays(30);
     private static final String SIGNING_PURPOSE = "borae:assistant-session:v1:";
     private static final String QUOTA_PURPOSE = "borae:assistant-quota:v1:";
 
