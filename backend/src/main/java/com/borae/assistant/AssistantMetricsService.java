@@ -2,6 +2,7 @@ package com.borae.assistant;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -82,6 +83,12 @@ public class AssistantMetricsService {
                 """, date, restaurantId, productId,
                 "recommendation_count".equals(column) ? 1 : 0,
                 "click_count".equals(column) ? 1 : 0);
+    }
+
+    @Scheduled(cron = "0 15 3 * * *", zone = "America/Sao_Paulo")
+    @Transactional
+    public void purgeExpiredMetrics() {
+        purgeExpired(LocalDate.now(AssistantQuotaService.BUSINESS_ZONE));
     }
 
     private void purgeExpired(LocalDate today) {
