@@ -16,6 +16,10 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.UUID;
+import java.util.ArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -88,6 +92,42 @@ class AssistantQuotaPostgresIntegrationTest {
 
         assertEquals(0, consumed("CONSUMER_SESSION", lastConsumerKey));
         assertEquals(100, consumed("RESTAURANT", RESTAURANT_ID.toString()));
+    }
+
+
+    @Test
+    void concurrentRequestsNeverExceedConsumerQuota() throws Exception {
+        int attempts = 50;
+        var executor = Executors.newFixedThreadPool(10);
+        var start = new CountDownLatch(1);
+        try {
+            var futures = new ArrayList<Future<Boolean>>();
+            for (int i = 0; i < attempts; i++) {
+                futures.add(executor.submit(() -> {
+                    start.await();
+                    try {
+                        quotaService.consume(RESTAURANT_ID, "same-concurrent-session");
+                        return true;
+                    } catch (AssistantQuotaService.AssistantQuotaExceededException expected) {
+                        return false;
+                    }
+                }));
+            }
+            start.countDown();
+
+            int accepted = 0;
+            for (Future<Boolean> future : futures) {
+                if (future.get()) accepted++;
+            }
+
+            assertEquals(AssistantQuotaService.CONSUMER_DAILY_LIMIT, accepted);
+            assertEquals(AssistantQuotaService.CONSUMER_DAILY_LIMIT,
+                    consumed("CONSUMER_SESSION", "same-concurrent-session"));
+            assertEquals(AssistantQuotaService.CONSUMER_DAILY_LIMIT,
+                    consumed("RESTAURANT", RESTAURANT_ID.toString()));
+        } finally {
+            executor.shutdownNow();
+        }
     }
 
     private int consumed(String scopeType, String scopeKey) {
