@@ -4,7 +4,7 @@
 
 ## Provedor e arquitetura de integração — D-10
 
-- Google Gemini é o provedor aprovado. O único modelo escolhido nesta fase é Gemini Flash-Lite. A modalidade de faturamento e os limites efetivos devem ser validados antes de produção; esta decisão não aprova automaticamente plano gratuito ou pago.
+- Google Gemini é o provedor aprovado. O modelo escolhido nesta fase é Gemini 3.5 Flash-Lite (`gemini-3.5-flash-lite`), versão estável GA. A modalidade de faturamento e os limites efetivos devem ser validados antes de produção; esta decisão não aprova automaticamente plano gratuito ou pago.
 - Somente o backend Java/Spring Boot integra com a API do provedor; o frontend conversa exclusivamente com a API do Boraê.
 - Manter credenciais em segredos/variáveis de ambiente do servidor. Nunca incluir chaves no frontend, repositório, logs ou respostas.
 - Isolar a integração atrás de uma interface interna de provedor/serviço de IA, mantendo o domínio e os casos de uso independentes do SDK e dos tipos específicos do Gemini.
