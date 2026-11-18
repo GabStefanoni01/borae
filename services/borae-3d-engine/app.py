@@ -30,7 +30,7 @@ logger = logging.getLogger("borae-3d-engine")
 # Pin the upstream source so Space rebuilds do not silently change the pipeline.
 TRIPOSR_REPOSITORY = "https://github.com/VAST-AI-Research/TripoSR.git"
 TRIPOSR_COMMIT = "107cefdc244c39106fa830359024f6a2f1c78871"
-TRIPOSR_ROOT = Path("/tmp/borae-trip osr").with_name("borae-triposr")
+TRIPOSR_ROOT = Path("/tmp/borae-triposr")
 MAX_IMAGE_PIXELS = 16_000_000
 MAX_IMAGE_SIDE = 4096
 MAX_GLB_BYTES = 25 * 1024 * 1024
