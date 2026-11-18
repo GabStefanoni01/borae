@@ -183,6 +183,21 @@ class AssistantQuotaPostgresIntegrationTest {
     }
 
 
+
+    @Test
+    void purgesPseudonymousIpBucketsOlderThanTwoHours() {
+        jdbc.update("""
+                INSERT INTO assistant_ip_rate_limit (window_start, ip_hash, request_count)
+                VALUES (?, ?, 1)
+                """, java.sql.Timestamp.from(java.time.Instant.now().minus(java.time.Duration.ofHours(3))),
+                "a".repeat(64));
+
+        ipRateLimitService.purgeExpiredBuckets();
+
+        Integer rows = jdbc.queryForObject("SELECT COUNT(*) FROM assistant_ip_rate_limit", Integer.class);
+        assertEquals(0, rows);
+    }
+
     @Test
     void aggregatesOutcomesTokensRecommendationsAndClicksWithoutSessionData() {
         metricsService.recordInteractionOutcome(
