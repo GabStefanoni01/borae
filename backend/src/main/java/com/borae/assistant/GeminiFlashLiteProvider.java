@@ -40,6 +40,8 @@ public class GeminiFlashLiteProvider {
     private final ObjectMapper objectMapper;
     private final String apiKey;
     private final String model;
+    private final boolean enabled;
+    private final boolean dataProcessingApproved;
     private final int maxOutputTokens;
 
     public GeminiFlashLiteProvider(
@@ -47,6 +49,8 @@ public class GeminiFlashLiteProvider {
             ObjectMapper objectMapper,
             @Value("${app.assistant.gemini.api-key:}") String apiKey,
             @Value("${app.assistant.gemini.model:gemini-3.1-flash-lite}") String model,
+            @Value("${app.assistant.gemini.enabled:false}") boolean enabled,
+            @Value("${app.assistant.gemini.data-processing-approved:false}") boolean dataProcessingApproved,
             @Value("${app.assistant.gemini.timeout-seconds:12}") long timeoutSeconds,
             @Value("${app.assistant.gemini.max-output-tokens:500}") int maxOutputTokens
     ) {
@@ -59,11 +63,13 @@ public class GeminiFlashLiteProvider {
         this.objectMapper = objectMapper;
         this.apiKey = apiKey;
         this.model = model;
+        this.enabled = enabled;
+        this.dataProcessingApproved = dataProcessingApproved;
         this.maxOutputTokens = Math.max(64, Math.min(maxOutputTokens, 1000));
     }
 
     public ModelAnswer recommend(String userMessage, String catalogJson) {
-        if (apiKey == null || apiKey.isBlank()) {
+        if (!enabled || !dataProcessingApproved || apiKey == null || apiKey.isBlank()) {
             throw new AssistantProviderUnavailableException();
         }
 
