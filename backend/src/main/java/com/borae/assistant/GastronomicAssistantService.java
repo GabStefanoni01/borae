@@ -64,8 +64,15 @@ public class GastronomicAssistantService {
 
         List<CatalogProduct> boundedCatalog = eligible.stream().limit(MAX_CATALOG_PRODUCTS).toList();
         String catalogJson = serializeCatalog(boundedCatalog);
-        if (catalogJson.length() > MAX_CATALOG_CONTEXT_CHARS) {
-            catalogJson = catalogJson.substring(0, MAX_CATALOG_CONTEXT_CHARS);
+        while (catalogJson.length() > MAX_CATALOG_CONTEXT_CHARS && !boundedCatalog.isEmpty()) {
+            boundedCatalog = boundedCatalog.subList(0, boundedCatalog.size() - 1);
+            catalogJson = serializeCatalog(boundedCatalog);
+        }
+        if (boundedCatalog.isEmpty()) {
+            return new AssistantInteractionResponse(
+                    "Não encontrei opções disponíveis com esses filtros. Tente ajustar o orçamento ou a categoria.",
+                    List.of(), null, false, null
+            );
         }
 
         // Commit quota before the provider call: provider errors still consume the attempted interaction.
@@ -106,8 +113,8 @@ public class GastronomicAssistantService {
     private List<CatalogProduct> eligibleProducts(PublicRestaurantMenuResponse menu,
                                                    AssistantInteractionRequest request) {
         AssistantInteractionRequest.Filters filters = request.filters();
-        if (filters != null && filters.menuId() != null
-                && menu.menus().stream().noneMatch(item -> item.id().equals(filters.menuId()))) {
+        if (filters != null && request.menuId() != null
+                && menu.menus().stream().noneMatch(item -> item.id().equals(request.menuId()))) {
             return List.of();
         }
 
@@ -119,7 +126,7 @@ public class GastronomicAssistantService {
                 .filter(value -> !value.isBlank()).toList();
 
         return menu.menus().stream()
-                .filter(item -> filters == null || filters.menuId() == null || item.id().equals(filters.menuId()))
+                .filter(item -> filters == null || request.menuId() == null || item.id().equals(request.menuId()))
                 .flatMap(item -> item.categories().stream())
                 .filter(category -> categoryIds.isEmpty() || categoryIds.contains(category.id()))
                 .flatMap(category -> category.products().stream()
