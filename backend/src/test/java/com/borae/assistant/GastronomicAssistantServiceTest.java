@@ -18,6 +18,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 class GastronomicAssistantServiceTest {
@@ -41,9 +42,9 @@ class GastronomicAssistantServiceTest {
                 publicMenuService, sessionService, quotaService, aiProvider,
                 new com.fasterxml.jackson.databind.ObjectMapper()
         );
-        when(sessionService.quotaKey("valid-cookie")).thenReturn("opaque-hmac-key");
-        when(publicMenuService.getBySlug("restaurante-demo")).thenReturn(publicMenu());
-        when(quotaService.consume(RESTAURANT_ID, "opaque-hmac-key")).thenReturn(
+        lenient().when(sessionService.quotaKey("valid-cookie")).thenReturn("opaque-hmac-key");
+        lenient().when(publicMenuService.getBySlug("restaurante-demo")).thenReturn(publicMenu());
+        lenient().when(quotaService.consume(RESTAURANT_ID, "opaque-hmac-key")).thenReturn(
                 new AssistantQuotaService.QuotaConsumption(
                         19, 99, ZonedDateTime.now(ZoneId.of("America/Sao_Paulo")).plusDays(1)
                 )
