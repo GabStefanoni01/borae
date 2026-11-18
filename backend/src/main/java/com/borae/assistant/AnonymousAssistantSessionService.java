@@ -13,7 +13,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
-import java.util.UUID;
 
 /**
  * Issues short-lived, opaque browser sessions for anonymous public assistant usage.
