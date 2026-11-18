@@ -613,3 +613,69 @@ O Google model-viewer é a camada de visualização, não um gerador de modelos.
 **Direção escolhida para a prova de conceito:** Render Free para orquestração leve (se necessário) + Hugging Face Spaces/ZeroGPU para inferência experimental + modelo open source (TripoSR primeiro; SF3D em comparação) + ImageKit para assets + Google model-viewer para apresentação 3D/AR.
 
 Essa direção não é aprovação para produção. A escolha final depende dos testes com pratos reais, dos termos/licenças atuais e da confirmação de que as cotas gratuitas atendem ao volume pretendido.
+
+## 14. Serviço próprio `borae-3d-engine`: desenho interno da PoC
+
+O objetivo não é treinar um modelo fundacional do zero nem criar uma API de geração baseada em regras. O Boraê desenvolverá seu próprio serviço/pipeline de geração, combinando modelos open source existentes, pré-processamento, pós-processamento, validação e integração com o domínio atual. Assim, o produto controla a experiência e pode trocar o modelo de inferência sem acoplar o backend Java a um fornecedor específico.
+
+### 14.1 Responsabilidade e fronteiras
+
+- Repositório/serviço lógico: `borae-3d-engine`, implementado em Python.
+- API de orquestração: FastAPI hospedado inicialmente no Render Free, somente para coordenação leve; não carregar pesos nem executar inferência 3D pesada no Render.
+- Runner de inferência: processo/Space separado com GPU compartilhada no Hugging Face ZeroGPU durante a PoC. A integração deve ser substituível por worker GPU próprio ou outro host no futuro.
+- Backend Spring Boot continua sendo o sistema de registro e autoridade: autenticação, autorização, tenant, produto, cotas, geração durável, aprovação, publicação e auditoria.
+- O serviço Python não decide quem pode publicar um modelo e não escreve diretamente em `Product3DModel`.
+- O serviço Python devolve um artefato e metadados técnicos; o backend Java valida novamente e controla armazenamento/publicação.
+
+### 14.2 Contrato interno sugerido
+
+Contrato ilustrativo, a compatibilizar com a implementação e com autenticação serviço-a-serviço:
+
+- `POST /internal/v1/generations`: recebe `generationId`, referência temporária/assinada às imagens, método de captura, modelo/versão solicitados e parâmetros permitidos; retorna `202` e `engineTaskId`.
+- `GET /internal/v1/generations/{engineTaskId}`: retorna estado normalizado (`QUEUED`, `PROCESSING`, `SUCCEEDED`, `FAILED`), timestamps, código de falha e metadados; progresso percentual somente se mensurável.
+- `GET /internal/v1/generations/{engineTaskId}/artifact`: disponibiliza o resultado por canal autenticado/URL temporária, se a arquitetura de entrega exigir endpoint separado.
+- Callback/webhook opcional somente se necessário; deve validar assinatura/autenticidade, tolerar repetição e não ser a única fonte de estado.
+- Toda chamada deve usar credencial serviço-a-serviço, timeout, limite de payload e correlação por `generationId`. Nenhum token do Hugging Face ou segredo interno pode chegar ao Angular.
+
+O contrato final deve evitar transferir arquivos grandes em JSON/base64. Preferir upload/transferência binária ou URLs temporárias com escopo e expiração definidos. Não aceitar URL arbitrária do usuário para o serviço buscar.
+
+### 14.3 Pipeline de geração
+
+1. Validar quantidade, MIME real, resolução, tamanho e integridade das imagens recebidas.
+2. Normalizar orientação, dimensões e formato; preservar originais apenas pelo período de retenção aprovado.
+3. Aplicar validações de qualidade da captura (nitidez, exposição, enquadramento e cobertura de ângulos) e solicitar nova captura quando insuficiente, se tecnicamente viável.
+4. Selecionar estratégia de inferência por adaptador: imagem única (TripoSR/Stable Fast 3D) ou reconstrução multi-view (COLMAP e alternativas que comprovadamente consumam as várias vistas).
+5. Executar inferência no runner GPU e capturar versão do modelo, parâmetros, consumo e duração.
+6. Converter/exportar para GLB de maneira reproduzível; não assumir que toda saída de modelo já será GLB pronto.
+7. Otimizar geometria e texturas com limites configuráveis; não degradar a aparência sem registrar a transformação.
+8. Validar GLB, limites de polígonos/textura/tamanho e compatibilidade com o visualizador atual.
+9. Retornar artefato e metadados ao backend Java para validação final, armazenamento no ImageKit e aprovação humana.
+
+### 14.4 Estratégia de modelos e decisão
+
+- Começar por TripoSR como baseline leve e simples de experimentar.
+- Comparar Stable Fast 3D somente após validar separadamente os termos da licença do código e dos pesos para uso comercial.
+- Tratar TRELLIS.2 como experimento posterior, condicionado a acesso a GPU de memória suficiente; não assumir que ZeroGPU fornecerá sempre a GPU necessária.
+- Usar COLMAP como baseline de fotogrametria multi-view, sabendo que alimentos brilhantes, deformáveis, repetitivos ou parcialmente oclusos podem impedir reconstrução confiável.
+- Não assumir que modelos de imagem única aproveitam automaticamente todas as fotos. A prova de conceito deve provar o suporte multi-view ou escolher um pipeline específico para isso.
+
+### 14.5 Limites operacionais da PoC
+
+- Render Free pode suspender por inatividade e não oferece GPU dedicada; o serviço deve tolerar cold start e indisponibilidade.
+- ZeroGPU tem cotas/filas compartilhadas e não é SLA. Tratar `429`, timeout e indisponibilidade sem loop de retry que consuma a cota.
+- Jobs duráveis, estado e referências de arquivos devem ficar em componentes persistentes já aprovados; nunca depender da memória do processo ou disco efêmero do Render.
+- Limitar gerações por restaurante, concorrência global, tamanho de captura e tentativas.
+- Se o runner gratuito estiver indisponível, deixar job em fila/estado recuperável ou informar indisponibilidade; não trocar silenciosamente para API paga.
+- Nenhum fallback pago deve ser acionado sem decisão explícita do produto.
+
+### 14.6 Entrega incremental
+
+**PoC 1 — prova de geração:** serviço mínimo FastAPI + runner ZeroGPU + um modelo; gerar um GLB a partir de uma imagem de prato real autorizada e medir qualidade/tempo/VRAM.
+
+**PoC 2 — comparação:** testar TripoSR, Stable Fast 3D (se licença permitir) e COLMAP com o mesmo conjunto de pratos; documentar diferenças entre entrada de imagem única e multi-view.
+
+**PoC 3 — integração:** conectar Spring Boot ao serviço interno, persistir estado, validar artefato e armazenar no ImageKit; ainda sem expor geração a todos os restaurantes.
+
+**MVP controlado:** habilitar para grupo limitado de restaurantes, com cotas, monitoramento, aprovação humana e fallback para foto convencional.
+
+Critério para avançar de fase: resultado visual reconhecível e suficientemente fiel, GLB seguro e leve para celular, licença comercial compatível, processo repetível e capacidade/custo dentro dos limites aprovados.
