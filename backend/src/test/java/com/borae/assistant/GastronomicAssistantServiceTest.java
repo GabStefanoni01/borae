@@ -43,6 +43,7 @@ class GastronomicAssistantServiceTest {
                 new com.fasterxml.jackson.databind.ObjectMapper()
         );
         lenient().when(sessionService.quotaKey("valid-cookie")).thenReturn("opaque-hmac-key");
+        lenient().when(aiProvider.isAvailable()).thenReturn(true);
         lenient().when(publicMenuService.getBySlug("restaurante-demo")).thenReturn(publicMenu());
         lenient().when(quotaService.consume(RESTAURANT_ID, "opaque-hmac-key")).thenReturn(
                 new AssistantQuotaService.QuotaConsumption(
