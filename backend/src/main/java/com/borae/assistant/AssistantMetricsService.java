@@ -1,6 +1,7 @@
 package com.borae.assistant;
 
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,9 +16,17 @@ public class AssistantMetricsService {
     public static final int RETENTION_DAYS = 180;
 
     private final JdbcTemplate jdbcTemplate;
+    private final double inputPricePerMillionUsd;
+    private final double outputPricePerMillionUsd;
 
-    public AssistantMetricsService(JdbcTemplate jdbcTemplate) {
+    public AssistantMetricsService(
+            JdbcTemplate jdbcTemplate,
+            @Value("${app.assistant.gemini.input-price-per-million-usd:0.25}") double inputPricePerMillionUsd,
+            @Value("${app.assistant.gemini.output-price-per-million-usd:1.50}") double outputPricePerMillionUsd
+    ) {
         this.jdbcTemplate = jdbcTemplate;
+        this.inputPricePerMillionUsd = Math.max(0, inputPricePerMillionUsd);
+        this.outputPricePerMillionUsd = Math.max(0, outputPricePerMillionUsd);
     }
 
     @Transactional
@@ -41,12 +50,25 @@ public class AssistantMetricsService {
         if (noResult) incrementMetric(today, restaurantId, "NO_RESULTS", 1);
         if (inputTokens > 0) incrementMetric(today, restaurantId, "INPUT_TOKENS", inputTokens);
         if (outputTokens > 0) incrementMetric(today, restaurantId, "OUTPUT_TOKENS", outputTokens);
+        long estimatedCostMicroUsd = Math.round(
+                inputTokens * inputPricePerMillionUsd + outputTokens * outputPricePerMillionUsd
+        );
+        if (estimatedCostMicroUsd > 0) {
+            incrementMetric(today, restaurantId, "ESTIMATED_COST_MICRO_USD", estimatedCostMicroUsd);
+        }
 
         if (recommendedProductIds != null) {
             for (UUID productId : recommendedProductIds) {
                 if (productId != null) incrementProductMetric(today, restaurantId, productId, "recommendation_count");
             }
         }
+    }
+
+    @Transactional
+    public void recordProviderError(UUID restaurantId) {
+        LocalDate today = LocalDate.now(AssistantQuotaService.BUSINESS_ZONE);
+        purgeExpired(today);
+        incrementMetric(today, restaurantId, "PROVIDER_ERRORS", 1);
     }
 
     @Transactional
