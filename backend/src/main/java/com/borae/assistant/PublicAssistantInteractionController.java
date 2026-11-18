@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,13 +20,16 @@ public class PublicAssistantInteractionController {
 
     private final GastronomicAssistantService assistantService;
     private final AssistantIpRateLimitService ipRateLimitService;
+    private final AssistantRecommendationClickService clickService;
 
     public PublicAssistantInteractionController(
             GastronomicAssistantService assistantService,
-            AssistantIpRateLimitService ipRateLimitService
+            AssistantIpRateLimitService ipRateLimitService,
+            AssistantRecommendationClickService clickService
     ) {
         this.assistantService = assistantService;
         this.ipRateLimitService = ipRateLimitService;
+        this.clickService = clickService;
     }
 
     @PostMapping(value = "/interactions", consumes = MediaType.APPLICATION_JSON_VALUE,
@@ -43,4 +47,20 @@ public class PublicAssistantInteractionController {
         ipRateLimitService.checkAndConsume(httpRequest);
         return assistantService.interact(slug, sessionCookie, request);
     }
+    @PostMapping("/recommendations/{productId}/click")
+    @Operation(
+            summary = "Registrar clique em recomendação",
+            description = "Registra somente um contador agregado para um produto disponível no cardápio público. Requer sessão anônima válida."
+    )
+    public ResponseEntity<Void> recordRecommendationClick(
+            @PathVariable String slug,
+            @PathVariable java.util.UUID productId,
+            @CookieValue(name = AnonymousAssistantSessionService.COOKIE_NAME, required = false) String sessionCookie,
+            HttpServletRequest httpRequest
+    ) {
+        ipRateLimitService.checkAndConsume(httpRequest);
+        clickService.recordClick(slug, sessionCookie, productId);
+        return ResponseEntity.noContent().build();
+    }
+
 }
