@@ -28,7 +28,7 @@ O assistente é uma camada de descoberta. Não cria pedidos, não adiciona itens
 ## 3. Provedor e limites aprovados
 
 - Provedor: Google Gemini.
-- Modelo: Gemini Flash-Lite; identificador configurável (`GEMINI_MODEL`), com padrão inicial `gemini-3.1-flash-lite` conforme a lista de modelos compatíveis com Interactions API.
+- Modelo: Gemini Flash-Lite; identificador configurável (`GEMINI_MODEL`), com padrão inicial `gemini-3.5-flash-lite` conforme a lista de modelos compatíveis com Interactions API.
 - Integração exclusivamente no backend Java/Spring Boot.
 - Chave em variável/secret do backend (proposta: `GEMINI_API_KEY`); nunca no Angular, no bundle, no Git ou em logs.
 - Limite por interação: contexto do catálogo limitado a **4.000 caracteres** e mensagem a 500 caracteres; saída limitada a **500 tokens**. A contagem exata de tokens de entrada ainda precisa ser validada antes de produção.
