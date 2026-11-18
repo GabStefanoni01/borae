@@ -103,7 +103,7 @@ public class GeminiFlashLiteProvider {
             if (output == null || output.isBlank()) {
                 throw new AssistantProviderUnavailableException();
             }
-            return parseAnswer(output);
+            return parseAnswer(output, response.path("usage"));
         } catch (RestClientException | IllegalArgumentException exception) {
             throw new AssistantProviderUnavailableException();
         }
@@ -155,7 +155,7 @@ public class GeminiFlashLiteProvider {
         return null;
     }
 
-    private ModelAnswer parseAnswer(String output) {
+    private ModelAnswer parseAnswer(String output, JsonNode usage) {
         try {
             JsonNode root = objectMapper.readTree(output);
             String answer = root.path("answer").asText("");
@@ -173,13 +173,20 @@ public class GeminiFlashLiteProvider {
                     }
                 }
             }
-            return new ModelAnswer(answer, List.copyOf(recommendations));
+            long inputTokens = Math.max(0, usage.path("total_input_tokens").asLong(0));
+            long outputTokens = Math.max(0, usage.path("total_output_tokens").asLong(0));
+            return new ModelAnswer(answer, List.copyOf(recommendations), inputTokens, outputTokens);
         } catch (Exception exception) {
             throw new AssistantProviderUnavailableException();
         }
     }
 
-    public record ModelAnswer(String answer, List<ModelRecommendation> recommendations) {}
+    public record ModelAnswer(String answer, List<ModelRecommendation> recommendations,
+                              long inputTokens, long outputTokens) {
+        public ModelAnswer(String answer, List<ModelRecommendation> recommendations) {
+            this(answer, recommendations, 0, 0);
+        }
+    }
     public record ModelRecommendation(UUID productId, String reason) {}
 
     public static class AssistantProviderUnavailableException extends RuntimeException {
