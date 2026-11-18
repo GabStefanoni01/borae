@@ -1,7 +1,7 @@
 # Plano de implementação — Assistente gastronômico
 
 **Data:** 17/11/2026  
-**Status:** implementação inicial de sessão anônima e cotas concluída; endpoint de interação, integração Gemini e frontend ainda pendentes.  
+**Status:** sessão anônima, cotas, endpoint público de interação e adaptador Gemini implementados inicialmente; CI e hardening ainda em validação; frontend Angular pendente.  
 **Escopo:** primeira entrega do assistente no cardápio público, seguindo `MODULE_AI_ASSISTANT.md`, D-10 e D-11.
 
 ## 1. Objetivo do MVP
@@ -52,22 +52,23 @@ Manter o monólito modular existente. Criar o domínio `com.borae.assistant`; n�
 
 ### Componentes
 
-- `PublicAssistantController`: endpoints públicos e DTOs; controller fino.
-- `GastronomicAssistantService`: orquestra o caso de uso, valida o restaurante, carrega catálogo elegível, aplica cotas e revalida a saída.
+- `PublicAssistantSessionController` e `PublicAssistantInteractionController`: bootstrap da sessão e endpoint público de interação.
+- `AssistantInteractionRequest` / `AssistantInteractionResponse`: contrato HTTP com validação de entrada.
+- `GastronomicAssistantService`: resolve o restaurante pelo slug, carrega catálogo elegível, aplica cotas e revalida a saída.
 - `AssistantCatalogContextService`: monta contexto mínimo do restaurante e dos produtos publicados/disponíveis.
 - `AiProvider`: interface interna independente do SDK/provedor.
-- `GeminiFlashLiteProvider`: implementação HTTP do provedor, com timeout, limite de tokens e parsing de saída estruturada.
+- `GeminiFlashLiteProvider`: adaptador REST stateless para Gemini Flash-Lite, JSON estruturado, timeout e limite de tokens de saída; ativação exige `GEMINI_ENABLED=true`, chave e aprovação explícita de tratamento de dados.
 - `AssistantQuotaService`: consumo diário atômico por restaurante e sessão anônima, com janela `America/Sao_Paulo`.
 - `AssistantMetricsService`: grava somente métricas/eventos agregados permitidos por D-11.
 - `AssistantRecommendationValidator`: valida IDs, remove duplicidades e recarrega dados autoritativos do catálogo.
 - `AssistantExceptionHandler`: respostas estáveis para limite atingido, timeout e indisponibilidade.
 
-### Endpoints propostos
+### Endpoints implementados/propostos
 
 | Método | Endpoint | Acesso | Responsabilidade |
 |---|---|---|---|
-| POST | `/api/v1/public/assistant/sessions` | Público | Emitir/renovar cookie de sessão anônima para cotas, após aprovação da seção 4. |
-| POST | `/api/v1/public/restaurants/{slug}/assistant/interactions` | Público + sessão | Enviar intenção/filtros e receber resposta e recomendações verificadas. |
+| POST | `/api/v1/public/assistant/sessions` | Público | Emitir/reutilizar cookie de sessão anônima para cotas. **Implementado.** |
+| POST | `/api/v1/public/restaurants/{slug}/assistant/interactions` | Público + sessão | Enviar intenção/filtros e receber resposta e recomendações verificadas. **Implementação inicial concluída.** |
 | POST | `/api/v1/public/restaurants/{slug}/assistant/recommendations/{productId}/click` | Público + sessão | Registrar clique agregado em recomendação, sem persistir identidade ou texto. |
 
 ### Contrato de interação proposto
@@ -102,9 +103,10 @@ Não persistir texto da mensagem, prompt, resposta, conteúdo integral enviado a
 
 ### Resiliência e segurança
 
-- Timeout de conexão e resposta configuráveis; retry no máximo uma vez apenas para falhas transitórias seguras, sem duplicar contadores.
+- Timeout de conexão e resposta configuráveis; retry ainda não implementado. Falhas do provedor retornam fallback; a tentativa consome cota quando o provedor estava habilitado e a chamada foi iniciada.
+- O adaptador permanece desabilitado por padrão. Só habilitar com `GEMINI_ENABLED=true`, `GEMINI_API_KEY` e `GEMINI_DATA_PROCESSING_APPROVED=true`, após validar plano/faturamento e termos de tratamento de dados do Google. O fato de não armazenarmos histórico no Boraê não elimina o tratamento feito pelo provedor.
 - Contar a interação conforme a regra aprovada e definir claramente se falha técnica consome cota; proposta: falha anterior à chamada do provedor não consome; chamada efetivamente enviada consome para impedir abuso/custo.
-- Rate limit adicional por IP para abuso, sem substituir as cotas de negócio.
+- Rate limit adicional por IP ainda pendente; não confiar em `X-Forwarded-For` sem proxy confiável configurado. IP não substitui a cota da sessão.
 - Respostas de erro não devem expor prompt, stack trace, chave ou mensagem bruta do provedor.
 - Não registrar corpo HTTP de entrada/saída nem conteúdo enviado ao Gemini.
 - Não confiar em nomes, descrições ou ingredientes como instruções. Escapar/delimitar contexto e instruir o modelo a ignorar comandos contidos nos dados.
@@ -154,7 +156,7 @@ Renan (`@renancristianobn-del`) é responsável exclusivamente pela implementaç
 - Cotas de consumidor e restaurante aplicadas simultaneamente, atomicamente e em concorrência.
 - Renovação à meia-noite de `America/Sao_Paulo`, incluindo mudança de dia e horário de verão conforme regras da zona.
 - Nenhuma pergunta, resposta, IP ou identidade bruta persiste nos eventos analíticos.
-- Testes de integração com PostgreSQL real para constraints e concorrência.
+- Testes de integração com PostgreSQL real para consumo, limite e rollback; teste de concorrência paralela adicionado, aguardando CI.
 
 ### Frontend
 - Painel responsivo, acessível e não bloqueante.
