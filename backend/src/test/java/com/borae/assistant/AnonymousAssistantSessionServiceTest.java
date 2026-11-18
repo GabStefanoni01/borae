@@ -29,7 +29,7 @@ class AnonymousAssistantSessionServiceTest {
         assertFalse(cookie.isSecure());
         assertEquals("Lax", cookie.getSameSite());
         assertEquals("/api/v1/public", cookie.getPath());
-        assertEquals(86400, cookie.getMaxAge().getSeconds());
+        assertEquals(2592000, cookie.getMaxAge().getSeconds());
         assertNotNull(issued.expiresAt());
     }
 
