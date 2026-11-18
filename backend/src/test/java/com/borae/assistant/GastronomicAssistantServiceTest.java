@@ -33,6 +33,7 @@ class GastronomicAssistantServiceTest {
     @Mock private PublicRestaurantMenuService publicMenuService;
     @Mock private AnonymousAssistantSessionService sessionService;
     @Mock private AssistantQuotaService quotaService;
+    @Mock private AssistantMetricsService metricsService;
     @Mock private GeminiFlashLiteProvider aiProvider;
 
     private GastronomicAssistantService service;
@@ -40,7 +41,7 @@ class GastronomicAssistantServiceTest {
     @BeforeEach
     void setUp() {
         service = new GastronomicAssistantService(
-                publicMenuService, sessionService, quotaService, aiProvider,
+                publicMenuService, sessionService, quotaService, metricsService, aiProvider,
                 new com.fasterxml.jackson.databind.ObjectMapper()
         );
         lenient().when(sessionService.quotaKey("valid-cookie")).thenReturn("opaque-hmac-key");
