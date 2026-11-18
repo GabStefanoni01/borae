@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,9 +26,15 @@ public class PublicAssistantSessionController {
     @PostMapping("/sessions")
     @Operation(
             summary = "Iniciar sessão anônima do assistente",
-            description = "Emite cookie HttpOnly assinado com validade de 24 horas. Nenhuma conta de consumidor é necessária."
+            description = "Emite cookie HttpOnly assinado com validade de 24 horas. Uma sessão válida existente é reutilizada."
     )
-    public ResponseEntity<Void> createSession() {
+    public ResponseEntity<Void> createSession(
+            @CookieValue(name = AnonymousAssistantSessionService.COOKIE_NAME, required = false) String existingCookie
+    ) {
+        if (sessionService.isValid(existingCookie)) {
+            return ResponseEntity.noContent().build();
+        }
+
         AnonymousAssistantSessionService.IssuedSession session = sessionService.issue();
         return ResponseEntity.noContent()
                 .header(HttpHeaders.SET_COOKIE, session.cookie().toString())
