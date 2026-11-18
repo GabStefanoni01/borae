@@ -91,13 +91,13 @@ class AssistantQuotaPostgresIntegrationTest {
     }
 
     private int consumed(String scopeType, String scopeKey) {
-        Integer value = jdbc.queryForObject("""
+        var values = jdbc.query("""
                 SELECT consumed
                 FROM assistant_daily_quota
                 WHERE quota_date = (CURRENT_TIMESTAMP AT TIME ZONE 'America/Sao_Paulo')::date
                   AND scope_type = ?
                   AND scope_key = ?
-                """, Integer.class, scopeType, scopeKey);
-        return value == null ? 0 : value;
+                """, (resultSet, rowNumber) -> resultSet.getInt(1), scopeType, scopeKey);
+        return values.isEmpty() ? 0 : values.getFirst();
     }
 }
