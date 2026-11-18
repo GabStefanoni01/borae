@@ -13,14 +13,15 @@ Esta documentação é a referência de produto e engenharia do Boraê. Ela sepa
 7. [Desenho da API futura](API_DESIGN.md): recursos e contratos candidatos ainda não implementados.
 8. [Especificação do catálogo](MODULE_CATALOG.md): categorias, produtos, opções, publicação e cardápio.
 9. [Guia de implementação frontend do catálogo](FRONTEND_CATALOG_IMPLEMENTATION.md): tarefas e critérios de aceite para o painel Angular e a página pública.
-10. [Especificação do assistente IA](MODULE_AI_ASSISTANT.md): fluxo, limites, validação e segurança.
-11. [Fidelidade e Boraê Club](MODULE_LOYALTY_CLUB.md): ledgers, resgates, controles e decisões comerciais.
-12. [Experiência 3D/AR](MODULE_3D_AR.md): mídia, modelos, calibração e fallback.
-13. [Descoberta](MODULE_DISCOVERY.md): diretório, busca e dados públicos.
-14. [Roadmap](ROADMAP.md): sequência de implementação e critérios de conclusão.
-15. [Decisões comerciais e operacionais](DECISIONS_COMMERCIAL_AND_OPERATIONS.md): preços, provedores e políticas aprovadas em 13/11/2026.
-16. [Registro de decisões e pendências restantes](OPEN_DECISIONS.md): decisões aprovadas e parâmetros técnicos ainda a definir.
-17. [Contribuição](CONTRIBUTING.md): Git, testes, PRs e Definition of Done.
+10. [Editor visual de cardápios em tempo real e IA](MODULE_MENU_VISUAL_EDITOR_AI.md): especificação proposta para prévia sincronizada, branding, banners, múltiplos cardápios, Gemini + fallback Grok e compatibilidade 3D.
+11. [Especificação do assistente IA](MODULE_AI_ASSISTANT.md): fluxo, limites, validação e segurança.
+12. [Fidelidade e Boraê Club](MODULE_LOYALTY_CLUB.md): ledgers, resgates, controles e decisões comerciais.
+13. [Experiência 3D/AR](MODULE_3D_AR.md): mídia, modelos, calibração e fallback.
+14. [Descoberta](MODULE_DISCOVERY.md): diretório, busca e dados públicos.
+15. [Roadmap](ROADMAP.md): sequência de implementação e critérios de conclusão.
+16. [Decisões comerciais e operacionais](DECISIONS_COMMERCIAL_AND_OPERATIONS.md): preços, provedores e políticas aprovadas em 13/11/2026.
+17. [Registro de decisões e pendências restantes](OPEN_DECISIONS.md): decisões aprovadas e parâmetros técnicos ainda a definir.
+18. [Contribuição](CONTRIBUTING.md): Git, testes, PRs e Definition of Done.
 
 ## Como interpretar o status
 
