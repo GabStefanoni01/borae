@@ -1,6 +1,6 @@
 # Especificação de módulo — Assistente gastronômico
 
-**Status:** planejado; depende do catálogo publicado e confiável.
+**Status:** implementação em andamento na PR #29 (draft); depende do catálogo publicado e confiável e de homologação ponta a ponta.
 
 ## Provedor e arquitetura de integração — D-10
 
@@ -12,7 +12,7 @@
 - Aplicar rate limits por sessão/IP e controles de custo/consumo com visibilidade por restaurante.
 - Em falha, timeout ou saída inválida, manter a navegação disponível e recorrer à busca/filtros convencionais.
 
-Cotas aprovadas: até 20 interações por consumidor por dia e até 100 por restaurante por dia, aplicadas simultaneamente. Cada interação também terá limite de tokens, cujo valor será definido como parâmetro técnico antes de produção. Registrar tokens/consumo, latência, falhas e custo estimado por restaurante sem persistir conversas completas. Configurar a versão estável exata do Gemini Flash-Lite no momento da implementação. Revisar termos de uso de dados, faturamento e limites vigentes do Google antes de produção. A decisão não implica integração implementada.
+Cotas aprovadas: até 20 interações por consumidor por dia e até 100 por restaurante por dia, aplicadas simultaneamente. Há limite de 30 requisições por IP por minuto para antiabuso, separado da identidade de consumidor. Cada interação também terá limite de tokens, cujo valor será definido como parâmetro técnico antes de produção. Registrar tokens/consumo, latência, falhas e custo estimado por restaurante sem persistir conversas completas. Os agregados são retidos por 180 dias; o rate limit guarda HMAC do IP por no máximo 2 horas. Configurar a versão estável exata do Gemini Flash-Lite no momento da implementação. Revisar termos de uso de dados, faturamento e limites vigentes do Google antes de produção. A decisão não implica integração implementada.
 
 ## 1. Objetivo
 
@@ -89,6 +89,7 @@ Métricas por restaurante:
 - Latência/tempo de resposta.
 - Erros, timeouts, respostas inválidas e acionamentos de fallback.
 - Quantidade de chamadas e consumo de tokens, quando disponibilizados pelo provedor.
+- Custo estimado por restaurante, calculado com preços configuráveis por milhão de tokens e revisados antes de produção.
 
 Exibir somente para usuários autorizados daquele restaurante, respeitando o isolamento multi-tenant. Definir retenção mínima necessária para os agregados na implementação. Logs técnicos não devem conter mensagens completas.
 
