@@ -188,3 +188,32 @@ Renan (`@renancristianobn-del`) revisa o contrato e lidera a implementação Ang
 - Treinamento/fine-tuning de modelo.
 - Microserviço Python/FastAPI, agentes autônomos ou tool calling com acesso irrestrito.
 - Painel analítico completo; apenas instrumentação agregada para futura visualização.
+
+
+## 9. Decisão aprovada — sessão anônima assinada (17/11/2026)
+
+A estratégia de sessão anônima por cookie assinada pelo backend foi aprovada pelo responsável pelo produto.
+
+### Implementação iniciada
+
+- Cookie `BORA_ASSISTANT_SESSION`, HttpOnly, SameSite configurável e Secure configurável por ambiente.
+- Valor opaco com 256 bits aleatórios, payload com expiração e assinatura HMAC-SHA256.
+- Validação da assinatura em tempo constante e rejeição de cookies expirados/malformados.
+- Validade de 30 dias; chamada de bootstrap reutiliza cookie válido em vez de emitir outro.
+- Cookie limitado ao caminho `/api/v1/public`, compartilhado pelos endpoints públicos do assistente.
+- Endpoint `POST /api/v1/public/assistant/sessions` retorna 204 e define o cookie quando necessário.
+- CORS passa a aceitar credenciais somente nas origens explicitamente configuradas em `CORS_ALLOWED_ORIGINS`.
+- Identificador bruto não deve ser persistido ou registrado. O serviço expõe somente uma chave HMAC derivada para uso futuro na cota diária.
+- Segredo dedicado configurável por `ASSISTANT_SESSION_SECRET`; fallback para `JWT_SECRET` apenas para desenvolvimento/compatibilidade. Produção deve configurar segredo dedicado de alta entropia.
+- Testes unitários adicionados para atributos do cookie, emissão, derivação opaca da chave, adulteração, entradas inválidas e isolamento entre sessões.
+
+### Limite de identidade anônima
+
+Sem cadastro ou outro mecanismo de identidade forte, o limite de 20 interações é tecnicamente uma cota por **sessão de navegador**, não uma garantia de uma pessoa física única. O consumidor pode apagar cookies ou trocar de navegador/dispositivo. Não usar fingerprinting para tentar contornar essa limitação. O rate limit por IP será uma camada antiabuso separada e não substitui a cota da sessão.
+
+### Configuração operacional
+
+- Produção: definir `ASSISTANT_SESSION_SECRET` e `ASSISTANT_SESSION_COOKIE_SECURE=true`.
+- Se frontend e API estiverem em sites diferentes, configurar `ASSISTANT_SESSION_COOKIE_SAME_SITE=None` junto com `ASSISTANT_SESSION_COOKIE_SECURE=true`; manter CORS com origens explícitas, nunca curingas.
+- Para frontend/API same-site, manter `SameSite=Lax`.
+- A cota diária ainda precisa ser implementada com contador atômico e chave HMAC; o bootstrap de sessão, sozinho, não implementa as cotas.
