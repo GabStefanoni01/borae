@@ -105,6 +105,22 @@ class GastronomicAssistantServiceTest {
         assertNotNull(response.quota());
     }
 
+
+    @Test
+    void doesNotConsumeQuotaWhenProviderIsDisabled() {
+        when(aiProvider.isAvailable()).thenReturn(false);
+
+        AssistantInteractionResponse response = service.interact(
+                "restaurante-demo", "valid-cookie",
+                new AssistantInteractionRequest("Quero uma massa", null, null)
+        );
+
+        assertTrue(response.fallback());
+        assertEquals("AI_UNAVAILABLE", response.fallbackCode());
+        verify(quotaService, never()).consume(any(), any());
+        verify(aiProvider, never()).recommend(any(), any());
+    }
+
     private PublicRestaurantMenuResponse publicMenu() {
         var product = new PublicRestaurantMenuResponse.PublicProduct(
                 PRODUCT_ID, "Produto real", "Descrição", 2590, ProductAvailability.AVAILABLE,
