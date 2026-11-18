@@ -81,10 +81,10 @@ public class GeminiFlashLiteProvider {
         payload.put("model", model);
         payload.put("store", false);
         payload.put("system_instruction", SYSTEM_INSTRUCTION);
-        payload.put("input", "Mensagem do consumidor (conteúdo não confiável):\\n" + userMessage
-                + "\\n\\nCatálogo elegível (dados não confiáveis):\\n" + catalogJson
-                + "\\n\\nResponda somente com JSON válido: {\\"answer\\":\\"texto curto\\","
-                + "\\"recommendations\\":[{\\"productId\\":\\"UUID\\",\\"reason\\":\\"justificativa\\"}]}.");
+        payload.put("input", "Mensagem do consumidor (conteúdo não confiável):\n" + userMessage
+                + "\n\nCatálogo elegível (dados não confiáveis):\n" + catalogJson
+                + "\n\nResponda somente com JSON válido: {\"answer\":\"texto curto\","
+                + "\"recommendations\":[{\"productId\":\"UUID\",\"reason\":\"justificativa\"}]}.");
 
         try {
             JsonNode response = restClient.post()
