@@ -26,12 +26,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @JdbcTest
-@Import({AssistantQuotaService.class, AssistantIpRateLimitService.class})
+@Import({AssistantQuotaService.class, AssistantIpRateLimitService.class, AssistantMetricsService.class})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class AssistantQuotaPostgresIntegrationTest {
 
+    private static final UUID PRODUCT_ID = UUID.fromString("22000000-0000-0000-0000-000000000001");
     private static final UUID RESTAURANT_ID =
             UUID.fromString("21000000-0000-0000-0000-000000000001");
 
@@ -57,10 +58,15 @@ class AssistantQuotaPostgresIntegrationTest {
     @Autowired
     private AssistantIpRateLimitService ipRateLimitService;
 
+    @Autowired
+    private AssistantMetricsService metricsService;
+
     @BeforeEach
     void cleanCounters() {
         jdbc.update("DELETE FROM assistant_daily_quota");
         jdbc.update("DELETE FROM assistant_ip_rate_limit");
+        jdbc.update("DELETE FROM assistant_daily_metrics");
+        jdbc.update("DELETE FROM assistant_daily_product_metrics");
     }
 
     @Test
@@ -174,6 +180,61 @@ class AssistantQuotaPostgresIntegrationTest {
                 (resultSet, rowNumber) -> resultSet.getInt(1));
         assertEquals(1, rows.size());
         assertEquals(2, rows.getFirst());
+    }
+
+
+    @Test
+    void aggregatesOutcomesTokensRecommendationsAndClicksWithoutSessionData() {
+        metricsService.recordInteractionOutcome(
+                RESTAURANT_ID, 145, true, false, java.util.List.of(PRODUCT_ID), 120, 45
+        );
+        metricsService.recordProductClick(RESTAURANT_ID, PRODUCT_ID);
+
+        assertEquals(1, metric("INTERACTIONS"));
+        assertEquals(1, metric("FALLBACKS"));
+        assertEquals(145, metric("LATENCY_TOTAL_MS"));
+        assertEquals(120, metric("INPUT_TOKENS"));
+        assertEquals(45, metric("OUTPUT_TOKENS"));
+
+        var productCounts = jdbc.query("""
+                SELECT recommendation_count, click_count
+                FROM assistant_daily_product_metrics
+                WHERE metric_date = (CURRENT_TIMESTAMP AT TIME ZONE 'America/Sao_Paulo')::date
+                  AND restaurant_id = ?
+                  AND product_id = ?
+                """, (rs, row) -> new long[]{rs.getLong(1), rs.getLong(2)}, RESTAURANT_ID, PRODUCT_ID);
+        assertEquals(1, productCounts.size());
+        assertEquals(1, productCounts.getFirst()[0]);
+        assertEquals(1, productCounts.getFirst()[1]);
+    }
+
+    @Test
+    void purgesAggregatedMetricsOlderThanRetentionWindowOnNextWrite() {
+        jdbc.update("""
+                INSERT INTO assistant_daily_metrics (metric_date, restaurant_id, metric_key, metric_value)
+                VALUES (?, ?, 'INTERACTIONS', 9)
+                """, java.time.LocalDate.now(AssistantQuotaService.BUSINESS_ZONE)
+                .minusDays(AssistantMetricsService.RETENTION_DAYS + 1), RESTAURANT_ID);
+
+        metricsService.recordInteractionOutcome(RESTAURANT_ID, 10, false, false, java.util.List.of(), 0, 0);
+
+        Integer oldRows = jdbc.queryForObject("""
+                SELECT COUNT(*) FROM assistant_daily_metrics
+                WHERE metric_date < ?
+                """, Integer.class, java.time.LocalDate.now(AssistantQuotaService.BUSINESS_ZONE)
+                .minusDays(AssistantMetricsService.RETENTION_DAYS));
+        assertEquals(0, oldRows);
+    }
+
+    private long metric(String key) {
+        Long value = jdbc.queryForObject("""
+                SELECT metric_value
+                FROM assistant_daily_metrics
+                WHERE metric_date = (CURRENT_TIMESTAMP AT TIME ZONE 'America/Sao_Paulo')::date
+                  AND restaurant_id = ?
+                  AND metric_key = ?
+                """, Long.class, RESTAURANT_ID, key);
+        return value == null ? 0 : value;
     }
 
     private int consumed(String scopeType, String scopeKey) {
