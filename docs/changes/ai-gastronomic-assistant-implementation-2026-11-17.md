@@ -1,7 +1,7 @@
 # Plano de implementação — Assistente gastronômico
 
 **Data:** 17/11/2026  
-**Status:** sessão anônima, cotas, endpoint público de interação e adaptador Gemini implementados inicialmente; CI e hardening ainda em validação; frontend Angular pendente.  
+**Status:** sessão anônima, cotas, endpoint público de interação, rate limit por IP pseudonimizado, métricas agregadas e adaptador Gemini implementados inicialmente; CI do commit final em validação; frontend Angular pendente.  
 **Escopo:** primeira entrega do assistente no cardápio público, seguindo `MODULE_AI_ASSISTANT.md`, D-10 e D-11.
 
 ## 1. Objetivo do MVP
@@ -57,7 +57,10 @@ Manter o monólito modular existente. Criar o domínio `com.borae.assistant`; n�
 - `GastronomicAssistantService`: resolve o restaurante pelo slug, carrega catálogo elegível, aplica cotas e revalida a saída.
 - `AssistantCatalogContextService`: monta contexto mínimo do restaurante e dos produtos publicados/disponíveis.
 - `AiProvider`: interface interna independente do SDK/provedor.
-- `GeminiFlashLiteProvider`: adaptador REST stateless para a API Interactions do Gemini Flash-Lite, `store=false`, `response_format` JSON, timeout e limite de tokens de saída; ativação exige `GEMINI_ENABLED=true`, chave e aprovação explícita de tratamento de dados.
+- `GeminiFlashLiteProvider`: adaptador REST stateless para a API Interactions do Gemini Flash-Lite, `store=false`, `response_format` JSON Schema efetivamente enviado, timeout, limite de tokens de saída e captura de uso de tokens; ativação exige `GEMINI_ENABLED=true`, chave e aprovação explícita de tratamento de dados.
+- `AssistantIpRateLimitService`: limite distribuído de 30 solicitações/minuto por IP, com HMAC no banco, sem persistir endereço bruto e `Retry-After` em 429.
+- `AssistantMetricsService`: agregados diários por restaurante para interações, fallback, sem resultado, latência, tokens, recomendações por produto e cliques; retenção de 180 dias.
+- `AssistantRecommendationClickService`: valida sessão e disponibilidade atual do produto antes de registrar clique agregado.
 - `AssistantQuotaService`: consumo diário atômico por restaurante e sessão anônima, com janela `America/Sao_Paulo`.
 - `AssistantMetricsService`: grava somente métricas/eventos agregados permitidos por D-11.
 - `AssistantRecommendationValidator`: valida IDs, remove duplicidades e recarrega dados autoritativos do catálogo.
@@ -106,7 +109,7 @@ Não persistir texto da mensagem, prompt, resposta, conteúdo integral enviado a
 - Timeout de conexão e resposta configuráveis; retry ainda não implementado. Falhas do provedor retornam fallback; a tentativa consome cota quando o provedor estava habilitado e a chamada foi iniciada.
 - O adaptador permanece desabilitado por padrão. Só habilitar com `GEMINI_ENABLED=true`, `GEMINI_API_KEY` e `GEMINI_DATA_PROCESSING_APPROVED=true`, após validar plano/faturamento e termos de tratamento de dados do Google. O fato de não armazenarmos histórico no Boraê não elimina o tratamento feito pelo provedor.
 - Contar a interação conforme a regra aprovada e definir claramente se falha técnica consome cota; proposta: falha anterior à chamada do provedor não consome; chamada efetivamente enviada consome para impedir abuso/custo.
-- Rate limit adicional por IP ainda pendente; não confiar em `X-Forwarded-For` sem proxy confiável configurado. IP não substitui a cota da sessão.
+- Rate limit adicional implementado: 30 requisições/minuto por IP com HMAC e bucket PostgreSQL distribuído. Por padrão usa `request.getRemoteAddr()` e ignora `X-Forwarded-For`; `ASSISTANT_TRUST_FORWARDED_HEADERS=true` só deve ser usado se o proxy confiável sobrescrever esse header. IP não substitui a cota da sessão.
 - Respostas de erro não devem expor prompt, stack trace, chave ou mensagem bruta do provedor.
 - Não registrar corpo HTTP de entrada/saída nem conteúdo enviado ao Gemini.
 - Não confiar em nomes, descrições ou ingredientes como instruções. Escapar/delimitar contexto e instruir o modelo a ignorar comandos contidos nos dados.
