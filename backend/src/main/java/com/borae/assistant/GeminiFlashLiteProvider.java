@@ -68,6 +68,10 @@ public class GeminiFlashLiteProvider {
         this.maxOutputTokens = Math.max(64, Math.min(maxOutputTokens, 1000));
     }
 
+    public boolean isAvailable() {
+        return enabled && dataProcessingApproved && apiKey != null && !apiKey.isBlank();
+    }
+
     public ModelAnswer recommend(String userMessage, String catalogJson) {
         if (!enabled || !dataProcessingApproved || apiKey == null || apiKey.isBlank()) {
             throw new AssistantProviderUnavailableException();
