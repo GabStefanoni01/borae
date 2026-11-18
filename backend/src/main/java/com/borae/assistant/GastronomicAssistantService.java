@@ -76,6 +76,13 @@ public class GastronomicAssistantService {
             );
         }
 
+        if (!aiProvider.isAvailable()) {
+            return new AssistantInteractionResponse(
+                    "O assistente está temporariamente indisponível. Você ainda pode explorar o cardápio normalmente.",
+                    List.of(), null, true, "AI_UNAVAILABLE"
+            );
+        }
+
         // Commit quota before the provider call: provider errors still consume the attempted interaction.
         AssistantQuotaService.QuotaConsumption quota = quotaService.consume(menu.id(), quotaKey);
         AssistantInteractionResponse.Quota quotaDto = new AssistantInteractionResponse.Quota(
