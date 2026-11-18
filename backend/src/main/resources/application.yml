@@ -33,6 +33,27 @@ app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
   public-restaurant-url-prefix: ${PUBLIC_RESTAURANT_URL_PREFIX:http://localhost:4200/r/}
+  assistant:
+    session:
+      # Use a dedicated high-entropy secret in production. JWT_SECRET is a development fallback only.
+      secret: ${ASSISTANT_SESSION_SECRET:${JWT_SECRET:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}}
+      cookie-secure: ${ASSISTANT_SESSION_COOKIE_SECURE:false}
+      cookie-same-site: ${ASSISTANT_SESSION_COOKIE_SAME_SITE:Lax}
+    rate-limit:
+      # Separate secret recommended in production; session secret is a development fallback.
+      secret: ${ASSISTANT_RATE_LIMIT_SECRET:${ASSISTANT_SESSION_SECRET:${JWT_SECRET:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}}}
+      # Enable only when the reverse proxy overwrites X-Forwarded-For and is trusted.
+      trust-forwarded-headers: ${ASSISTANT_TRUST_FORWARDED_HEADERS:false}
+    gemini:
+      enabled: ${GEMINI_ENABLED:false}
+      # Enable only after confirming the Google AI data-processing terms/tier for production.
+      data-processing-approved: ${GEMINI_DATA_PROCESSING_APPROVED:false}
+      api-key: ${GEMINI_API_KEY:}
+      model: ${GEMINI_MODEL:gemini-3.5-flash-lite}
+      timeout-seconds: ${GEMINI_TIMEOUT_SECONDS:12}
+      max-output-tokens: ${GEMINI_MAX_OUTPUT_TOKENS:500}
+      input-price-per-million-usd: ${GEMINI_INPUT_PRICE_PER_MILLION_USD:0.30}
+      output-price-per-million-usd: ${GEMINI_OUTPUT_PRICE_PER_MILLION_USD:2.50}
   storage:
     imagekit:
       private-key: ${IMAGEKIT_PRIVATE_KEY:}
