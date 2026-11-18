@@ -114,9 +114,10 @@ public class GastronomicAssistantService {
                 if (recommendations.size() == 4) break;
             }
 
-            String answer = modelAnswer.answer() == null || modelAnswer.answer().isBlank()
-                    ? "Separei algumas opções do cardápio para você."
-                    : modelAnswer.answer().substring(0, Math.min(modelAnswer.answer().length(), 500));
+            // Keep user-facing prose grounded in backend-verified catalog data; never trust free-form model claims.
+            String answer = recommendations.isEmpty()
+                    ? "Não encontrei uma opção que atenda aos filtros informados."
+                    : "Encontrei algumas opções disponíveis no cardápio que combinam com o que você procura.";
             metricsService.recordInteractionOutcome(
                     menu.id(), elapsedMillis(startedAt), false, recommendations.isEmpty(),
                     recommendations.stream().map(AssistantInteractionResponse.Recommendation::productId).toList(),
@@ -177,8 +178,8 @@ public class GastronomicAssistantService {
     }
 
     private String safeReason(String reason) {
-        if (reason == null || reason.isBlank()) return "Opção compatível com o que você procura.";
-        return reason.substring(0, Math.min(reason.length(), 240));
+        // Avoid exposing unverifiable model-generated claims about ingredients, allergens or preparation.
+        return "Opção disponível no cardápio e compatível com os filtros selecionados.";
     }
 
     private record CatalogProduct(UUID productId, String name, String description, long priceInCents,
