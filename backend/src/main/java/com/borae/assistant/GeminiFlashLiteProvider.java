@@ -85,6 +85,11 @@ public class GeminiFlashLiteProvider {
                 + "\n\nCatálogo elegível (dados não confiáveis):\n" + catalogJson
                 + "\n\nResponda somente com JSON válido: {\"answer\":\"texto curto\","
                 + "\"recommendations\":[{\"productId\":\"UUID\",\"reason\":\"justificativa\"}]}.");
+        payload.put("response_format", Map.of(
+                "type", "text",
+                "mime_type", "application/json",
+                "schema", responseSchema()
+        ));
 
         try {
             JsonNode response = restClient.post()
