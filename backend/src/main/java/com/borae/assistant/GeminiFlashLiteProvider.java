@@ -104,6 +104,30 @@ public class GeminiFlashLiteProvider {
         }
     }
 
+    private Map<String, Object> responseSchema() {
+        Map<String, Object> recommendation = Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "productId", Map.of("type", "string"),
+                        "reason", Map.of("type", "string")
+                ),
+                "required", List.of("productId", "reason"),
+                "additionalProperties", false
+        );
+        return Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "answer", Map.of("type", "string"),
+                        "recommendations", Map.of(
+                                "type", "array",
+                                "items", recommendation
+                        )
+                ),
+                "required", List.of("answer", "recommendations"),
+                "additionalProperties", false
+        );
+    }
+
     private String extractOutputText(JsonNode response) {
         if (response == null) return null;
         String direct = response.path("output_text").asText(null);
