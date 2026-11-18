@@ -39,6 +39,11 @@ app:
       secret: ${ASSISTANT_SESSION_SECRET:${JWT_SECRET:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}}
       cookie-secure: ${ASSISTANT_SESSION_COOKIE_SECURE:false}
       cookie-same-site: ${ASSISTANT_SESSION_COOKIE_SAME_SITE:Lax}
+    gemini:
+      api-key: ${GEMINI_API_KEY:}
+      model: ${GEMINI_MODEL:gemini-3.1-flash-lite}
+      timeout-seconds: ${GEMINI_TIMEOUT_SECONDS:12}
+      max-output-tokens: ${GEMINI_MAX_OUTPUT_TOKENS:500}
   storage:
     imagekit:
       private-key: ${IMAGEKIT_PRIVATE_KEY:}
