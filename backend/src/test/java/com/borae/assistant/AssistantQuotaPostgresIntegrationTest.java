@@ -170,10 +170,10 @@ class AssistantQuotaPostgresIntegrationTest {
         ipRateLimitService.checkAndConsume(first);
         ipRateLimitService.checkAndConsume(second);
 
-        var rows = jdbc.query("SELECT ip_hash, request_count FROM assistant_ip_rate_limit",
-                (resultSet, rowNumber) -> resultSet.getString(1) + ":" + resultSet.getInt(2));
+        var rows = jdbc.query("SELECT request_count FROM assistant_ip_rate_limit",
+                (resultSet, rowNumber) -> resultSet.getInt(1));
         assertEquals(1, rows.size());
-        assertEquals(1, rows.getFirst().split(":")[1].length() > 0 ? 1 : 0);
+        assertEquals(2, rows.getFirst());
     }
 
     private int consumed(String scopeType, String scopeKey) {
