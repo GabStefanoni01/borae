@@ -26,7 +26,7 @@ class AnonymousAssistantSessionServiceTest {
 
         assertEquals(AnonymousAssistantSessionService.COOKIE_NAME, cookie.getName());
         assertTrue(cookie.isHttpOnly());
-        assertFalse(cookie.getSecure());
+        assertFalse(cookie.toString().contains("; Secure"));
         assertEquals("Lax", cookie.getSameSite());
         assertEquals("/api/v1/public", cookie.getPath());
         assertEquals(2592000, cookie.getMaxAge().getSeconds());
