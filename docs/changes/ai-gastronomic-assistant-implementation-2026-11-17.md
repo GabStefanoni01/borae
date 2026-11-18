@@ -1,7 +1,7 @@
 # Plano de implementação — Assistente gastronômico
 
 **Data:** 17/11/2026  
-**Status:** contrato técnico detalhado; implementação funcional depende da decisão de identidade de sessão descrita na seção 4.  
+**Status:** implementação inicial de sessão anônima e cotas concluída; endpoint de interação, integração Gemini e frontend ainda pendentes.  
 **Escopo:** primeira entrega do assistente no cardápio público, seguindo `MODULE_AI_ASSISTANT.md`, D-10 e D-11.
 
 ## 1. Objetivo do MVP
@@ -38,15 +38,13 @@ O assistente é uma camada de descoberta. Não cria pedidos, não adiciona itens
 - Registrar tokens (quando fornecidos), latência, erros e custo estimado por restaurante.
 - Antes de produção, validar versão estável, faturamento, limites, termos de uso e tratamento de dados do Google.
 
-## 4. Bloqueio técnico que precisa de decisão antes da cota por consumidor
+## 4. Decisão aprovada — sessão anônima assinada (17/11/2026)
 
-O PRD permite consulta anônima ao cardápio e não há hoje uma identidade/sessão de consumidor implementada no backend. A conta existente (`UserAccount`) atende autenticação do painel/restaurante e não deve ser reaproveitada como identidade de consumidor.
+A identidade anônima foi aprovada pelo responsável pelo produto. O backend emite cookie `BORA_ASSISTANT_SESSION`, com 256 bits aleatórios, assinatura HMAC-SHA256, HttpOnly, validade de 30 dias e atributos SameSite/Secure configuráveis. O endpoint `POST /api/v1/public/assistant/sessions` reutiliza cookie válido e emite um novo quando necessário.
 
-A regra de 20 interações por consumidor/dia está aprovada, mas falta definir como identificar um consumidor anônimo de forma confiável. Não adotar silenciosamente IP como identidade (NAT pode agrupar várias pessoas) nem um UUID livre do navegador (pode ser trocado para contornar a cota).
+A cota de 20 é tecnicamente por sessão de navegador, não uma garantia por pessoa física. Apagar cookies ou trocar de navegador/dispositivo pode gerar nova sessão; não usar fingerprinting. IP será somente camada antiabuso separada, nunca identidade. O banco recebe apenas chave HMAC opaca, nunca cookie ou ID bruto. Em produção, configurar segredo dedicado de alta entropia e cookie Secure.
 
-**Alternativa técnica recomendada para aprovação:** endpoint de bootstrap emite cookie de sessão anônima assinado pelo backend, com identificador aleatório opaco, HttpOnly, Secure em produção, SameSite apropriado e validade curta renovável. A cota usa HMAC/hash do identificador no escopo diário, sem persistir o identificador bruto. Aplicar também rate limit de abuso por IP, sem usar IP como identidade de consumidor. O contador técnico de cota deve expirar após a janela diária; ele não é histórico analítico nem histórico de conversa.
-
-Até a aprovação dessa estratégia, não declarar a cota individual implementada nem liberar o endpoint de IA em produção. A cota de 100 por restaurante também deve ser aplicada atomicamente para evitar ultrapassagem por chamadas concorrentes.
+A migration V10 e `AssistantQuotaService` implementam cotas de 20 por sessão/dia e 100 por restaurante/dia com upsert atômico e transação única. Testes PostgreSQL cobrem consumo, limite de sessão e rollback quando o limite do restaurante é atingido. Teste de concorrência paralela ainda precisa ser adicionado.
 
 ## 5. Backend — desenho de implementação
 
@@ -140,7 +138,7 @@ A interface será implementada no Angular existente, integrada à página públi
 
 ### Responsabilidade de integração
 
-Renan (`@renancristianobn-del`) revisa o contrato e lidera a implementação Angular após o backend publicar DTOs/OpenAPI estáveis. O frontend não deve antecipar um contrato diferente do backend. A integração final valida CORS, cookie de sessão com credenciais, SameSite/Secure e ambiente de homologação.
+Renan (`@renancristianobn-del`) é responsável exclusivamente pela implementação Angular: painel, serviço HTTP, estados, acessibilidade e integração com o cardápio público. Ele não é reviewer desta PR. O frontend deve aguardar DTOs/OpenAPI estáveis; a integração final valida CORS, cookie de sessão com credenciais, SameSite/Secure e ambiente de homologação.
 
 ## 7. Testes e critérios de aceite
 
@@ -167,12 +165,12 @@ Renan (`@renancristianobn-del`) revisa o contrato e lidera a implementação Ang
 - Testes de serviço e componente; `npm run build`.
 
 ### Definition of Done
-- [ ] Decisão da identidade/sessão anônima aprovada.
+- [x] Decisão da identidade/sessão anônima aprovada.
 - [ ] Gemini Flash-Lite e condições operacionais validadas.
-- [ ] Migration e cotas atômicas implementadas.
+- [x] Migration e cotas atômicas implementadas (testes de concorrência ainda pendentes).
 - [ ] Backend, OpenAPI e testes aprovados.
 - [ ] Frontend Angular integrado por contrato.
-- [ ] Renan revisou e validou a integração.
+- [ ] Renan implementou e validou a integração Angular.
 - [ ] CI backend/frontend verde.
 - [ ] Homologação ponta a ponta realizada sem persistência de conversas.
 - [ ] Documentação de API, arquitetura e módulo atualizada.
