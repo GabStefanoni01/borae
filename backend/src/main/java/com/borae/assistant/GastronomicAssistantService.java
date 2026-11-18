@@ -114,7 +114,7 @@ public class GastronomicAssistantService {
     private List<CatalogProduct> eligibleProducts(PublicRestaurantMenuResponse menu,
                                                    AssistantInteractionRequest request) {
         AssistantInteractionRequest.Filters filters = request.filters();
-        if (filters != null && request.menuId() != null
+        if (request.menuId() != null
                 && menu.menus().stream().noneMatch(item -> item.id().equals(request.menuId()))) {
             return List.of();
         }
@@ -127,7 +127,7 @@ public class GastronomicAssistantService {
                 .filter(value -> !value.isBlank()).toList();
 
         return menu.menus().stream()
-                .filter(item -> filters == null || request.menuId() == null || item.id().equals(request.menuId()))
+                .filter(item -> request.menuId() == null || item.id().equals(request.menuId()))
                 .flatMap(item -> item.categories().stream())
                 .filter(category -> categoryIds.isEmpty() || categoryIds.contains(category.id()))
                 .flatMap(category -> category.products().stream()
