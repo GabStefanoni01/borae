@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/api/v1/public/restaurants/{slug}/assistant")
@@ -17,9 +18,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class PublicAssistantInteractionController {
 
     private final GastronomicAssistantService assistantService;
+    private final AssistantIpRateLimitService ipRateLimitService;
 
-    public PublicAssistantInteractionController(GastronomicAssistantService assistantService) {
+    public PublicAssistantInteractionController(
+            GastronomicAssistantService assistantService,
+            AssistantIpRateLimitService ipRateLimitService
+    ) {
         this.assistantService = assistantService;
+        this.ipRateLimitService = ipRateLimitService;
     }
 
     @PostMapping(value = "/interactions", consumes = MediaType.APPLICATION_JSON_VALUE,
@@ -31,8 +37,10 @@ public class PublicAssistantInteractionController {
     public AssistantInteractionResponse interact(
             @PathVariable String slug,
             @CookieValue(name = AnonymousAssistantSessionService.COOKIE_NAME, required = false) String sessionCookie,
-            @Valid @RequestBody AssistantInteractionRequest request
+            @Valid @RequestBody AssistantInteractionRequest request,
+            HttpServletRequest httpRequest
     ) {
+        ipRateLimitService.checkAndConsume(httpRequest);
         return assistantService.interact(slug, sessionCookie, request);
     }
 }
