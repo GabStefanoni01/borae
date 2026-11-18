@@ -28,6 +28,7 @@ class GastronomicAssistantServiceTest {
     private static final UUID CATEGORY_ID = UUID.randomUUID();
     private static final UUID PRODUCT_ID = UUID.randomUUID();
     private static final UUID FOREIGN_PRODUCT_ID = UUID.randomUUID();
+    private static final UUID UNAVAILABLE_PRODUCT_ID = UUID.randomUUID();
 
     @Mock private PublicRestaurantMenuService publicMenuService;
     @Mock private AnonymousAssistantSessionService sessionService;
@@ -70,6 +71,7 @@ class GastronomicAssistantServiceTest {
                 List.of(
                         new GeminiFlashLiteProvider.ModelRecommendation(PRODUCT_ID, "Combina com sua preferência."),
                         new GeminiFlashLiteProvider.ModelRecommendation(PRODUCT_ID, "Duplicado."),
+                        new GeminiFlashLiteProvider.ModelRecommendation(UNAVAILABLE_PRODUCT_ID, "Produto indisponível."),
                         new GeminiFlashLiteProvider.ModelRecommendation(FOREIGN_PRODUCT_ID, "Não pertence ao catálogo.")
                 )
         ));
@@ -109,7 +111,7 @@ class GastronomicAssistantServiceTest {
                 0, List.of("tomate", "manjericão"), List.of(), null, null
         );
         var unavailable = new PublicRestaurantMenuResponse.PublicProduct(
-                UUID.randomUUID(), "Produto indisponível", null, 1990, ProductAvailability.UNAVAILABLE,
+                UNAVAILABLE_PRODUCT_ID, "Produto indisponível", null, 1990, ProductAvailability.UNAVAILABLE,
                 1, List.of(), List.of(), null, null
         );
         var category = new PublicRestaurantMenuResponse.PublicCategory(
