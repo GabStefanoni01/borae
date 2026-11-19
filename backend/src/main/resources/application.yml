@@ -36,16 +36,18 @@ server:
         max-age: 3600s
 security:
   ip-headers: ${SECURITY_IP_HEADERS:X-Forwarded-For,X-Real-IP,CF-Connecting-IP}
-  trust-forwarded-headers: ${SECURITY_TRUST_FORWARDED_HEADERS:true}
+  trusted-proxies: ${SECURITY_TRUSTED_PROXIES:}
   headers:
     hsts-enabled: ${SECURITY_HSTS_ENABLED:false}
+    hsts-max-age-seconds: ${SECURITY_HSTS_MAX_AGE_SECONDS:31536000}
+    hsts-include-subdomains: ${SECURITY_HSTS_INCLUDE_SUBDOMAINS:false}
   jwt:
     secret: ${JWT_SECRET:}
     expiration-ms: ${JWT_EXPIRATION_MS:900000}
     issuer: ${JWT_ISSUER:borae-api}
   rate-limit:
     storage-mode: ${RATE_LIMIT_STORAGE_MODE:postgres}
-    login-max: ${RATE_LIMIT_LOGIN_MAX:10}
+    login-max: ${RATE_LIMIT_LOGIN_MAX:20}
     login-window-ms: ${RATE_LIMIT_LOGIN_WINDOW_MS:900000}
     login-max-failures: ${RATE_LIMIT_LOGIN_MAX_FAILURES:5}
     login-lockout-ms: ${RATE_LIMIT_LOGIN_LOCKOUT_MS:900000}

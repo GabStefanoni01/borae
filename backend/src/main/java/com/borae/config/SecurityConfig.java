@@ -46,7 +46,9 @@ public class SecurityConfig {
             SecurityAnomalyMonitor anomalyMonitor,
             SecurityAuditLogger auditLogger,
             ObjectMapper objectMapper,
-            @Value("${security.headers.hsts-enabled:false}") boolean hstsAlwaysEnabled
+            @Value("${security.headers.hsts-enabled:false}") boolean hstsAlwaysEnabled,
+            @Value("${security.headers.hsts-max-age-seconds:31536000}") long hstsMaxAgeSeconds,
+            @Value("${security.headers.hsts-include-subdomains:false}") boolean hstsIncludeSubDomains
     ) throws Exception {
         JwtAuthenticationFilter jwtAuthenticationFilter =
                 new JwtAuthenticationFilter(jwtService, auditLogger, ipResolver);
@@ -57,7 +59,9 @@ public class SecurityConfig {
                 anomalyMonitor,
                 auditLogger,
                 objectMapper,
-                hstsAlwaysEnabled
+                hstsAlwaysEnabled,
+                hstsMaxAgeSeconds,
+                hstsIncludeSubDomains
         );
 
         return http

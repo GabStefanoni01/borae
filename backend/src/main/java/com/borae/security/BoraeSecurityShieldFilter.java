@@ -31,7 +31,7 @@ public class BoraeSecurityShieldFilter extends OncePerRequestFilter {
             "default-src 'self'",
             "script-src 'self'",
             "style-src 'self' 'unsafe-inline'",
-            "img-src 'self' data: blob: https://ik.imagekit.io https:",
+            "img-src 'self' data: blob: https://ik.imagekit.io",
             "font-src 'self' data:",
             "connect-src 'self' https://ik.imagekit.io",
             "media-src 'self' blob: https://ik.imagekit.io",
@@ -43,7 +43,6 @@ public class BoraeSecurityShieldFilter extends OncePerRequestFilter {
     );
 
     private static final String PRIVATE_NO_STORE = "private, no-store, max-age=0, must-revalidate";
-    private static final String HSTS_VALUE = "max-age=63072000; includeSubDomains";
 
     private final ClientIpResolver ipResolver;
     private final WafRequestInspector wafInspector;
@@ -52,6 +51,7 @@ public class BoraeSecurityShieldFilter extends OncePerRequestFilter {
     private final SecurityAuditLogger auditLogger;
     private final ObjectMapper objectMapper;
     private final boolean hstsAlwaysEnabled;
+    private final String hstsHeaderValue;
 
     public BoraeSecurityShieldFilter(
             ClientIpResolver ipResolver,
@@ -62,6 +62,21 @@ public class BoraeSecurityShieldFilter extends OncePerRequestFilter {
             ObjectMapper objectMapper,
             boolean hstsAlwaysEnabled
     ) {
+        this(ipResolver, wafInspector, rateLimitService, anomalyMonitor, auditLogger,
+                objectMapper, hstsAlwaysEnabled, 31536000L, false);
+    }
+
+    public BoraeSecurityShieldFilter(
+            ClientIpResolver ipResolver,
+            WafRequestInspector wafInspector,
+            RateLimitService rateLimitService,
+            SecurityAnomalyMonitor anomalyMonitor,
+            SecurityAuditLogger auditLogger,
+            ObjectMapper objectMapper,
+            boolean hstsAlwaysEnabled,
+            long hstsMaxAgeSeconds,
+            boolean hstsIncludeSubDomains
+    ) {
         this.ipResolver = ipResolver;
         this.wafInspector = wafInspector;
         this.rateLimitService = rateLimitService;
@@ -69,6 +84,8 @@ public class BoraeSecurityShieldFilter extends OncePerRequestFilter {
         this.auditLogger = auditLogger;
         this.objectMapper = objectMapper;
         this.hstsAlwaysEnabled = hstsAlwaysEnabled;
+        long safeMaxAge = Math.max(0L, hstsMaxAgeSeconds);
+        this.hstsHeaderValue = "max-age=" + safeMaxAge + (hstsIncludeSubDomains ? "; includeSubDomains" : "");
     }
 
     @Override
@@ -176,7 +193,7 @@ public class BoraeSecurityShieldFilter extends OncePerRequestFilter {
         response.setHeader("X-Frame-Options", "DENY");
         response.setHeader("X-XSS-Protection", "0");
         response.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-        response.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+        response.setHeader("Permissions-Policy", "camera=(self), geolocation=(self), microphone=(), payment=(), usb=()");
         response.setHeader("X-Permitted-Cross-Domain-Policies", "none");
         response.setHeader("Content-Security-Policy", DEFAULT_CSP);
 
@@ -184,11 +201,11 @@ public class BoraeSecurityShieldFilter extends OncePerRequestFilter {
             response.setHeader("Cache-Control", PRIVATE_NO_STORE);
         }
 
-        boolean isHttps = request.isSecure()
-                || "https".equalsIgnoreCase(request.getHeader("X-Forwarded-Proto"))
-                || hstsAlwaysEnabled;
+        boolean trustedForwardedHttps = ipResolver.isTrustedProxy(request.getRemoteAddr())
+                && "https".equalsIgnoreCase(request.getHeader("X-Forwarded-Proto"));
+        boolean isHttps = request.isSecure() || trustedForwardedHttps || hstsAlwaysEnabled;
         if (isHttps) {
-            response.setHeader("Strict-Transport-Security", HSTS_VALUE);
+            response.setHeader("Strict-Transport-Security", hstsHeaderValue);
         }
     }
 
