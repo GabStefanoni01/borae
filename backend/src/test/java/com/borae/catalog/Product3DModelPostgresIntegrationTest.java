@@ -112,6 +112,19 @@ class Product3DModelPostgresIntegrationTest {
         assertEquals(1, count("SELECT COUNT(*) FROM menu_product_3d_model_audit WHERE product_id = ?", PRODUCT_ID));
     }
 
+    @Test
+    void incrementsSharedRateLimitAtomicallyInRealPostgres() {
+        com.borae.security.PostgresRateLimitStorage storage = new com.borae.security.PostgresRateLimitStorage(jdbc);
+        String key = "usuario:test-pg:auth-login";
+
+        com.borae.security.RateLimitWindow first = storage.increment(key, 60_000L);
+        com.borae.security.RateLimitWindow second = storage.increment(key, 60_000L);
+
+        assertEquals(1, first.count());
+        assertEquals(2, second.count());
+        assertEquals(first.resetAtEpochMs(), second.resetAtEpochMs());
+    }
+
     private void insertProduct(UUID productId, String name) {
         jdbc.update("INSERT INTO menu_product (id, category_id, name, price_in_cents, lifecycle_status, availability, display_order) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 productId, CATEGORY_ID, name, 2590L, "ACTIVE", "AVAILABLE", 0);
