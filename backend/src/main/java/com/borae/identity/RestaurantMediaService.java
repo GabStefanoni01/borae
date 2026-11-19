@@ -43,7 +43,10 @@ public class RestaurantMediaService {
     @Transactional(readOnly = true)
     public List<RestaurantMediaResponse> list(UUID restaurantId, UserAccount actor) {
         requireManagerAccess(restaurantId, actor);
-        return mediaRepository.findAllByRestaurant_IdOrderByCreatedAtDesc(restaurantId)
+        return mediaRepository.findAllByRestaurant_IdAndMediaTypeInOrderByCreatedAtDesc(
+                        restaurantId,
+                        List.of(RestaurantMediaType.LOGO, RestaurantMediaType.PHOTO)
+                )
                 .stream().map(RestaurantMediaResponse::from).toList();
     }
 

@@ -23,6 +23,12 @@
               "outputHashing": "all"
             },
             "development": {"optimization": false, "extractLicenses": false, "sourceMap": true},
+            "local": {
+              "optimization": false, "extractLicenses": false, "sourceMap": true,
+              "fileReplacements": [
+                {"replace": "src/environments/environment.ts", "with": "src/environments/environment.local.ts"}
+              ]
+            },
             "demo": {
               "optimization": false, "extractLicenses": false, "sourceMap": true,
               "fileReplacements": [
@@ -37,6 +43,7 @@
           "configurations": {
             "production": {"buildTarget": "borae-frontend:build:production"},
             "development": {"buildTarget": "borae-frontend:build:development"},
+            "local": {"buildTarget": "borae-frontend:build:local"},
             "demo": {"buildTarget": "borae-frontend:build:demo"}
           },
           "defaultConfiguration": "development"

@@ -47,6 +47,12 @@ import { catalogErrorMessage } from './catalog-errors';
             @default {
               <h2 id="c-pub-title">Seu restaurante ainda não está público.</h2>
               <p>Publique seu perfil para disponibilizar sua página pública e permitir que clientes acessem seus cardápios.</p>
+              @if (missingProfileFields().length) {
+                <div class="d-alert d-alert-warning" role="status">
+                  <bo-icon name="alert" [size]="16" />
+                  <p>Antes de publicar, preencha os campos obrigatórios em <a routerLink="/app/restaurante">Meu restaurante</a>: <strong>{{ missingProfileFields().join(', ') }}</strong>.</p>
+                </div>
+              }
               <div class="d-form-actions">
                 <button type="button" class="d-btn d-btn-primary" (click)="publish()" [disabled]="busy()">
                   <bo-icon [name]="busy() ? 'loader' : 'globe'" [size]="16" [spin]="busy()" /> Publicar restaurante
@@ -55,8 +61,8 @@ import { catalogErrorMessage } from './catalog-errors';
             }
           }
           <ul class="c-pub-notes">
-            <li><bo-icon name="info" [size]="14" /> A página mostra apenas cardápios publicados, categorias ativas e produtos não arquivados.</li>
-            <li><bo-icon name="book-open" [size]="14" /> Publicar o restaurante não publica cardápios: cada cardápio tem sua própria publicação em <a routerLink="/app/cardapios">Cardápios</a>.</li>
+            <li><bo-icon name="info" [size]="14" /> <span>A página mostra apenas cardápios publicados, categorias ativas e produtos não arquivados.</span></li>
+            <li><bo-icon name="book-open" [size]="14" /> <span>Publicar o restaurante não publica cardápios: cada cardápio tem sua própria publicação em <a routerLink="/app/cardapios">Cardápios</a>.</span></li>
           </ul>
         </section>
 
@@ -109,6 +115,16 @@ export class PublicationPage {
   protected readonly qrError = signal('');
 
   protected readonly fileName = computed(() => `qrcode-${sanitizeFileName(this.profile()?.name ?? 'restaurante')}.png`);
+  protected readonly missingProfileFields = computed(() => {
+    const p = this.profile();
+    if (!p) return [];
+    const missing: string[] = [];
+    if (!p.name?.trim()) missing.push('Nome do restaurante');
+    if (!p.slug?.trim()) missing.push('Endereço público (slug)');
+    if (!p.category?.trim()) missing.push('Categoria gastronômica');
+    if (!p.address?.trim()) missing.push('Endereço');
+    return missing;
+  });
 
   constructor() {
     effect(() => {

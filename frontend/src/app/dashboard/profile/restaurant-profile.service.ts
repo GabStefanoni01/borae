@@ -140,20 +140,24 @@ export class RestaurantProfileService {
   }
 }
 
-/** A API não devolve o texto do erro (server.error.include-message=never); mensagens por status e contexto. */
+/** Mensagens por status HTTP e contexto, aproveitando a mensagem segura do ApiExceptionHandler quando presente. */
 export function profileErrorMessage(error: unknown, context: 'profile' | 'hours' | 'media-upload' | 'media-delete' | 'load'): string {
   const status = error instanceof HttpErrorResponse ? error.status : -1;
+  const apiMessage = error instanceof HttpErrorResponse && typeof error.error?.message === 'string' && error.error.message.trim()
+    ? error.error.message.trim()
+    : null;
   if (status === 0) return 'Não foi possível conectar ao Boraê. Verifique sua conexão e tente novamente.';
   if (status === 401) return 'Sua sessão expirou. Entre novamente para continuar.';
   if (status === 403) return 'Seu papel neste restaurante não permite administrar o perfil. Somente proprietário e gerentes podem editar.';
   if (status === 404) return context === 'media-delete' ? 'Esta imagem já não existe.' : 'Restaurante não encontrado ou inativo.';
+  if (status === 429) return apiMessage ?? 'Muitas solicitações em sequência. Aguarde alguns instantes e tente novamente.';
   if (status >= 500) return context === 'media-upload'
     ? 'O servidor não conseguiu armazenar a imagem agora. Tente novamente em instantes.'
     : 'O servidor encontrou um problema. Tente novamente em instantes.';
   switch (context) {
     case 'profile':
       if (status === 409) return 'Este endereço público já está em uso por outro restaurante.';
-      if (status === 400) return 'Confira os campos: nome obrigatório, endereço público só com letras, números e hífens, e latitude/longitude informadas juntas e dentro dos limites.';
+      if (status === 400) return apiMessage ?? 'Confira os campos: nome obrigatório, endereço público só com letras, números e hífens, e latitude/longitude informadas juntas e dentro dos limites.';
       break;
     case 'hours':
       if (status === 400) return 'A grade não foi aceita. Confira se cada dia aberto tem horários completos, se o fechamento é depois da abertura e se os intervalos não se sobrepõem.';

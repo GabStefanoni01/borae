@@ -67,7 +67,7 @@ Regras da resposta pública:
 - O produto inclui `model3d` somente quando há modelo publicado; o objeto contém URL pública, MIME e dimensões em milímetros. Sem modelo publicado, `model3d` é `null`.
 - O caminho `/api/v1/public/**` é liberado da autenticação JWT; os demais endpoints continuam protegidos conforme suas regras.
 
-**Publicação do perfil:** OWNER ou MANAGER pode publicar e despublicar o perfil pelos endpoints autenticados. Restaurante suspenso não pode ser publicado nem ter seu estado alterado pelo painel da equipe. Despublicar não arquiva cardápios nem apaga o catálogo.
+**Publicação do perfil:** OWNER ou MANAGER pode publicar e despublicar o perfil pelos endpoints autenticados. Antes de publicar (`POST /api/v1/restaurants/{restaurantId}/publish`), o backend valida os campos obrigatórios definidos na **Decisão D-01** (`name`, `slug`, `category` e `address`), devolvendo `400 Bad Request` se algum estiver ausente; enquanto `PUBLISHED`, esses campos também não podem ser esvaziados via `PATCH`. Restaurante suspenso não pode ser publicado nem ter seu estado alterado pelo painel da equipe (`409 Conflict`). Despublicar não arquiva cardápios nem apaga o catálogo. A consulta pública `GET /api/v1/public/restaurants/{slug}/menu` normaliza o `slug` para minúsculas. `GET /api/v1/restaurants/{restaurantId}/media` retorna exclusivamente mídia do restaurante (`LOGO` e `PHOTO`), sem expor `PRODUCT_IMAGE`.
 
 ### QR Code principal
 
