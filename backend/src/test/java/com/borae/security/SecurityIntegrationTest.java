@@ -25,6 +25,7 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -93,11 +94,40 @@ class SecurityIntegrationTest {
     }
 
     @Test
-    void shouldRejectExpiredAndInvalidSignatureJwtsOnProtectedEndpoints() throws Exception {
+    void shouldRejectMissingIssuerWrongIssuerExpiredAndInvalidSignatureJwtsOnProtectedEndpoints() throws Exception {
         String email = "jwt-user-" + UUID.randomUUID() + "@example.com";
         registerAndGetToken("User JWT", email);
 
         SecretKey correctKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(configuredJwtSecret));
+
+        // 1. Token sem claim 'iss' -> 401 Unauthorized (SEC-REV-01)
+        String missingIssuerToken = Jwts.builder()
+                .subject(email)
+                .issuedAt(new Date())
+                .expiration(Date.from(Instant.now().plusSeconds(900)))
+                .signWith(correctKey, Jwts.SIG.HS256)
+                .compact();
+
+        mockMvc.perform(get("/api/v1/users/me")
+                        .header("Authorization", "Bearer " + missingIssuerToken))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
+
+        // 2. Token com 'iss' diferente de 'borae-api' -> 401 Unauthorized
+        String wrongIssuerToken = Jwts.builder()
+                .subject(email)
+                .issuer("forged-issuer")
+                .issuedAt(new Date())
+                .expiration(Date.from(Instant.now().plusSeconds(900)))
+                .signWith(correctKey, Jwts.SIG.HS256)
+                .compact();
+
+        mockMvc.perform(get("/api/v1/users/me")
+                        .header("Authorization", "Bearer " + wrongIssuerToken))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
+
+        // 3. Token expirado -> 401 Unauthorized
         Instant expiredTime = Instant.now().minusSeconds(300);
         String expiredToken = Jwts.builder()
                 .subject(email)
@@ -112,6 +142,7 @@ class SecurityIntegrationTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401));
 
+        // 4. Token com assinatura inválida -> 401 Unauthorized
         SecretKey wrongKey = Keys.hmacShaKeyFor(
                 Decoders.BASE64.decode("QW5vdGhlclZhbGlkQjY0U2VjcmV0S2V5Rm9yQm9yYWVTZWN1cml0eVN1aXRlOTk="));
         String forgedToken = Jwts.builder()
@@ -133,24 +164,20 @@ class SecurityIntegrationTest {
         String ownerToken = registerAndGetToken("Owner", "owner-" + UUID.randomUUID() + "@example.com");
         String restaurantId = createRestaurant(ownerToken, "Restaurante RBAC");
 
-        // Convidar e aceitar STAFF
         String staffEmail = "staff-" + UUID.randomUUID() + "@example.com";
         String staffInviteToken = inviteMember(ownerToken, restaurantId, staffEmail, "STAFF");
         String staffToken = registerAndGetToken("Staff", staffEmail);
         String staffMembershipId = acceptInvitation(staffToken, staffInviteToken);
 
-        // Convidar e aceitar MANAGER
         String managerEmail = "manager-" + UUID.randomUUID() + "@example.com";
         String managerInviteToken = inviteMember(ownerToken, restaurantId, managerEmail, "MANAGER");
         String managerToken = registerAndGetToken("Manager", managerEmail);
         acceptInvitation(managerToken, managerInviteToken);
 
-        // OWNER/MANAGER criam cardápio, categoria e produto
         String menuId = createMenu(managerToken, restaurantId, "Cardápio Principal");
         String categoryId = createCategory(managerToken, restaurantId, menuId, "Pratos");
         String productId = createProduct(managerToken, restaurantId, menuId, categoryId, "Risoto", 4500L);
 
-        // STAFF não pode acessar perfil administrativo, publicar restaurante, convidar, criar menu/categoria/produto ou gerar QR Code
         mockMvc.perform(get("/api/v1/restaurants/" + restaurantId)
                         .header("Authorization", "Bearer " + staffToken))
                 .andExpect(status().isForbidden());
@@ -198,7 +225,6 @@ class SecurityIntegrationTest {
                         ))))
                 .andExpect(status().isForbidden());
 
-        // STAFF pode alterar exclusivamente a disponibilidade operacional
         mockMvc.perform(patch("/api/v1/restaurants/" + restaurantId + "/menus/" + menuId + "/products/" + productId + "/availability")
                         .header("Authorization", "Bearer " + staffToken)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -206,7 +232,6 @@ class SecurityIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.availability").value("UNAVAILABLE"));
 
-        // MANAGER não pode criar convites nem alterar papel ou remover membros
         mockMvc.perform(post("/api/v1/restaurants/" + restaurantId + "/invitations")
                         .header("Authorization", "Bearer " + managerToken)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -238,7 +263,6 @@ class SecurityIntegrationTest {
         String categoryBId = createCategory(ownerBToken, restaurantBId, menuBId, "Categoria B");
         String productBId = createProduct(ownerBToken, restaurantBId, menuBId, categoryBId, "Produto B", 3000L);
 
-        // Owner A não pode ler nem alterar qualquer recurso do Restaurante B
         mockMvc.perform(get("/api/v1/restaurants/" + restaurantBId)
                         .header("Authorization", "Bearer " + ownerAToken))
                 .andExpect(status().isForbidden());
@@ -269,7 +293,6 @@ class SecurityIntegrationTest {
                         .header("Authorization", "Bearer " + ownerAToken))
                 .andExpect(status().isForbidden());
 
-        // Tentativa de IDOR cruzado: Owner A usando restaurantAId na rota mas apontando para menuBId / categoryBId / productBId
         mockMvc.perform(get("/api/v1/restaurants/" + restaurantAId + "/menus/" + menuBId)
                         .header("Authorization", "Bearer " + ownerAToken))
                 .andExpect(status().isNotFound());
@@ -304,38 +327,118 @@ class SecurityIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    // SEC-REV-03 & SEC-REV-02: Bloqueio de login ponta a ponta após 5 falhas consecutivas e prevenção contra IP spoofing
     @Test
-    void shouldEnforceHttpRateLimitingAndWafProtection() throws Exception {
-        String ip = "198.51.100.200";
-        String loginBody = objectMapper.writeValueAsString(Map.of(
-                "email", "ratelimit@example.com",
+    void shouldEnforceEndToEndLoginLockoutAfterFiveFailuresAndPreventIpSpoofingBypass() throws Exception {
+        String existingEmail = "target-" + UUID.randomUUID() + "@example.com";
+        registerAndGetToken("Target User", existingEmail);
+
+        String clientSocketIp = "198.51.100.200";
+        String wrongPasswordBody = objectMapper.writeValueAsString(Map.of(
+                "email", existingEmail,
                 "password", "wrong-password-123"
         ));
+        String correctPasswordBody = objectMapper.writeValueAsString(Map.of(
+                "email", existingEmail,
+                "password", "senha-segura-123"
+        ));
 
-        for (int i = 0; i < 10; i++) {
+        // Tentativas 1 a 5: mesmo tentando falsificar X-Forwarded-For, X-Real-IP e CF-Connecting-IP a cada chamada,
+        // os cabeçalhos falsos são ignorados e as 5 falhas retornam 401 Unauthorized
+        for (int attempt = 1; attempt <= 5; attempt++) {
+            int attemptNum = attempt;
             mockMvc.perform(post("/api/v1/auth/login")
-                            .header("X-Forwarded-For", ip)
+                            .with(remoteAddr(clientSocketIp))
+                            .header("X-Forwarded-For", "203.0.113." + attemptNum)
+                            .header("X-Real-IP", "203.0.113." + (100 + attemptNum))
+                            .header("CF-Connecting-IP", "203.0.113." + (200 + attemptNum))
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(loginBody))
+                            .content(wrongPasswordBody))
                     .andExpect(status().isUnauthorized())
-                    .andExpect(header().exists("X-RateLimit-Limit"))
-                    .andExpect(header().exists("X-RateLimit-Remaining"));
+                    .andExpect(jsonPath("$.status").value(401))
+                    .andExpect(jsonPath("$.message").value("E-mail ou senha inválidos."));
         }
 
-        // 11ª tentativa excede o limite de login (10 por 15 min) e retorna 429 Too Many Requests
+        // 6ª tentativa: bloqueio temporário de 15 minutos ativado -> retorna 429 Too Many Requests com Retry-After
         mockMvc.perform(post("/api/v1/auth/login")
-                        .header("X-Forwarded-For", ip)
+                        .with(remoteAddr(clientSocketIp))
+                        .header("X-Forwarded-For", "192.0.2.99")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(loginBody))
+                        .content(correctPasswordBody))
                 .andExpect(status().isTooManyRequests())
                 .andExpect(header().exists("Retry-After"))
+                .andExpect(header().string("X-RateLimit-Limit", "5"))
+                .andExpect(header().string("X-RateLimit-Remaining", "0"))
+                .andExpect(jsonPath("$.status").value(429))
+                .andExpect(jsonPath("$.error").value("rate_limit"))
+                .andExpect(jsonPath("$.retryAfterSeconds").isNumber());
+
+        // E-mail inexistente tem exatamente o mesmo comportamento externo (5x 401 -> 6ª 429 com Retry-After)
+        String nonExistentBody = objectMapper.writeValueAsString(Map.of(
+                "email", "inexistente-" + UUID.randomUUID() + "@example.com",
+                "password", "wrong-password-123"
+        ));
+        for (int attempt = 1; attempt <= 5; attempt++) {
+            mockMvc.perform(post("/api/v1/auth/login")
+                            .with(remoteAddr("198.51.100.205"))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(nonExistentBody))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.status").value(401))
+                    .andExpect(jsonPath("$.message").value("E-mail ou senha inválidos."));
+        }
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .with(remoteAddr("198.51.100.205"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(nonExistentBody))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().exists("Retry-After"))
+                .andExpect(header().string("X-RateLimit-Limit", "5"))
                 .andExpect(header().string("X-RateLimit-Remaining", "0"))
                 .andExpect(jsonPath("$.status").value(429))
                 .andExpect(jsonPath("$.error").value("rate_limit"));
+    }
+
+    @Test
+    void shouldPreventBypassingVolumetricRateLimitViaHeaderSpoofingAndBlockWafScanners() throws Exception {
+        String attackerSocketIp = "198.51.100.222";
+
+        // Limite de registro é 10 por hora por IP. Enviar um X-Forwarded-For falso diferente a cada chamada
+        // NÃO contorna o rate limiter porque a conexão direta não vem de um proxy confiável
+        for (int i = 1; i <= 10; i++) {
+            String body = objectMapper.writeValueAsString(Map.of(
+                    "fullName", "Spam User " + i,
+                    "email", "spam-" + i + "-" + UUID.randomUUID() + "@example.com",
+                    "password", "senha-segura-123"
+            ));
+            mockMvc.perform(post("/api/v1/auth/register")
+                            .with(remoteAddr(attackerSocketIp))
+                            .header("X-Forwarded-For", "10.99.0." + i)
+                            .header("X-Real-IP", "10.99.1." + i)
+                            .header("CF-Connecting-IP", "10.99.2." + i)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isCreated());
+        }
+
+        String eleventhBody = objectMapper.writeValueAsString(Map.of(
+                "fullName", "Spam User 11",
+                "email", "spam-11-" + UUID.randomUUID() + "@example.com",
+                "password", "senha-segura-123"
+        ));
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .with(remoteAddr(attackerSocketIp))
+                        .header("X-Forwarded-For", "10.99.0.250")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(eleventhBody))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().exists("Retry-After"))
+                .andExpect(header().string("X-RateLimit-Remaining", "0"))
+                .andExpect(jsonPath("$.status").value(429));
 
         // WAF bloqueia ferramenta de varredura (sqlmap) com 403
         mockMvc.perform(get("/api/v1/public/restaurants/borae/menu")
-                        .header("X-Forwarded-For", "198.51.100.201")
+                        .with(remoteAddr("198.51.100.201"))
                         .header("User-Agent", "sqlmap/1.8"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.status").value(403));
@@ -343,14 +446,12 @@ class SecurityIntegrationTest {
 
     @Test
     void shouldAllowAuthorizedCorsOriginAndRejectUnauthorizedCorsOrigin() throws Exception {
-        // Origem autorizada (http://localhost:4200)
         mockMvc.perform(options("/api/v1/auth/login")
                         .header("Origin", "http://localhost:4200")
                         .header("Access-Control-Request-Method", "POST"))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:4200"));
 
-        // Origem não autorizada
         mockMvc.perform(options("/api/v1/auth/login")
                         .header("Origin", "https://malicious-site.example.com")
                         .header("Access-Control-Request-Method", "POST"))
@@ -363,25 +464,26 @@ class SecurityIntegrationTest {
         String ownerToken = registerAndGetToken("Owner Upload", "upload-" + UUID.randomUUID() + "@example.com");
         String restaurantId = createRestaurant(ownerToken, "Restaurante Upload");
 
-        // Arquivo com extensão .png mas conteúdo de texto inválido -> 400 Bad Request
         MockMultipartFile invalidFile = new MockMultipartFile(
                 "file", "fake.png", "image/png", "not-a-valid-png-binary-content".getBytes(StandardCharsets.UTF_8));
 
         mockMvc.perform(multipart("/api/v1/restaurants/" + restaurantId + "/media")
                         .file(invalidFile)
                         .param("type", "LOGO")
-                        .header("Authorization", "Bearer " + ownerToken)
-                        .header("X-Forwarded-Proto", "https"))
+                        .with(request -> {
+                            request.setSecure(true);
+                            return request;
+                        })
+                        .header("Authorization", "Bearer " + ownerToken))
                 .andExpect(status().isBadRequest())
                 .andExpect(header().string("X-Content-Type-Options", "nosniff"))
                 .andExpect(header().string("X-Frame-Options", "DENY"))
                 .andExpect(header().string("X-XSS-Protection", "0"))
                 .andExpect(header().string("Referrer-Policy", "strict-origin-when-cross-origin"))
-                .andExpect(header().exists("Content-Security-Policy"))
-                .andExpect(header().exists("Strict-Transport-Security"))
+                .andExpect(header().string("Content-Security-Policy", containsString("https://ik.imagekit.io")))
+                .andExpect(header().string("Strict-Transport-Security", "max-age=31536000"))
                 .andExpect(jsonPath("$.message", not(containsString("Exception"))));
 
-        // Upload de logo acima de 5 MB -> 413 Payload Too Large
         MockMultipartFile oversizedLogo = new MockMultipartFile(
                 "file", "huge-logo.png", "image/png", new byte[5 * 1024 * 1024 + 32]);
 
@@ -393,14 +495,22 @@ class SecurityIntegrationTest {
                 .andExpect(jsonPath("$.status").value(413));
     }
 
+    private static RequestPostProcessor remoteAddr(String ip) {
+        return request -> {
+            request.setRemoteAddr(ip);
+            return request;
+        };
+    }
+
     private String registerAndGetToken(String fullName, String email) throws Exception {
         String body = objectMapper.writeValueAsString(Map.of(
                 "fullName", fullName,
                 "email", email,
                 "password", "senha-segura-123"
         ));
+        String uniqueIp = "10.0." + (Math.abs(email.hashCode()) % 250) + "." + (Math.abs(fullName.hashCode()) % 250 + 1);
         String response = mockMvc.perform(post("/api/v1/auth/register")
-                        .header("X-Forwarded-For", "10.0." + (Math.abs(email.hashCode()) % 250) + "." + (Math.abs(fullName.hashCode()) % 250))
+                        .with(remoteAddr(uniqueIp))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isCreated())

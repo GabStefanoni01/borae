@@ -125,6 +125,41 @@ class Product3DModelPostgresIntegrationTest {
         assertEquals(first.resetAtEpochMs(), second.resetAtEpochMs());
     }
 
+    @Test
+    void enforcesDistributedLoginLockoutAcrossMultipleInstancesInRealPostgres() {
+        com.borae.security.PostgresRateLimitStorage instanceAStorage = new com.borae.security.PostgresRateLimitStorage(jdbc);
+        com.borae.security.PostgresRateLimitStorage instanceBStorage = new com.borae.security.PostgresRateLimitStorage(jdbc);
+        com.borae.security.SecurityAuditLogger auditLogger = new com.borae.security.SecurityAuditLogger();
+
+        com.borae.security.RateLimitService instanceA = new com.borae.security.RateLimitService(
+                instanceAStorage, new com.borae.security.InMemoryRateLimitStorage(), auditLogger, System::currentTimeMillis,
+                20, 900_000L, 5, 900_000L, 10, 15, 10, 30, 20, 120, 30, 120, 100, 10_000L, 600_000L
+        );
+        com.borae.security.RateLimitService instanceB = new com.borae.security.RateLimitService(
+                instanceBStorage, new com.borae.security.InMemoryRateLimitStorage(), auditLogger, System::currentTimeMillis,
+                20, 900_000L, 5, 900_000L, 10, 15, 10, 30, 20, 120, 30, 120, 100, 10_000L, 600_000L
+        );
+
+        String targetEmail = "distributed-target@borae.com";
+
+        // 3 falhas registradas na Instância A + 2 falhas registradas na Instância B (total = 5 no PostgreSQL)
+        instanceA.recordLoginFailure(targetEmail, "198.51.100.1");
+        instanceA.recordLoginFailure(targetEmail, "198.51.100.2");
+        instanceA.recordLoginFailure(targetEmail, "198.51.100.3");
+        instanceB.recordLoginFailure(targetEmail, "198.51.100.4");
+        instanceB.recordLoginFailure(targetEmail, "198.51.100.5");
+
+        // 6ª tentativa é bloqueada tanto na Instância A quanto na Instância B
+        assertThrows(com.borae.security.RateLimitExceededException.class,
+                () -> instanceA.assertLoginAttemptAllowed(targetEmail, "198.51.100.6"));
+        assertThrows(com.borae.security.RateLimitExceededException.class,
+                () -> instanceB.assertLoginAttemptAllowed(targetEmail, "198.51.100.6"));
+
+        // Reset após login válido na Instância A libera imediatamente a Instância B
+        instanceA.clearLoginFailures(targetEmail, "198.51.100.6");
+        instanceB.assertLoginAttemptAllowed(targetEmail, "198.51.100.6");
+    }
+
     private void insertProduct(UUID productId, String name) {
         jdbc.update("INSERT INTO menu_product (id, category_id, name, price_in_cents, lifecycle_status, availability, display_order) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 productId, CATEGORY_ID, name, 2590L, "ACTIVE", "AVAILABLE", 0);
