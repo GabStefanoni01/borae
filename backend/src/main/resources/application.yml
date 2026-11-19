@@ -25,10 +25,41 @@ server:
   error:
     include-message: never
     include-binding-errors: never
+    include-stacktrace: never
+    include-exception: false
+  servlet:
+    session:
+      cookie:
+        http-only: true
+        secure: ${COOKIE_SECURE:true}
+        same-site: lax
+        max-age: 3600s
 security:
+  ip-headers: ${SECURITY_IP_HEADERS:X-Forwarded-For,X-Real-IP,CF-Connecting-IP}
+  trust-forwarded-headers: ${SECURITY_TRUST_FORWARDED_HEADERS:true}
+  headers:
+    hsts-enabled: ${SECURITY_HSTS_ENABLED:false}
   jwt:
-    secret: ${JWT_SECRET:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}
+    secret: ${JWT_SECRET:}
     expiration-ms: ${JWT_EXPIRATION_MS:900000}
+    issuer: ${JWT_ISSUER:borae-api}
+  rate-limit:
+    storage-mode: ${RATE_LIMIT_STORAGE_MODE:postgres}
+    login-max: ${RATE_LIMIT_LOGIN_MAX:10}
+    login-window-ms: ${RATE_LIMIT_LOGIN_WINDOW_MS:900000}
+    login-max-failures: ${RATE_LIMIT_LOGIN_MAX_FAILURES:5}
+    login-lockout-ms: ${RATE_LIMIT_LOGIN_LOCKOUT_MS:900000}
+    register-max: ${RATE_LIMIT_REGISTER_MAX:10}
+    invitation-accept-max: ${RATE_LIMIT_INVITATION_ACCEPT_MAX:15}
+    invitation-send-hour-max: ${RATE_LIMIT_INVITATION_SEND_HOUR_MAX:10}
+    invitation-send-day-restaurant-max: ${RATE_LIMIT_INVITATION_SEND_DAY_RESTAURANT_MAX:30}
+    media-upload-max: ${RATE_LIMIT_MEDIA_UPLOAD_MAX:20}
+    public-max: ${RATE_LIMIT_PUBLIC_MAX:120}
+    admin-sensitive-max: ${RATE_LIMIT_ADMIN_SENSITIVE_MAX:30}
+    default-max: ${RATE_LIMIT_DEFAULT_MAX:120}
+    peak-max: ${RATE_LIMIT_PEAK_MAX:100}
+    peak-window-ms: ${RATE_LIMIT_PEAK_WINDOW_MS:10000}
+    attack-block-ms: ${RATE_LIMIT_ATTACK_BLOCK_MS:600000}
 app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
@@ -44,6 +75,7 @@ management:
         include: health,info
   endpoint:
     health:
+      show-details: never
       probes:
         enabled: true
 springdoc:
