@@ -9,3 +9,8 @@ spring:
       ddl-auto: create-drop
   flyway:
     enabled: false
+security:
+  jwt:
+    secret: VGVzdE9ubHlCNjRTZWNyZXRLZXlGb3JCb3JhZVNlY3VyaXR5U3VpdGUyMDI2IQ==
+  rate-limit:
+    storage-mode: memory

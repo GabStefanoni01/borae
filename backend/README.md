@@ -43,7 +43,7 @@ Para construir somente a imagem: `docker build -t borae-backend ./backend`.
 
 O cadastro armazena a senha com BCrypt e retorna um access token. Envie o token nas rotas protegidas usando `Authorization: Bearer <token>`.
 
-O access token expira por padrão em 15 minutos. Configure `JWT_SECRET` com uma chave Base64 forte de pelo menos 256 bits. O valor padrão da aplicação existe apenas para desenvolvimento local e não deve ser usado em produção. Refresh tokens, recuperação de senha, verificação de e-mail e rate limiting ainda não fazem parte desta etapa.
+O access token expira por padrão em 15 minutos e exige a claim `iss=borae-api`. **Não existe valor padrão para `JWT_SECRET`**: configure obrigatoriamente `JWT_SECRET` com uma chave Base64 criptograficamente forte de pelo menos 32 bytes (256 bits) após decodificação. O login possui bloqueio temporário de 15 minutos após 5 tentativas consecutivas inválidas e as rotas contam com rate limiting distribuído no PostgreSQL (`security_rate_limit`) com reserva em memória. Para confiar em cabeçalhos de proxy (`X-Forwarded-For`), configure explicitamente os IPs/CIDRs dos proxies confiáveis em `SECURITY_TRUSTED_PROXIES`.
 
 ## Banco e testes
 A migration inicial cria `user_account`, `restaurant` e `restaurant_membership`. A aplicação usa `ddl-auto: validate`; evolua o schema por migrations Flyway.

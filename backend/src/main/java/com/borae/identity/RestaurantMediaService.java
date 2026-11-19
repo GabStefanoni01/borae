@@ -1,8 +1,12 @@
 package com.borae.identity;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -13,6 +17,7 @@ import java.util.UUID;
 @Service
 public class RestaurantMediaService {
 
+    private static final Logger log = LoggerFactory.getLogger(RestaurantMediaService.class);
     private static final long LOGO_MAX_BYTES = 5L * 1024 * 1024;
     private static final long PHOTO_MAX_BYTES = 10L * 1024 * 1024;
     private static final long MAX_PHOTOS = 100L;
@@ -49,6 +54,10 @@ public class RestaurantMediaService {
         if (type == null || file == null || file.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Selecione o tipo e o arquivo de imagem.");
         }
+        if (type == RestaurantMediaType.PRODUCT_IMAGE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Imagens de produtos devem ser enviadas pelo endpoint específico do produto.");
+        }
 
         long maxBytes = type == RestaurantMediaType.LOGO ? LOGO_MAX_BYTES : PHOTO_MAX_BYTES;
         if (file.getSize() > maxBytes) {
@@ -65,6 +74,10 @@ public class RestaurantMediaService {
             original = file.getBytes();
         } catch (IOException exception) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Não foi possível ler o arquivo enviado.");
+        }
+        if (original.length > maxBytes) {
+            throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE,
+                    type == RestaurantMediaType.LOGO ? "A logo pode ter no máximo 5 MB." : "Cada foto pode ter no máximo 10 MB.");
         }
         RestaurantImageProcessor.ProcessedImage processed =
                 imageProcessor.process(original, file.getOriginalFilename(), file.getContentType());
@@ -84,14 +97,24 @@ public class RestaurantMediaService {
 
         RestaurantMedia saved;
         try {
-            saved = mediaRepository.save(new RestaurantMedia(restaurant, type, uploaded.fileId(), uploaded.publicUrl(),
-                    processed.contentType(), processed.bytes().length, processed.width(), processed.height()));
             if (previousLogo != null) {
                 mediaRepository.delete(previousLogo);
-                storage.delete(previousLogo.getProviderFileId());
+                mediaRepository.flush();
+            }
+            saved = mediaRepository.save(new RestaurantMedia(restaurant, type, uploaded.fileId(), uploaded.publicUrl(),
+                    processed.contentType(), processed.bytes().length, processed.width(), processed.height()));
+            deleteUploadedAssetIfTransactionRollsBack(uploaded.fileId());
+            if (previousLogo != null) {
+                deleteFromStorageAfterCommit(previousLogo.getProviderFileId());
             }
         } catch (RuntimeException exception) {
-            storage.delete(uploaded.fileId());
+            try {
+                storage.delete(uploaded.fileId());
+            } catch (RuntimeException cleanupException) {
+                log.warn("REMOTE_STORAGE_ORPHAN_CLEANUP_REQUIRED: falha ao remover mídia recém-enviada após erro de persistência. fileId={}",
+                        uploaded.fileId(), cleanupException);
+                exception.addSuppressed(cleanupException);
+            }
             throw exception;
         }
         return RestaurantMediaResponse.from(saved);
@@ -102,8 +125,52 @@ public class RestaurantMediaService {
         requireManagerAccess(restaurantId, actor);
         RestaurantMedia media = mediaRepository.findByIdAndRestaurant_Id(mediaId, restaurantId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Imagem não encontrada."));
+        if (media.getMediaType() == RestaurantMediaType.PRODUCT_IMAGE) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Imagens de produtos devem ser removidas pelo endpoint específico do produto.");
+        }
         mediaRepository.delete(media);
-        storage.delete(media.getProviderFileId());
+        deleteFromStorageAfterCommit(media.getProviderFileId());
+    }
+
+    private void deleteUploadedAssetIfTransactionRollsBack(String fileId) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status == TransactionSynchronization.STATUS_ROLLED_BACK) {
+                    deleteRemoteWithRetry(fileId, "rollback");
+                }
+            }
+        });
+    }
+
+    private void deleteFromStorageAfterCommit(String fileId) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    deleteRemoteWithRetry(fileId, "afterCommit");
+                }
+            });
+        } else {
+            deleteRemoteWithRetry(fileId, "direct");
+        }
+    }
+
+    private void deleteRemoteWithRetry(String fileId, String phase) {
+        try {
+            storage.delete(fileId);
+        } catch (RuntimeException firstException) {
+            try {
+                storage.delete(fileId);
+            } catch (RuntimeException secondException) {
+                log.warn("REMOTE_STORAGE_ORPHAN_CLEANUP_REQUIRED: não foi possível remover mídia remota do ImageKit (fase={}). fileId={}",
+                        phase, fileId, secondException);
+            }
+        }
     }
 
     private void requireManagerAccess(UUID restaurantId, UserAccount actor) {

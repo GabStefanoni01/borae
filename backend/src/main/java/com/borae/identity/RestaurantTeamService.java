@@ -21,6 +21,8 @@ import java.util.UUID;
 public class RestaurantTeamService {
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private static final long MAX_INVITATIONS_PER_ADMIN_HOUR = 10L;
+    private static final long MAX_INVITATIONS_PER_RESTAURANT_DAY = 30L;
 
     private final RestaurantRepository restaurantRepository;
     private final RestaurantMembershipRepository membershipRepository;
@@ -63,6 +65,18 @@ public class RestaurantTeamService {
                 .filter(Restaurant::isActive)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Restaurante não encontrado."));
 
+        Instant now = Instant.now();
+        if (invitationRepository.countByCreatedBy_IdAndCreatedAtAfter(actor.getId(), now.minus(1, ChronoUnit.HOURS))
+                >= MAX_INVITATIONS_PER_ADMIN_HOUR) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                    "Limite de 10 convites por hora por administrador atingido.");
+        }
+        if (invitationRepository.countByRestaurant_IdAndCreatedAtAfter(restaurantId, now.minus(24, ChronoUnit.HOURS))
+                >= MAX_INVITATIONS_PER_RESTAURANT_DAY) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                    "Limite de 30 convites por dia por restaurante atingido.");
+        }
+
         String email = request.email().trim().toLowerCase(Locale.ROOT);
         if (userRepository.findByEmail(email)
                 .filter(UserAccount::isActive)
@@ -71,12 +85,12 @@ public class RestaurantTeamService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Este usuário já faz parte da equipe.");
         }
         if (invitationRepository.existsByRestaurant_IdAndEmailIgnoreCaseAndAcceptedAtIsNullAndExpiresAtAfter(
-                restaurantId, email, Instant.now())) {
+                restaurantId, email, now)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um convite pendente para este e-mail.");
         }
 
         String token = generateToken();
-        Instant expiresAt = Instant.now().plus(7, ChronoUnit.DAYS);
+        Instant expiresAt = now.plus(7, ChronoUnit.DAYS);
         RestaurantInvitation invitation = invitationRepository.save(new RestaurantInvitation(
                 restaurant, email, request.role(), hashToken(token), expiresAt, actor
         ));
@@ -89,6 +103,10 @@ public class RestaurantTeamService {
         String tokenHash = hashToken(request.token());
         RestaurantInvitation invitation = invitationRepository.findByTokenHash(tokenHash)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Convite inválido ou inexistente."));
+
+        if (!invitation.getRestaurant().isActive()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Restaurante não encontrado.");
+        }
 
         Instant now = Instant.now();
         if (!invitation.isPendingAt(now)) {

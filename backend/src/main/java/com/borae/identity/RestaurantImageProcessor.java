@@ -1,12 +1,12 @@
 package com.borae.identity;
 
+import com.drew.imaging.ImageMetadataReader;
+import com.drew.imaging.ImageProcessingException;
+import com.drew.metadata.Metadata;
+import com.drew.metadata.exif.ExifIFD0Directory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
-import com.drew.metadata.Metadata;
-import com.drew.metadata.exif.ExifIFD0Directory;
-import com.drew.imaging.ImageMetadataReader;
-import com.drew.imaging.ImageProcessingException;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
@@ -15,8 +15,8 @@ import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.Graphics2D;
-import java.awt.geom.AffineTransform;
 import java.awt.RenderingHints;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -28,10 +28,14 @@ import java.util.Locale;
 public class RestaurantImageProcessor {
 
     private static final int MAX_EDGE = 2000;
+    private static final int MAX_SOURCE_DIMENSION = 12_000;
     private static final long MAX_PIXELS = 40_000_000L;
     private static final float QUALITY = 0.85f;
 
     public ProcessedImage process(byte[] source, String filename, String declaredContentType) {
+        if (source == null || source.length < 12) {
+            throw badImage();
+        }
         String extension = extension(filename);
         String expectedType = switch (extension) {
             case "jpg", "jpeg" -> "image/jpeg";
@@ -39,7 +43,10 @@ public class RestaurantImageProcessor {
             case "webp" -> "image/webp";
             default -> throw badImage();
         };
-        if (declaredContentType == null || !expectedType.equalsIgnoreCase(declaredContentType)) {
+        if (declaredContentType == null || !expectedType.equalsIgnoreCase(declaredContentType.trim())) {
+            throw badImage();
+        }
+        if (!matchesMagicBytes(source, expectedType)) {
             throw badImage();
         }
 
@@ -61,7 +68,12 @@ public class RestaurantImageProcessor {
                 if (!formatMatches) throw badImage();
                 int width = reader.getWidth(0);
                 int height = reader.getHeight(0);
-                if (width < 1 || height < 1 || (long) width * height > MAX_PIXELS) throw badImage();
+                if (width < 1 || height < 1
+                        || width > MAX_SOURCE_DIMENSION
+                        || height > MAX_SOURCE_DIMENSION
+                        || (long) width * height > MAX_PIXELS) {
+                    throw badImage();
+                }
                 BufferedImage original = reader.read(0);
                 if (original == null) throw badImage();
                 BufferedImage oriented = applyExifOrientation(original, exifOrientation(source));
@@ -111,13 +123,39 @@ public class RestaurantImageProcessor {
         }
     }
 
+    private boolean matchesMagicBytes(byte[] bytes, String expectedType) {
+        return switch (expectedType) {
+            case "image/jpeg" -> (bytes[0] & 0xFF) == 0xFF
+                    && (bytes[1] & 0xFF) == 0xD8
+                    && (bytes[2] & 0xFF) == 0xFF;
+            case "image/png" -> (bytes[0] & 0xFF) == 0x89
+                    && bytes[1] == 0x50
+                    && bytes[2] == 0x4E
+                    && bytes[3] == 0x47
+                    && bytes[4] == 0x0D
+                    && bytes[5] == 0x0A
+                    && bytes[6] == 0x1A
+                    && bytes[7] == 0x0A;
+            case "image/webp" -> bytes[0] == 'R'
+                    && bytes[1] == 'I'
+                    && bytes[2] == 'F'
+                    && bytes[3] == 'F'
+                    && bytes[8] == 'W'
+                    && bytes[9] == 'E'
+                    && bytes[10] == 'B'
+                    && bytes[11] == 'P';
+            default -> false;
+        };
+    }
 
     private int exifOrientation(byte[] source) {
         try {
             Metadata metadata = ImageMetadataReader.readMetadata(new ByteArrayInputStream(source));
             ExifIFD0Directory directory = metadata.getFirstDirectoryOfType(ExifIFD0Directory.class);
-            return directory == null ? 1 : directory.getInteger(ExifIFD0Directory.TAG_ORIENTATION);
-        } catch (ImageProcessingException | IOException | RuntimeException ignored) {
+            return directory == null || !directory.containsTag(ExifIFD0Directory.TAG_ORIENTATION)
+                    ? 1
+                    : directory.getInt(ExifIFD0Directory.TAG_ORIENTATION);
+        } catch (ImageProcessingException | IOException | RuntimeException | com.drew.metadata.MetadataException ignored) {
             return 1;
         }
     }
@@ -149,8 +187,14 @@ public class RestaurantImageProcessor {
     }
 
     private String extension(String filename) {
-        if (filename == null || !filename.contains(".")) throw badImage();
-        return filename.substring(filename.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT);
+        if (filename == null || filename.indexOf('\0') >= 0 || !filename.contains(".")) {
+            throw badImage();
+        }
+        String sanitized = filename.trim();
+        if (sanitized.contains("..") || sanitized.contains("/") || sanitized.contains("\\")) {
+            throw badImage();
+        }
+        return sanitized.substring(sanitized.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT);
     }
 
     private ResponseStatusException badImage() {

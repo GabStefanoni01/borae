@@ -71,16 +71,22 @@ A sessão atual usa JWT persistido no localStorage para o MVP. Antes de ampliar 
 - Não usar dados de um restaurante para responder consultas de outro.
 
 ## 7. Segurança e autorização
-- JWT identifica o usuário autenticado; o backend resolve a conta ativa.
+- JWT identifica o usuário autenticado (`sub`) e valida obrigatoriamente assinatura HMAC-SHA256 (`HS256`), expiração (`exp`) e emissor (`iss: borae-api` via `requireIssuer` no parser); tokens sem `iss` são rejeitados e o backend resolve a conta ativa.
+- Não existe `JWT_SECRET` padrão: a chave deve ser explicitamente configurada em Base64 com no mínimo 32 bytes decodificados e alta entropia.
+- No perfil `prod`/`production`, `ProductionSecurityConfigValidator` impede a inicialização caso `JWT_SECRET`, `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `CORS_ALLOWED_ORIGINS` ou `PUBLIC_RESTAURANT_URL_PREFIX` estejam ausentes ou utilizem valores padrão inseguros.
+- Resolução segura de IP (`ClientIpResolver`): padrão fail-closed (`SECURITY_TRUSTED_PROXIES` vazio ignora cabeçalhos encaminhados e usa o IP do socket). Quando proxies confiáveis são configurados, percorre `X-Forwarded-For` da direita para a esquerda e valida literais IPv4/IPv6 sem resolução DNS.
+- Camada de proteção HTTP (`BoraeSecurityShieldFilter`, adaptada do Neves Shield): aplica cabeçalhos de segurança (`X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection: 0`, `Referrer-Policy`, `Permissions-Policy`, `Content-Security-Policy` restrita ao ImageKit e `Strict-Transport-Security`), inspeção WAF (`WafRequestInspector`), monitoramento de anomalias (`SecurityAnomalyMonitor`) e rate limiting em duas camadas (`RateLimitService` com `PostgresRateLimitStorage` na tabela `security_rate_limit` + `ResilientRateLimitStorage` em memória com throttling de logs), incluindo bloqueio temporário de login por 15 minutos após 5 falhas consecutivas com chaves `HMAC-SHA256`.
+- Tratamento global de exceções (`ApiExceptionHandler`) padroniza respostas de erro e impede vazamento de stack traces, instruções SQL ou caminhos internos, registrando eventos no `SecurityAuditLogger` com redação automática de dados sensíveis.
 - Toda operação de restaurante valida vínculo ativo com o restaurante solicitado.
 - Papel deve ser validado no backend em cada endpoint.
 - Nunca aceitar userId, role ou ownerId do cliente como fonte de autoridade.
 - Senhas devem ser armazenadas com hash forte; nunca em texto puro.
-- Tokens de convite devem ser aleatórios, expirar e ser armazenados como hash.
+- Tokens de convite devem ser aleatórios, expirar, respeitar limites de envio (10/hora por administrador e 30/dia por restaurante) e ser armazenados como hash.
 - Não registrar tokens, senhas, connection strings ou dados pessoais sensíveis em logs.
 - Segredos somente em variáveis de ambiente/secret manager; nunca em Git.
-- CORS deve permitir apenas origens explicitamente configuradas.
+- CORS deve permitir apenas origens explicitamente configuradas, rejeitando wildcard (`*`).
 - Operações de saldo/pontos no futuro devem usar transações, idempotência, trilha de auditoria e proteção contra concorrência.
+- Detalhes completos da auditoria e arquitetura de segurança constam em [SECURITY_HARDENING_MVP.md](SECURITY_HARDENING_MVP.md).
 
 ## 8. IA: limites de integração
 A IA será um consumidor de capacidades internas controladas, não uma camada com acesso irrestrito ao banco.

@@ -9,6 +9,8 @@ import com.borae.identity.RestaurantMembershipRepository;
 import com.borae.identity.RestaurantObjectStorage;
 import com.borae.identity.RestaurantRole;
 import com.borae.identity.UserAccount;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +25,7 @@ import java.util.UUID;
 @Service
 public class MenuProductImageService {
 
+    private static final Logger log = LoggerFactory.getLogger(MenuProductImageService.class);
     private static final long MAX_IMAGE_BYTES = 10L * 1024 * 1024;
 
     private final RestaurantMembershipRepository membershipRepository;
@@ -88,6 +91,7 @@ public class MenuProductImageService {
                     processed.contentType(), processed.bytes().length, processed.width(), processed.height()));
             product.setImage(media);
             productRepository.flush();
+            deleteUploadedAssetIfTransactionRollsBack(uploaded.fileId());
             if (previous != null) {
                 mediaRepository.delete(previous);
                 deleteFromStorageAfterCommit(previous.getProviderFileId());
@@ -97,6 +101,8 @@ public class MenuProductImageService {
             try {
                 storage.delete(uploaded.fileId());
             } catch (RuntimeException cleanupException) {
+                log.warn("REMOTE_STORAGE_ORPHAN_CLEANUP_REQUIRED: falha ao remover imagem de produto após erro de banco. fileId={}",
+                        uploaded.fileId(), cleanupException);
                 exception.addSuppressed(cleanupException);
             }
             throw exception;
@@ -135,16 +141,39 @@ public class MenuProductImageService {
         }
     }
 
+    private void deleteUploadedAssetIfTransactionRollsBack(String fileId) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status == TransactionSynchronization.STATUS_ROLLED_BACK) {
+                    deleteRemoteWithRetry(fileId, "rollback");
+                }
+            }
+        });
+    }
+
     private void deleteFromStorageAfterCommit(String fileId) {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                try {
-                    storage.delete(fileId);
-                } catch (RuntimeException ignored) {
-                    // The database already points to the replacement; a failed remote deletion is safe to retry operationally.
-                }
+                deleteRemoteWithRetry(fileId, "afterCommit");
             }
         });
+    }
+
+    private void deleteRemoteWithRetry(String fileId, String phase) {
+        try {
+            storage.delete(fileId);
+        } catch (RuntimeException firstException) {
+            try {
+                storage.delete(fileId);
+            } catch (RuntimeException secondException) {
+                log.warn("REMOTE_STORAGE_ORPHAN_CLEANUP_REQUIRED: não foi possível remover imagem de produto do ImageKit (fase={}). fileId={}",
+                        phase, fileId, secondException);
+            }
+        }
     }
 }

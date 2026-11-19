@@ -5,6 +5,8 @@ import com.borae.identity.RestaurantMembershipRepository;
 import com.borae.identity.RestaurantObjectStorage;
 import com.borae.identity.RestaurantRole;
 import com.borae.identity.UserAccount;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,16 +16,22 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
+import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Service
 public class Product3DModelService {
 
     private static final Logger log = LoggerFactory.getLogger(Product3DModelService.class);
     private static final long MAX_MODEL_BYTES = 10L * 1024 * 1024;
+    private static final int MAX_DIMENSION_MM = 10_000;
     private static final String GLB_CONTENT_TYPE = "model/gltf-binary";
+    private static final Set<String> ALLOWED_DECLARED_TYPES = Set.of(
+            "model/gltf-binary",
+            "model/gltf+binary",
+            "application/octet-stream"
+    );
 
     private final RestaurantMembershipRepository membershipRepository;
     private final MenuRepository menuRepository;
@@ -75,8 +83,19 @@ public class Product3DModelService {
                     "O modelo 3D pode ter no máximo 10 MB nesta primeira versão.");
         }
         String originalName = file.getOriginalFilename();
-        if (originalName == null || !originalName.toLowerCase(java.util.Locale.ROOT).endsWith(".glb")) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Envie um arquivo com extensão .glb.");
+        if (originalName == null
+                || originalName.indexOf('\0') >= 0
+                || originalName.contains("..")
+                || !originalName.toLowerCase(Locale.ROOT).endsWith(".glb")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Envie um arquivo com extensão .glb válida.");
+        }
+        String declaredType = file.getContentType();
+        if (declaredType != null && !declaredType.isBlank()) {
+            String normalizedType = declaredType.split(";")[0].trim().toLowerCase(Locale.ROOT);
+            if (!ALLOWED_DECLARED_TYPES.contains(normalizedType)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "MIME type inválido para modelo 3D. Utilize model/gltf-binary ou application/octet-stream.");
+            }
         }
 
         byte[] bytes;
@@ -178,9 +197,10 @@ public class Product3DModelService {
     }
 
     private void validateDimensions(int widthMm, int heightMm, int depthMm) {
-        if (widthMm <= 0 || heightMm <= 0 || depthMm <= 0) {
+        if (widthMm <= 0 || heightMm <= 0 || depthMm <= 0
+                || widthMm > MAX_DIMENSION_MM || heightMm > MAX_DIMENSION_MM || depthMm > MAX_DIMENSION_MM) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Informe largura, altura e profundidade em milímetros, sempre maiores que zero.");
+                    "Informe largura, altura e profundidade em milímetros (entre 1 e 10000 mm).");
         }
     }
 

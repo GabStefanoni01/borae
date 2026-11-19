@@ -10,8 +10,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.UUID;
 
@@ -20,7 +18,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @JdbcTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Testcontainers
 class Product3DModelPostgresIntegrationTest {
 
     private static final UUID USER_ID = UUID.fromString("10000000-0000-0000-0000-000000000001");
@@ -31,15 +28,26 @@ class Product3DModelPostgresIntegrationTest {
     private static final UUID SECOND_PRODUCT_ID = UUID.fromString("50000000-0000-0000-0000-000000000002");
     private static final UUID MODEL_ID = UUID.fromString("60000000-0000-0000-0000-000000000001");
 
-    @Container
-    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
+    private static PostgreSQLContainer<?> postgres;
 
     @DynamicPropertySource
     static void configurePostgres(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES::getUsername);
-        registry.add("spring.datasource.password", POSTGRES::getPassword);
-        registry.add("spring.datasource.driver-class-name", POSTGRES::getDriverClassName);
+        String externalUrl = System.getProperty("test.postgres.url");
+        if (externalUrl != null && !externalUrl.isBlank()) {
+            registry.add("spring.datasource.url", () -> externalUrl);
+            registry.add("spring.datasource.username", () -> System.getProperty("test.postgres.username", "postgres"));
+            registry.add("spring.datasource.password", () -> System.getProperty("test.postgres.password", "postgres"));
+            registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
+        } else {
+            if (postgres == null) {
+                postgres = new PostgreSQLContainer<>("postgres:16-alpine");
+                postgres.start();
+            }
+            registry.add("spring.datasource.url", postgres::getJdbcUrl);
+            registry.add("spring.datasource.username", postgres::getUsername);
+            registry.add("spring.datasource.password", postgres::getPassword);
+            registry.add("spring.datasource.driver-class-name", postgres::getDriverClassName);
+        }
         registry.add("spring.flyway.enabled", () -> true);
     }
 
@@ -110,6 +118,56 @@ class Product3DModelPostgresIntegrationTest {
 
         assertEquals(0, count("SELECT COUNT(*) FROM menu_product_3d_model WHERE product_id = ?", PRODUCT_ID));
         assertEquals(1, count("SELECT COUNT(*) FROM menu_product_3d_model_audit WHERE product_id = ?", PRODUCT_ID));
+    }
+
+    @Test
+    void incrementsSharedRateLimitAtomicallyInRealPostgres() {
+        com.borae.security.PostgresRateLimitStorage storage = new com.borae.security.PostgresRateLimitStorage(jdbc);
+        storage.reset();
+        String key = "usuario:test-pg:auth-login";
+
+        com.borae.security.RateLimitWindow first = storage.increment(key, 60_000L);
+        com.borae.security.RateLimitWindow second = storage.increment(key, 60_000L);
+
+        assertEquals(1, first.count());
+        assertEquals(2, second.count());
+        assertEquals(first.resetAtEpochMs(), second.resetAtEpochMs());
+    }
+
+    @Test
+    void enforcesDistributedLoginLockoutAcrossMultipleInstancesInRealPostgres() {
+        com.borae.security.PostgresRateLimitStorage instanceAStorage = new com.borae.security.PostgresRateLimitStorage(jdbc);
+        com.borae.security.PostgresRateLimitStorage instanceBStorage = new com.borae.security.PostgresRateLimitStorage(jdbc);
+        instanceAStorage.reset();
+        com.borae.security.SecurityAuditLogger auditLogger = new com.borae.security.SecurityAuditLogger();
+
+        com.borae.security.RateLimitService instanceA = new com.borae.security.RateLimitService(
+                instanceAStorage, new com.borae.security.InMemoryRateLimitStorage(), auditLogger, System::currentTimeMillis,
+                20, 900_000L, 5, 900_000L, 10, 15, 10, 30, 20, 120, 30, 120, 100, 10_000L, 600_000L
+        );
+        com.borae.security.RateLimitService instanceB = new com.borae.security.RateLimitService(
+                instanceBStorage, new com.borae.security.InMemoryRateLimitStorage(), auditLogger, System::currentTimeMillis,
+                20, 900_000L, 5, 900_000L, 10, 15, 10, 30, 20, 120, 30, 120, 100, 10_000L, 600_000L
+        );
+
+        String targetEmail = "distributed-target@borae.com";
+
+        // 3 falhas registradas na Instância A + 2 falhas registradas na Instância B (total = 5 no PostgreSQL)
+        instanceA.recordLoginFailure(targetEmail, "198.51.100.1");
+        instanceA.recordLoginFailure(targetEmail, "198.51.100.2");
+        instanceA.recordLoginFailure(targetEmail, "198.51.100.3");
+        instanceB.recordLoginFailure(targetEmail, "198.51.100.4");
+        instanceB.recordLoginFailure(targetEmail, "198.51.100.5");
+
+        // 6ª tentativa é bloqueada tanto na Instância A quanto na Instância B
+        assertThrows(com.borae.security.RateLimitExceededException.class,
+                () -> instanceA.assertLoginAttemptAllowed(targetEmail, "198.51.100.6"));
+        assertThrows(com.borae.security.RateLimitExceededException.class,
+                () -> instanceB.assertLoginAttemptAllowed(targetEmail, "198.51.100.6"));
+
+        // Reset após login válido na Instância A libera imediatamente a Instância B
+        instanceA.clearLoginFailures(targetEmail, "198.51.100.6");
+        instanceB.assertLoginAttemptAllowed(targetEmail, "198.51.100.6");
     }
 
     private void insertProduct(UUID productId, String name) {

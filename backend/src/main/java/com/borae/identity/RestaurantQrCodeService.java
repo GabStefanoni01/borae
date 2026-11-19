@@ -46,6 +46,7 @@ public class RestaurantQrCodeService {
     public byte[] generateRestaurantQrCode(UUID restaurantId, UserAccount actor) {
         RestaurantMembership membership = membershipRepository
                 .findByUser_IdAndRestaurant_IdAndActiveTrue(actor.getId(), restaurantId)
+                .filter(item -> item.getRestaurant().isActive())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
                         "Você não tem acesso a este restaurante."));
 
