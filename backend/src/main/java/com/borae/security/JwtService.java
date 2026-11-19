@@ -1,6 +1,7 @@
 package com.borae.security;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -76,18 +77,23 @@ public class JwtService {
         if (token == null || token.isBlank() || token.length() > MAX_TOKEN_LENGTH) {
             throw new JwtException("Token JWT ausente ou inválido.");
         }
-        Claims claims = Jwts.parser()
+        Jws<Claims> jws = Jwts.parser()
                 .verifyWith(signingKey)
+                .requireIssuer(issuer)
                 .build()
-                .parseSignedClaims(token)
-                .getPayload();
+                .parseSignedClaims(token);
 
+        if (!Jwts.SIG.HS256.getId().equals(jws.getHeader().getAlgorithm())) {
+            throw new JwtException("Algoritmo de assinatura do token JWT não permitido.");
+        }
+
+        Claims claims = jws.getPayload();
+        String tokenIssuer = claims.getIssuer();
+        if (tokenIssuer == null || !issuer.equals(tokenIssuer)) {
+            throw new JwtException("Emissor do token JWT ausente ou inválido.");
+        }
         if (claims.getExpiration() == null) {
             throw new JwtException("Token JWT sem data de expiração.");
-        }
-        String tokenIssuer = claims.getIssuer();
-        if (tokenIssuer != null && !issuer.equals(tokenIssuer)) {
-            throw new JwtException("Emissor do token JWT inválido.");
         }
         String subject = claims.getSubject();
         if (subject == null || subject.isBlank()) {
