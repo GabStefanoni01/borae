@@ -15,4 +15,8 @@ public interface RestaurantInvitationRepository extends JpaRepository<Restaurant
             String email,
             Instant now
     );
+
+    long countByCreatedBy_IdAndCreatedAtAfter(UUID createdById, Instant since);
+
+    long countByRestaurant_IdAndCreatedAtAfter(UUID restaurantId, Instant since);
 }

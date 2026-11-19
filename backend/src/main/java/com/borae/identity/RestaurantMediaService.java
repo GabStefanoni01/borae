@@ -3,6 +3,8 @@ package com.borae.identity;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -49,6 +51,10 @@ public class RestaurantMediaService {
         if (type == null || file == null || file.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Selecione o tipo e o arquivo de imagem.");
         }
+        if (type == RestaurantMediaType.PRODUCT_IMAGE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Imagens de produtos devem ser enviadas pelo endpoint específico do produto.");
+        }
 
         long maxBytes = type == RestaurantMediaType.LOGO ? LOGO_MAX_BYTES : PHOTO_MAX_BYTES;
         if (file.getSize() > maxBytes) {
@@ -65,6 +71,10 @@ public class RestaurantMediaService {
             original = file.getBytes();
         } catch (IOException exception) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Não foi possível ler o arquivo enviado.");
+        }
+        if (original.length > maxBytes) {
+            throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE,
+                    type == RestaurantMediaType.LOGO ? "A logo pode ter no máximo 5 MB." : "Cada foto pode ter no máximo 10 MB.");
         }
         RestaurantImageProcessor.ProcessedImage processed =
                 imageProcessor.process(original, file.getOriginalFilename(), file.getContentType());
@@ -84,14 +94,21 @@ public class RestaurantMediaService {
 
         RestaurantMedia saved;
         try {
+            if (previousLogo != null) {
+                mediaRepository.delete(previousLogo);
+                mediaRepository.flush();
+            }
             saved = mediaRepository.save(new RestaurantMedia(restaurant, type, uploaded.fileId(), uploaded.publicUrl(),
                     processed.contentType(), processed.bytes().length, processed.width(), processed.height()));
             if (previousLogo != null) {
-                mediaRepository.delete(previousLogo);
-                storage.delete(previousLogo.getProviderFileId());
+                deleteFromStorageAfterCommit(previousLogo.getProviderFileId());
             }
         } catch (RuntimeException exception) {
-            storage.delete(uploaded.fileId());
+            try {
+                storage.delete(uploaded.fileId());
+            } catch (RuntimeException cleanupException) {
+                exception.addSuppressed(cleanupException);
+            }
             throw exception;
         }
         return RestaurantMediaResponse.from(saved);
@@ -102,8 +119,29 @@ public class RestaurantMediaService {
         requireManagerAccess(restaurantId, actor);
         RestaurantMedia media = mediaRepository.findByIdAndRestaurant_Id(mediaId, restaurantId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Imagem não encontrada."));
+        if (media.getMediaType() == RestaurantMediaType.PRODUCT_IMAGE) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Imagens de produtos devem ser removidas pelo endpoint específico do produto.");
+        }
         mediaRepository.delete(media);
-        storage.delete(media.getProviderFileId());
+        deleteFromStorageAfterCommit(media.getProviderFileId());
+    }
+
+    private void deleteFromStorageAfterCommit(String fileId) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    try {
+                        storage.delete(fileId);
+                    } catch (RuntimeException ignored) {
+                        // A exclusão remota após commit pode ser reconciliada operacionalmente se falhar.
+                    }
+                }
+            });
+        } else {
+            storage.delete(fileId);
+        }
     }
 
     private void requireManagerAccess(UUID restaurantId, UserAccount actor) {

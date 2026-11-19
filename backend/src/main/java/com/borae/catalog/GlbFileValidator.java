@@ -9,6 +9,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 
 @Component
 public class GlbFileValidator {
@@ -81,6 +82,9 @@ public class GlbFileValidator {
                     throw invalid();
                 }
                 binChunkLength = chunkLength;
+            } else {
+                // Reject arbitrary unknown chunks to prevent hidden payloads
+                throw invalid();
             }
 
             offset += chunkLength;
@@ -139,14 +143,31 @@ public class GlbFileValidator {
                     throw invalid();
                 }
                 JsonNode uriNode = item.get("uri");
-                // Embedded data URIs are allowed; remote and relative references are not.
-                if (uriNode != null && (!uriNode.isTextual() || !uriNode.asText().startsWith("data:"))) {
-                    throw invalid();
+                // Only safe embedded raster image data URIs are allowed; remote, relative, SVG, or HTML data URIs are rejected.
+                if (uriNode != null) {
+                    if (!uriNode.isTextual()) {
+                        throw invalid();
+                    }
+                    String uri = uriNode.asText().trim().toLowerCase(Locale.ROOT);
+                    if (!isAllowedImageDataUri(uri)) {
+                        throw invalid();
+                    }
                 }
             }
         } else if (!images.isMissingNode()) {
             throw invalid();
         }
+    }
+
+    private boolean isAllowedImageDataUri(String lowerUri) {
+        return lowerUri.startsWith("data:image/png;")
+                || lowerUri.startsWith("data:image/png,")
+                || lowerUri.startsWith("data:image/jpeg;")
+                || lowerUri.startsWith("data:image/jpeg,")
+                || lowerUri.startsWith("data:image/jpg;")
+                || lowerUri.startsWith("data:image/jpg,")
+                || lowerUri.startsWith("data:image/webp;")
+                || lowerUri.startsWith("data:image/webp,");
     }
 
     private ResponseStatusException invalid() {

@@ -9,6 +9,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -44,6 +45,10 @@ public class RestaurantInvitation {
     @JoinColumn(name = "created_by", nullable = false)
     private UserAccount createdBy;
 
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt = Instant.now();
+
     protected RestaurantInvitation() {
     }
 
@@ -62,6 +67,7 @@ public class RestaurantInvitation {
         this.tokenHash = tokenHash;
         this.expiresAt = expiresAt;
         this.createdBy = createdBy;
+        this.createdAt = Instant.now();
     }
 
     public UUID getId() { return id; }
@@ -71,6 +77,7 @@ public class RestaurantInvitation {
     public String getTokenHash() { return tokenHash; }
     public Instant getExpiresAt() { return expiresAt; }
     public Instant getAcceptedAt() { return acceptedAt; }
+    public Instant getCreatedAt() { return createdAt; }
 
     public boolean isPendingAt(Instant now) {
         return acceptedAt == null && expiresAt.isAfter(now);
