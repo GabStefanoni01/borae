@@ -135,9 +135,47 @@ class RestaurantServiceTest {
     @Test
     void ownerCanPublishRestaurantProfile() {
         grantRole(RestaurantRole.OWNER);
+        restaurant.updateProfile(
+                restaurant.getName(), restaurant.getSlug(), restaurant.getDescription(),
+                null, null, null, null,
+                "Rua Central, 100 - São Paulo/SP", null, null, "Brasileira"
+        );
         when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(restaurant));
         RestaurantProfileResponse response = restaurantService.publish(restaurantId, owner);
         assertEquals(RestaurantPublicationStatus.PUBLISHED, response.publicationStatus());
+    }
+
+    @Test
+    void publishRejectsRestaurantMissingRequiredProfileFieldsAccordingToD01() {
+        grantRole(RestaurantRole.OWNER);
+        when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(restaurant));
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> restaurantService.publish(restaurantId, owner));
+
+        assertEquals(400, exception.getStatusCode().value());
+        assertEquals(RestaurantPublicationStatus.DRAFT, restaurant.getPublicationStatus());
+    }
+
+    @Test
+    void publishedRestaurantCannotClearRequiredProfileFields() {
+        grantRole(RestaurantRole.OWNER);
+        restaurant.updateProfile(
+                restaurant.getName(), restaurant.getSlug(), restaurant.getDescription(),
+                null, null, null, null,
+                "Rua Central, 100 - São Paulo/SP", null, null, "Brasileira"
+        );
+        restaurant.publish();
+        when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(restaurant));
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> restaurantService.updateProfile(
+                        restaurantId,
+                        request(null, null, null, null, null, null, null, "", null, null, null),
+                        owner
+                ));
+
+        assertEquals(400, exception.getStatusCode().value());
     }
 
     @Test
