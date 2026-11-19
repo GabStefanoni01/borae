@@ -51,8 +51,8 @@ function handle(req: HttpRequest<unknown>): Observable<HttpResponse<unknown>> {
     return ok(authResponse(user), 201);
   }
 
-  // ---------- Cardápio público (sem sessão) ----------
-  const publicReply = handlePublicCatalog(method, path, db, HELPERS);
+  // ---------- Cardápio público e assistente (sem sessão JWT) ----------
+  const publicReply = handlePublicCatalog(method, path, db, HELPERS, req.body);
   if (publicReply) return publicReply;
 
   // ---------- Rotas autenticadas ----------

@@ -8,6 +8,7 @@ import { BrandLogoComponent } from '../shared/brand-logo.component';
 import { IconComponent } from '../shared/icon.component';
 import { MenuProductCardComponent } from '../shared/menu-product-card.component';
 import { formatCents } from '../shared/money';
+import { PublicAssistantDrawerComponent } from './public-assistant-drawer.component';
 import { PublicMenu, PublicMenuService, PublicProduct, PublicRestaurantMenu } from './public-menu.service';
 
 type LoadState = 'loading' | 'ready' | 'not-found' | 'error';
@@ -20,7 +21,7 @@ type LoadState = 'loading' | 'ready' | 'not-found' | 'error';
   selector: 'bo-public-menu-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, BrandLogoComponent, IconComponent, MenuProductCardComponent],
+  imports: [RouterLink, BrandLogoComponent, IconComponent, MenuProductCardComponent, PublicAssistantDrawerComponent],
   styleUrls: ['./public-menu.page.css', './public-menu.extras.css'],
   template: `
     <div class="pm">
@@ -148,6 +149,16 @@ type LoadState = 'loading' | 'ready' | 'not-found' | 'error';
         <a routerLink="/">Cardápio digital por <strong>Boraê</strong></a>
       </footer>
 
+      @if (state() === 'ready' && data(); as readyRestaurant) {
+        @if (hasAvailableProducts()) {
+          <bo-public-assistant-drawer
+            [restaurant]="readyRestaurant"
+            [selectedMenuId]="selectedMenu()?.id ?? null"
+            (selectProduct)="open($event)"
+          />
+        }
+      }
+
       <dialog #sheet class="pm-sheet" (cancel)="close()" (click)="onBackdrop($event)" aria-label="Detalhes do produto">
         @if (detail(); as p) {
           <div class="pm-sheet-inner">
@@ -181,6 +192,12 @@ export class PublicMenuPage {
   });
   /** Categorias com ao menos um produto (o backend já remove inativas e arquivados). */
   protected readonly visibleCategories = computed(() => (this.selectedMenu()?.categories ?? []).filter(c => c.products.length > 0));
+  /** Exibe o assistente somente quando o restaurante possui ao menos um produto disponível no cardápio publicado. */
+  protected readonly hasAvailableProducts = computed(() =>
+    (this.data()?.menus ?? []).some(menu =>
+      menu.categories.some(category => category.products.some(product => product.availability === 'AVAILABLE'))
+    )
+  );
   protected readonly initials = computed(() => (this.data()?.name ?? '')
     .split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]!.toUpperCase()).join(''));
   protected readonly contacts = computed(() => {

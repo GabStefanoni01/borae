@@ -1,5 +1,5 @@
 /* Cardápio público — rodapé, painel de detalhes, carregamento e telas maiores */
-.pm-foot{display:grid;gap:8px;justify-items:center;padding:24px 16px 32px;border-top:1px solid #ECE7E1;text-align:center;font-size:12.5px;color:#707070}
+.pm-foot{display:grid;gap:8px;justify-items:center;padding:24px 16px 84px;border-top:1px solid #ECE7E1;text-align:center;font-size:12.5px;color:#707070}
 .pm-foot p{margin:0;max-width:60ch}
 .pm-foot a{color:#3D3D3D;text-decoration:none}
 

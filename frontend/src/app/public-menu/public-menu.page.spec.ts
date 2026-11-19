@@ -4,6 +4,7 @@ import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { text } from '../../testing/catalog-fixtures';
 import { MODEL_VIEWER_LOADER } from '../shared/model-3d-viewer.component';
+import { PublicAssistantService } from './public-assistant.service';
 import { PublicMenuPage } from './public-menu.page';
 import { PublicMenuService, PublicRestaurantMenu } from './public-menu.service';
 
@@ -32,12 +33,37 @@ const DATA: PublicRestaurantMenu = {
 
 function setup(response = of(DATA)) {
   const api = { getRestaurantMenu: vi.fn(() => response) };
+  const assistantApi = {
+    ensureSession: vi.fn(() => of(void 0)),
+    interact: vi.fn(() => of({
+      answer: 'Recomendo o Carbonara.',
+      recommendations: [
+        {
+          productId: 'p1', name: 'Carbonara', priceInCents: 5890, availability: 'AVAILABLE' as const,
+          imageUrl: 'https://ik.imagekit.io/borae/carbonara.webp', ingredients: ['Spaghetti', 'Guanciale'],
+          reason: 'Massa clássica disponível.'
+        }
+      ],
+      quota: { remainingConsumer: 19, remainingRestaurant: 99, resetsAt: '2026-11-20T00:00:00-03:00' },
+      fallback: false,
+      fallbackCode: null
+    })),
+    trackRecommendationClick: vi.fn(() => of(void 0))
+  };
   const loader = vi.fn(() => Promise.resolve());
-  TestBed.configureTestingModule({ imports: [PublicMenuPage], providers: [provideRouter([]), { provide: PublicMenuService, useValue: api }, { provide: MODEL_VIEWER_LOADER, useValue: loader }] });
+  TestBed.configureTestingModule({
+    imports: [PublicMenuPage],
+    providers: [
+      provideRouter([]),
+      { provide: PublicMenuService, useValue: api },
+      { provide: PublicAssistantService, useValue: assistantApi },
+      { provide: MODEL_VIEWER_LOADER, useValue: loader }
+    ]
+  });
   const fixture = TestBed.createComponent(PublicMenuPage);
   fixture.componentRef.setInput('slug', 'cantina');
   fixture.detectChanges();
-  return { fixture, api, loader, el: fixture.nativeElement as HTMLElement };
+  return { fixture, api, assistantApi, loader, el: fixture.nativeElement as HTMLElement };
 }
 
 describe('PublicMenuPage', () => {
@@ -137,5 +163,30 @@ describe('PublicMenuPage', () => {
     el.querySelectorAll<HTMLButtonElement>('.pm-item')[1].click();
     fixture.detectChanges();
     expect([...el.querySelectorAll('.pm-sheet button')].some(b => text(b) === 'Ver em 3D')).toBe(false);
+  });
+
+  it('integra o assistente gastronômico ao cardápio público e abre detalhes ao clicar na recomendação', () => {
+    const { el, fixture, assistantApi } = setup();
+    const fab = el.querySelector<HTMLButtonElement>('.asst-fab')!;
+    expect(fab).not.toBeNull();
+
+    fab.click();
+    fixture.detectChanges();
+    el.querySelector<HTMLButtonElement>('.asst-chip')!.click();
+    fixture.detectChanges();
+
+    expect(assistantApi.interact).toHaveBeenCalledTimes(1);
+    el.querySelector<HTMLButtonElement>('.asst-rec')!.click();
+    fixture.detectChanges();
+
+    expect(assistantApi.trackRecommendationClick).toHaveBeenCalledWith('cantina', 'p1');
+    const sheet = el.querySelector('.pm-sheet')!;
+    expect(sheet.hasAttribute('open')).toBe(true);
+    expect(text(sheet)).toContain('Carbonara');
+  });
+
+  it('oculta o assistente quando o restaurante não tem cardápios publicados', () => {
+    const { el } = setup(of({ ...DATA, menus: [] }));
+    expect(el.querySelector('.asst-fab')).toBeNull();
   });
 });

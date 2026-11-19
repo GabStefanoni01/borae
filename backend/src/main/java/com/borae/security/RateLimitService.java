@@ -46,8 +46,11 @@ public class RateLimitService {
     private static final Pattern ADMIN_SENSITIVE_PATH = Pattern.compile(
             "^/api/v1/restaurants(/[^/]+/(publish|unpublish|qrcode|members/[^/]+))?$"
     );
+    private static final Pattern PUBLIC_ASSISTANT_PATH = Pattern.compile(
+            "^/api/v1/public/restaurants/[^/]+/assistant(/.*)?$"
+    );
     private static final Pattern ASSISTANT_PATH = Pattern.compile(
-            "^/api/v1/(public/)?restaurants/[^/]+/(assistant|ai|recommendations)(/.*)?$"
+            "^/api/v1/restaurants/[^/]+/(assistant|ai|recommendations)(/.*)?$"
     );
     private static final Pattern ANONYMOUS_SESSION_PATH = Pattern.compile(
             "^/api/v1/(public/.*/sessions|sessions/anonymous)(/.*)?$"
@@ -523,11 +526,24 @@ public class RateLimitService {
         if ("POST".equals(safeMethod) && ANONYMOUS_SESSION_PATH.matcher(safePath).matches()) {
             return new RateLimitRule(
                     "anonymous-session",
-                    20,
+                    30,
                     10 * MINUTE_MS,
                     true,
                     true,
                     null
+            );
+        }
+        if (PUBLIC_ASSISTANT_PATH.matcher(safePath).matches()) {
+            // Proteção de borda por IP; o controle fino (30 req/min por IP pseudonimizado +
+            // cotas diárias de 20/sessão e 100/restaurante) é aplicado pelo módulo assistant
+            // sem bloquear redes Wi-Fi compartilhadas de restaurantes em 20/dia por IP.
+            return new RateLimitRule(
+                    "public-assistant-edge",
+                    60,
+                    MINUTE_MS,
+                    false,
+                    true,
+                    "Muitas solicitações ao assistente em pouco tempo. Tente novamente em instantes."
             );
         }
         if (ASSISTANT_PATH.matcher(safePath).matches()) {

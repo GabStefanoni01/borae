@@ -1,6 +1,6 @@
 # Especificação de módulo — Assistente gastronômico
 
-**Status:** planejado; depende do catálogo publicado e confiável.
+**Status:** integrado no backend e no frontend do cardápio público na branch `feature/gastronomic-assistant-integration` (homologação com Gemini simulado concluída; ativação em produção depende da configuração de `GEMINI_API_KEY`, `GEMINI_ENABLED=true` e `GEMINI_DATA_PROCESSING_APPROVED=true`).
 
 ## Provedor e arquitetura de integração — D-10
 

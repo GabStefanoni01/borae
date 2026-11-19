@@ -112,12 +112,26 @@ O endpoint autenticado `GET /api/v1/restaurants/{restaurantId}/qrcode` retorna `
 
 `POST /api/v1/restaurants` cria o estabelecimento e o vínculo OWNER em uma única transação. Identidade do proprietário e papel são definidos no servidor a partir do usuário autenticado; não confiar em valores enviados pelo frontend.
 
-## 7. Respostas e erros
+## 7. Assistente gastronômico público (`feature/gastronomic-assistant-integration`)
+
+Endpoints públicos sem autenticação JWT (utilizam exclusivamente sessão anônima assinada via cookie HttpOnly `BORA_ASSISTANT_SESSION`, com `withCredentials: true` e `Cache-Control: private, no-store`):
+
+| Método | Rota | Descrição |
+| --- | --- | --- |
+| `POST` | `/api/v1/public/assistant/sessions` | Emite (ou reutiliza) cookie HttpOnly `BORA_ASSISTANT_SESSION` assinado com HMAC-SHA256 (validade de 30 dias, path `/api/v1/public`). Retorna `204 No Content`. |
+| `POST` | `/api/v1/public/restaurants/{slug}/assistant/interactions` | Consulta recomendações no catálogo publicado e disponível do restaurante identificado pelo `slug`. Aceita `message` (até 500 chars), `menuId` opcional e `filters` (`maxPriceInCents`, `categoryIds`, `excludedIngredients`). Retorna resposta textual sanitizada, até 4 recomendações validadas contra o catálogo real, saldo de cotas (`remainingConsumer`, `remainingRestaurant`, `resetsAt`) e sinalização de `fallback`. |
+| `POST` | `/api/v1/public/restaurants/{slug}/assistant/recommendations/{productId}/click` | Registra clique agregado (sem conteúdo de conversa ou dados pessoais) em produto disponível pertencente ao restaurante do `slug`. Retorna `204 No Content` ou `404` se o produto for indisponível/inexistente/de outro restaurante. |
+
+- Cotas simultâneas atômicas no PostgreSQL (`America/Sao_Paulo`): 20 interações/sessão/dia e 100/restaurante/dia; excedentes retornam `429 Too Many Requests` com `code: "DAILY_QUOTA_EXCEEDED"`, `scope`, `resetsAt` e cabeçalho `Retry-After`.
+- Rate limit antiabuso distribuído por IP pseudonimizado (HMAC-SHA256 via `ClientIpResolver`): 30 req/min; excedentes retornam `429 Too Many Requests` com `code: "RATE_LIMIT_EXCEEDED"` e `retryAfterSeconds`.
+- Nenhuma conversa, prompt ou resposta é persistida em banco ou logs (D-11).
+
+## 8. Respostas e erros
 Os detalhes completos de DTOs, validações, status HTTP e exemplos devem ser consultados no Swagger/OpenAPI da versão publicada. Ao alterar um contrato:
 1. Atualizar DTO/controller e testes.
 2. Atualizar esta tabela e regras relevantes.
 3. Conferir a documentação OpenAPI gerada.
 4. Atualizar o frontend consumidor do contrato no mesmo PR, quando aplicável.
 
-## 8. Funcionalidades ainda não disponíveis na API
-O visualizador 3D/AR no frontend, IA, fidelidade, Boraê Club, descoberta, pedidos, pagamentos e administração global ainda não estão disponíveis. O backend de gestão de modelos 3D está em implementação na PR #27 e depende de CI verde, homologação do upload/entrega no ImageKit e aprovação antes da integração à `main`.
+## 9. Funcionalidades ainda não disponíveis na API
+Fidelidade, Boraê Club, descoberta/marketplace, pedidos/PDV, pagamentos e administração global ainda não estão disponíveis.

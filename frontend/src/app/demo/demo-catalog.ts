@@ -89,8 +89,46 @@ export function createDemoCatalog(restaurantId: string): DemoCatalog {
   };
 }
 
-/** Rotas públicas (sem sessão). Devolve null quando a rota não é do catálogo. */
-export function handlePublicCatalog(method: string, path: string, db: DemoDatabase, h: DemoHelpers): Reply | null {
+/** Rotas públicas (sem sessão). Devolve null quando a rota não é do catálogo ou assistente. */
+export function handlePublicCatalog(method: string, path: string, db: DemoDatabase, h: DemoHelpers, body?: unknown): Reply | null {
+  if (method === 'POST' && path === '/public/assistant/sessions') {
+    return h.ok(null, 204);
+  }
+  const clickMatch = path.match(/^\/public\/restaurants\/([^/]+)\/assistant\/recommendations\/([^/]+)\/click$/);
+  if (clickMatch && method === 'POST') {
+    return h.ok(null, 204);
+  }
+  const interactMatch = path.match(/^\/public\/restaurants\/([^/]+)\/assistant\/interactions$/);
+  if (interactMatch && method === 'POST') {
+    const slug = decodeURIComponent(interactMatch[1]);
+    const restaurant = db.restaurants.find(r => r.slug === slug && r.publicationStatus === 'PUBLISHED');
+    if (!restaurant) return h.fail(404, 'Restaurante não encontrado ou não publicado.');
+    const payload = (body ?? {}) as { message?: string; menuId?: string | null; filters?: { maxPriceInCents?: number | null; excludedIngredients?: string[] | null } | null };
+    const c = catalog(db);
+    const pubMenus = c.menus.filter(m => m.restaurantId === restaurant.id && m.status === 'PUBLISHED' && (!payload.menuId || m.id === payload.menuId));
+    const catIds = new Set(c.categories.filter(x => x.active && pubMenus.some(m => m.id === x.menuId)).map(x => x.id));
+    const excluded = (payload.filters?.excludedIngredients ?? []).map(v => v.trim().toLowerCase()).filter(Boolean);
+    const maxPrice = payload.filters?.maxPriceInCents ?? null;
+    const eligible = c.products.filter(p =>
+      catIds.has(p.categoryId) && p.lifecycleStatus === 'ACTIVE' && p.availability === 'AVAILABLE'
+      && (maxPrice === null || p.priceInCents <= maxPrice)
+      && (!excluded.length || !p.ingredients.some(i => excluded.some(ex => i.toLowerCase().includes(ex))))
+    );
+    const picks = eligible.slice(0, 3).map(p => ({
+      productId: p.id, name: p.name, priceInCents: p.priceInCents, availability: p.availability,
+      imageUrl: liveImage(p.imageUrl), ingredients: [...p.ingredients],
+      reason: p.description || 'Opção disponível no cardápio publicado.'
+    }));
+    return h.ok({
+      answer: picks.length
+        ? `Separei ${picks.length} ${picks.length === 1 ? 'opção disponível' : 'opções disponíveis'} no cardápio de ${restaurant.name} para você.`
+        : 'Não encontrei opções disponíveis com esses filtros no cardápio.',
+      recommendations: picks,
+      quota: { remainingConsumer: 19, remainingRestaurant: 99, resetsAt: new Date(Date.now() + 3600_000).toISOString() },
+      fallback: false,
+      fallbackCode: null
+    });
+  }
   const match = path.match(/^\/public\/restaurants\/([^/]+)\/menu$/);
   if (!match || method !== 'GET') return null;
   const slug = decodeURIComponent(match[1]);
