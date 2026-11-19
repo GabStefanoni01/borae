@@ -1,6 +1,7 @@
 package com.borae.security;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
@@ -46,6 +47,31 @@ public class InMemoryRateLimitStorage implements RateLimitStorage {
             }
             return new RateLimitWindow(existing.count() + 1, existing.resetAtEpochMs());
         });
+    }
+
+    @Override
+    public Optional<RateLimitWindow> getActiveWindow(String key) {
+        if (key == null) {
+            return Optional.empty();
+        }
+        long now = clock.getAsLong();
+        cleanupIfDue(now);
+        RateLimitWindow existing = windows.get(key);
+        if (existing == null) {
+            return Optional.empty();
+        }
+        if (now >= existing.resetAtEpochMs()) {
+            windows.remove(key, existing);
+            return Optional.empty();
+        }
+        return Optional.of(existing);
+    }
+
+    @Override
+    public void remove(String key) {
+        if (key != null) {
+            windows.remove(key);
+        }
     }
 
     @Override

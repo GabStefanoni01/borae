@@ -1,8 +1,10 @@
 package com.borae.config;
 
 import com.borae.security.ClientIpResolver;
+import com.borae.security.RateLimitExceededException;
 import com.borae.security.SecurityAuditLogger;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
@@ -43,6 +45,31 @@ public class ApiExceptionHandler {
     public ApiExceptionHandler(SecurityAuditLogger auditLogger, ClientIpResolver ipResolver) {
         this.auditLogger = auditLogger;
         this.ipResolver = ipResolver;
+    }
+
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleRateLimitExceeded(
+            RateLimitExceededException exception,
+            HttpServletResponse response
+    ) {
+        int retryAfter = exception.getRetryAfterSeconds();
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("status", HttpStatus.TOO_MANY_REQUESTS.value());
+        body.put("error", "rate_limit");
+        body.put("message", SecurityAuditLogger.redactSensitive(exception.getMessage()));
+        body.put("retryAfterSeconds", retryAfter);
+        body.put("timestamp", Instant.now().toString());
+
+        if (response != null) {
+            response.setHeader("Retry-After", String.valueOf(retryAfter));
+            if (exception.getLimit() > 0) {
+                response.setHeader("X-RateLimit-Limit", String.valueOf(exception.getLimit()));
+            }
+            response.setHeader("X-RateLimit-Remaining", "0");
+            response.setHeader("X-RateLimit-Reset", String.valueOf(retryAfter));
+        }
+
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(body);
     }
 
     @ExceptionHandler(ResponseStatusException.class)

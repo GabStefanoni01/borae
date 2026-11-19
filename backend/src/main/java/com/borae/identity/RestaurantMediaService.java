@@ -1,5 +1,7 @@
 package com.borae.identity;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +17,7 @@ import java.util.UUID;
 @Service
 public class RestaurantMediaService {
 
+    private static final Logger log = LoggerFactory.getLogger(RestaurantMediaService.class);
     private static final long LOGO_MAX_BYTES = 5L * 1024 * 1024;
     private static final long PHOTO_MAX_BYTES = 10L * 1024 * 1024;
     private static final long MAX_PHOTOS = 100L;
@@ -100,6 +103,7 @@ public class RestaurantMediaService {
             }
             saved = mediaRepository.save(new RestaurantMedia(restaurant, type, uploaded.fileId(), uploaded.publicUrl(),
                     processed.contentType(), processed.bytes().length, processed.width(), processed.height()));
+            deleteUploadedAssetIfTransactionRollsBack(uploaded.fileId());
             if (previousLogo != null) {
                 deleteFromStorageAfterCommit(previousLogo.getProviderFileId());
             }
@@ -107,6 +111,8 @@ public class RestaurantMediaService {
             try {
                 storage.delete(uploaded.fileId());
             } catch (RuntimeException cleanupException) {
+                log.warn("REMOTE_STORAGE_ORPHAN_CLEANUP_REQUIRED: falha ao remover mídia recém-enviada após erro de persistência. fileId={}",
+                        uploaded.fileId(), cleanupException);
                 exception.addSuppressed(cleanupException);
             }
             throw exception;
@@ -127,20 +133,43 @@ public class RestaurantMediaService {
         deleteFromStorageAfterCommit(media.getProviderFileId());
     }
 
+    private void deleteUploadedAssetIfTransactionRollsBack(String fileId) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status == TransactionSynchronization.STATUS_ROLLED_BACK) {
+                    deleteRemoteWithRetry(fileId, "rollback");
+                }
+            }
+        });
+    }
+
     private void deleteFromStorageAfterCommit(String fileId) {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    try {
-                        storage.delete(fileId);
-                    } catch (RuntimeException ignored) {
-                        // A exclusão remota após commit pode ser reconciliada operacionalmente se falhar.
-                    }
+                    deleteRemoteWithRetry(fileId, "afterCommit");
                 }
             });
         } else {
+            deleteRemoteWithRetry(fileId, "direct");
+        }
+    }
+
+    private void deleteRemoteWithRetry(String fileId, String phase) {
+        try {
             storage.delete(fileId);
+        } catch (RuntimeException firstException) {
+            try {
+                storage.delete(fileId);
+            } catch (RuntimeException secondException) {
+                log.warn("REMOTE_STORAGE_ORPHAN_CLEANUP_REQUIRED: não foi possível remover mídia remota do ImageKit (fase={}). fileId={}",
+                        phase, fileId, secondException);
+            }
         }
     }
 

@@ -5,12 +5,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.LongSupplier;
 import java.util.regex.Pattern;
@@ -20,8 +23,9 @@ import java.util.regex.Pattern;
  * adaptado de {@code src/limite-por-ip.ts} e {@code src/limite-compartilhado/*} do Neves Shield.
  *
  * <p>Política {@code so-a-rota} para limites operacionais (evitando bloquear redes Wi-Fi de restaurantes
- * ou CGNAT móvel inteiros) e bloqueio progressivo de IP ({@code 2^reincidencias}, até 32x) apenas
- * para ataques de WAF ou ferramentas de varredura.</p>
+ * ou CGNAT móvel inteiros), bloqueio temporário de login após 5 falhas consecutivas (Decisão D-13/D-17)
+ * com chaves derivadas por HMAC-SHA256 (sem persistir e-mails em texto puro) e bloqueio progressivo de IP
+ * ({@code 2^reincidencias}, até 32x) apenas para ataques de WAF ou ferramentas de varredura.</p>
  */
 @Service
 public class RateLimitService {
@@ -30,6 +34,7 @@ public class RateLimitService {
     private static final long MINUTE_MS = 60_000L;
     private static final long HOUR_MS = 60 * MINUTE_MS;
     private static final long DAY_MS = 24 * HOUR_MS;
+    private static final String DEFAULT_HMAC_KEY = "borae-rate-limit-hmac-key-2026-default";
 
     private static final Pattern MEDIA_UPLOAD_PATH = Pattern.compile(
             "^/api/v1/restaurants/[^/]+/(media|menus/[^/]+/products/[^/]+/(image|model-3d))$"
@@ -75,6 +80,7 @@ public class RateLimitService {
     private final RateLimitStorage memoryStorage;
     private final SecurityAuditLogger auditLogger;
     private final LongSupplier clock;
+    private final byte[] hmacKeyBytes;
 
     private final int loginMaxRequests;
     private final long loginWindowMs;
@@ -99,7 +105,8 @@ public class RateLimitService {
             JdbcTemplate jdbcTemplate,
             SecurityAuditLogger auditLogger,
             @Value("${security.rate-limit.storage-mode:postgres}") String storageMode,
-            @Value("${security.rate-limit.login-max:10}") int loginMaxRequests,
+            @Value("${security.jwt.secret:}") String jwtSecretForHmac,
+            @Value("${security.rate-limit.login-max:20}") int loginMaxRequests,
             @Value("${security.rate-limit.login-window-ms:900000}") long loginWindowMs,
             @Value("${security.rate-limit.login-max-failures:5}") int loginMaxFailures,
             @Value("${security.rate-limit.login-lockout-ms:900000}") long loginLockoutMs,
@@ -117,6 +124,11 @@ public class RateLimitService {
     ) {
         this.clock = System::currentTimeMillis;
         this.auditLogger = auditLogger;
+        String rawHmacKey = (jwtSecretForHmac == null || jwtSecretForHmac.isBlank())
+                ? DEFAULT_HMAC_KEY
+                : "borae-rl-hmac:" + jwtSecretForHmac.trim();
+        this.hmacKeyBytes = rawHmacKey.getBytes(StandardCharsets.UTF_8);
+
         InMemoryRateLimitStorage localMemory = new InMemoryRateLimitStorage(this.clock);
         this.memoryStorage = localMemory;
         if ("memory".equalsIgnoreCase(storageMode) || jdbcTemplate == null) {
@@ -125,7 +137,8 @@ public class RateLimitService {
             this.sharedStorage = new ResilientRateLimitStorage(
                     new PostgresRateLimitStorage(jdbcTemplate),
                     new InMemoryRateLimitStorage(this.clock),
-                    auditLogger
+                    auditLogger,
+                    this.clock
             );
         }
         this.loginMaxRequests = loginMaxRequests;
@@ -170,6 +183,7 @@ public class RateLimitService {
         this.memoryStorage = memoryStorage;
         this.auditLogger = auditLogger;
         this.clock = clock;
+        this.hmacKeyBytes = DEFAULT_HMAC_KEY.getBytes(StandardCharsets.UTF_8);
         this.loginMaxRequests = loginMaxRequests;
         this.loginWindowMs = loginWindowMs;
         this.loginMaxFailures = loginMaxFailures;
@@ -301,52 +315,107 @@ public class RateLimitService {
     }
 
     /**
-     * Registra tentativa de login com senha inválida e informa se a conta atingiu
-     * o bloqueio temporário de 15 minutos após 5 falhas consecutivas (Decisão D-13/D-17).
+     * Verifica antes da autenticação se o identificador (e-mail normalizado) ou o par (e-mail + IP)
+     * já acumulou 5 falhas consecutivas na janela atual de 15 minutos (Decisão D-13/D-17).
+     *
+     * <p>Lança {@link RateLimitExceededException} (HTTP 429) quando bloqueado, sem incrementar a contagem
+     * de forma duplicada com o filtro HTTP.</p>
      */
-    public boolean recordFailedLoginAttempt(String normalizedEmail) {
+    public void assertLoginAttemptAllowed(String normalizedEmail, String clientIp) {
         if (normalizedEmail == null || normalizedEmail.isBlank()) {
-            return false;
+            return;
         }
-        String key = "login-fail:" + shortHash(normalizedEmail.trim().toLowerCase(Locale.ROOT));
-        RateLimitWindow window = sharedStorage.increment(key, loginLockoutMs);
-        return window.count() >= loginMaxFailures;
-    }
-
-    /**
-     * Verifica se a conta está temporariamente bloqueada por excesso de falhas de senha.
-     */
-    public boolean isLoginTemporarilyLocked(String normalizedEmail) {
-        if (normalizedEmail == null || normalizedEmail.isBlank()) {
-            return false;
-        }
-        String lockKey = "login-lock:" + shortHash(normalizedEmail.trim().toLowerCase(Locale.ROOT));
-        RateLimitWindow window = sharedStorage.increment(lockKey, loginLockoutMs);
-        // A chave login-lock só existe quando ativada ou verificada junto ao contador:
-        return false;
-    }
-
-    /**
-     * Verifica e registra tentativa de autenticação por conta (proteção contra brute force distribuído).
-     */
-    public RateLimitDecision checkAccountLoginAttempt(String normalizedEmail) {
         long now = clock.getAsLong();
-        String key = "acct-login:" + shortHash(normalizedEmail == null ? "" : normalizedEmail.trim().toLowerCase(Locale.ROOT));
-        RateLimitWindow window = sharedStorage.increment(key, loginLockoutMs);
-        int retryAfter = Math.max(1, (int) Math.ceil((window.resetAtEpochMs() - now) / 1000.0));
-        int remaining = Math.max(0, loginMaxFailures - window.count());
-        if (window.count() > loginMaxFailures) {
-            return new RateLimitDecision(
-                    false,
+        String accountKey = loginAccountFailureKey(normalizedEmail);
+        String ipAccountKey = loginIpAccountFailureKey(normalizedEmail, clientIp);
+
+        Optional<RateLimitWindow> accountWindow = sharedStorage.getActiveWindow(accountKey);
+        if (accountWindow.isPresent() && accountWindow.get().count() >= loginMaxFailures) {
+            int retryAfter = Math.max(1, (int) Math.ceil((accountWindow.get().resetAtEpochMs() - now) / 1000.0));
+            logLoginLockout(clientIp, retryAfter);
+            throw new RateLimitExceededException(
                     loginMaxFailures,
-                    0,
                     retryAfter,
-                    false,
-                    "auth-account-lockout",
-                    "Muitas tentativas de login para esta conta. Aguarde " + formatTimePtBr(retryAfter) + " para tentar novamente."
+                    "auth-login-lockout",
+                    "Muitas tentativas de login inválidas. Aguarde " + formatTimePtBr(retryAfter) + " para tentar novamente."
             );
         }
-        return new RateLimitDecision(true, loginMaxFailures, remaining, retryAfter, false, "auth-account-lockout", null);
+
+        Optional<RateLimitWindow> ipAccountWindow = sharedStorage.getActiveWindow(ipAccountKey);
+        if (ipAccountWindow.isPresent() && ipAccountWindow.get().count() >= loginMaxFailures) {
+            int retryAfter = Math.max(1, (int) Math.ceil((ipAccountWindow.get().resetAtEpochMs() - now) / 1000.0));
+            logLoginLockout(clientIp, retryAfter);
+            throw new RateLimitExceededException(
+                    loginMaxFailures,
+                    retryAfter,
+                    "auth-login-lockout",
+                    "Muitas tentativas de login inválidas. Aguarde " + formatTimePtBr(retryAfter) + " para tentar novamente."
+            );
+        }
+    }
+
+    /**
+     * Registra uma falha de autenticação (tanto para e-mail existente com senha incorreta
+     * quanto para e-mail inexistente), garantindo comportamento idêntico contra enumeração.
+     */
+    public RateLimitWindow recordLoginFailure(String normalizedEmail, String clientIp) {
+        if (normalizedEmail == null || normalizedEmail.isBlank()) {
+            return new RateLimitWindow(0, clock.getAsLong());
+        }
+        String accountKey = loginAccountFailureKey(normalizedEmail);
+        String ipAccountKey = loginIpAccountFailureKey(normalizedEmail, clientIp);
+        sharedStorage.increment(ipAccountKey, loginLockoutMs);
+        RateLimitWindow accountWindow = sharedStorage.increment(accountKey, loginLockoutMs);
+        if (accountWindow.count() >= loginMaxFailures && auditLogger != null) {
+            int retryAfter = Math.max(1, (int) Math.ceil((accountWindow.resetAtEpochMs() - clock.getAsLong()) / 1000.0));
+            auditLogger.logSecurityEvent(
+                    "ALTA",
+                    "login_lockout_activated",
+                    "POST",
+                    "/api/v1/auth/login",
+                    clientIp == null ? ClientIpResolver.UNKNOWN_IP : clientIp,
+                    true,
+                    "Bloqueio temporário de login ativado após " + accountWindow.count()
+                            + " falhas consecutivas (expira em " + retryAfter + " s)."
+            );
+        }
+        return accountWindow;
+    }
+
+    /**
+     * Reseta o contador de falhas consecutivas quando o usuário realiza login válido.
+     */
+    public void clearLoginFailures(String normalizedEmail, String clientIp) {
+        if (normalizedEmail == null || normalizedEmail.isBlank()) {
+            return;
+        }
+        sharedStorage.remove(loginAccountFailureKey(normalizedEmail));
+        sharedStorage.remove(loginIpAccountFailureKey(normalizedEmail, clientIp));
+    }
+
+    private void logLoginLockout(String clientIp, int retryAfterSeconds) {
+        if (auditLogger != null) {
+            auditLogger.logSecurityEvent(
+                    "MEDIA",
+                    "login_locked",
+                    "POST",
+                    "/api/v1/auth/login",
+                    clientIp == null ? ClientIpResolver.UNKNOWN_IP : clientIp,
+                    true,
+                    "Tentativa de login recusada durante bloqueio temporário (retryAfter=" + retryAfterSeconds + " s)."
+            );
+        }
+    }
+
+    private String loginAccountFailureKey(String normalizedEmail) {
+        String clean = normalizedEmail.trim().toLowerCase(Locale.ROOT);
+        return "login-fail:" + hmacHex("acct:" + clean);
+    }
+
+    private String loginIpAccountFailureKey(String normalizedEmail, String clientIp) {
+        String cleanEmail = normalizedEmail.trim().toLowerCase(Locale.ROOT);
+        String cleanIp = (clientIp == null || clientIp.isBlank()) ? ClientIpResolver.UNKNOWN_IP : clientIp.trim();
+        return "login-ip-fail:" + hmacHex("ip-acct:" + cleanEmail + "|" + cleanIp);
     }
 
     /**
@@ -355,7 +424,7 @@ public class RateLimitService {
      */
     public RateLimitDecision checkInvitationQuota(String actorId, String restaurantId) {
         long now = clock.getAsLong();
-        String userKey = "usuario:" + shortHash(actorId) + ":invite-hour";
+        String userKey = "usuario:" + hmacHex(actorId) + ":invite-hour";
         RateLimitWindow userWindow = sharedStorage.increment(userKey, HOUR_MS);
         if (userWindow.count() > invitationSendPerHourMax) {
             int retryAfter = Math.max(1, (int) Math.ceil((userWindow.resetAtEpochMs() - now) / 1000.0));
@@ -370,7 +439,7 @@ public class RateLimitService {
             );
         }
 
-        String restaurantKey = "rest:" + shortHash(restaurantId) + ":invite-day";
+        String restaurantKey = "rest:" + hmacHex(restaurantId) + ":invite-day";
         RateLimitWindow restWindow = sharedStorage.increment(restaurantKey, DAY_MS);
         if (restWindow.count() > invitationSendPerDayRestaurantMax) {
             int retryAfter = Math.max(1, (int) Math.ceil((restWindow.resetAtEpochMs() - now) / 1000.0));
@@ -399,7 +468,7 @@ public class RateLimitService {
 
         if ("POST".equals(safeMethod) && "/api/v1/auth/login".equals(safePath)) {
             return new RateLimitRule(
-                    "auth-login",
+                    "auth-login-ip",
                     loginMaxRequests,
                     loginWindowMs,
                     true,
@@ -517,10 +586,10 @@ public class RateLimitService {
         sharedStorage.reset();
     }
 
-    public static String buildSubjectKey(RateLimitRule rule, String ip, String authenticatedSubject) {
+    public String buildSubjectKey(RateLimitRule rule, String ip, String authenticatedSubject) {
         String subjectPart;
         if (!rule.scopeByIpOnly() && authenticatedSubject != null && !authenticatedSubject.isBlank()) {
-            subjectPart = "usuario:" + shortHash(authenticatedSubject.trim().toLowerCase(Locale.ROOT));
+            subjectPart = "usuario:" + hmacHex(authenticatedSubject.trim().toLowerCase(Locale.ROOT));
         } else {
             String safeIp = (ip == null || ip.isBlank()) ? ClientIpResolver.UNKNOWN_IP : ip.trim();
             subjectPart = "anon:" + safeIp;
@@ -532,13 +601,14 @@ public class RateLimitService {
         return key;
     }
 
-    private static String shortHash(String value) {
+    private String hmacHex(String value) {
         try {
-            byte[] digest = MessageDigest.getInstance("SHA-256")
-                    .digest((value == null ? "" : value).getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(digest).substring(0, 24);
-        } catch (NoSuchAlgorithmException exception) {
-            throw new IllegalStateException("SHA-256 indisponível", exception);
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(hmacKeyBytes, "HmacSHA256"));
+            byte[] digest = mac.doFinal((value == null ? "" : value).getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(digest).substring(0, 32);
+        } catch (NoSuchAlgorithmException | InvalidKeyException exception) {
+            throw new IllegalStateException("HmacSHA256 indisponível", exception);
         }
     }
 
