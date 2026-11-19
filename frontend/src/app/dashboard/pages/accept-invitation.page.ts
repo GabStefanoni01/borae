@@ -50,7 +50,7 @@ import { PageHeaderComponent } from '../ui/ui.components';
 export class AcceptInvitationPage {
   private readonly auth = inject(AuthService);
   private readonly ctx = inject(RestaurantContext);
-  protected readonly roleLabel = ROLE_LABEL;
+  protected get roleLabel() { return ROLE_LABEL; }
   protected readonly email = () => this.ctx.user()?.email ?? '';
   protected token = '';
   protected readonly saving = signal(false);

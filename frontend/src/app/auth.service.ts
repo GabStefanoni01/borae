@@ -1,6 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, tap } from 'rxjs';
+import { environment } from '../environments/environment';
 
 export interface AuthUser {
   id: string;
@@ -42,7 +43,9 @@ export interface RestaurantInvitation {
 export interface LoginPayload { email: string; password: string; }
 export interface RegisterPayload extends LoginPayload { fullName: string; }
 
-export const API_URL = 'https://borae.onrender.com';
+export const API_URL = environment.apiUrl;
+
+const SELECTED_RESTAURANT_STORAGE_KEY = 'borae.dashboard.restaurant';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -51,10 +54,15 @@ export class AuthService {
   private session: AuthResponse | null = this.readSession();
 
   get currentUser(): AuthUser | null {
+    if (!this.hasSession) return null;
     return this.session?.user ?? null;
   }
 
   get accessToken(): string | null {
+    if (this.session?.accessToken && isJwtExpired(this.session.accessToken)) {
+      this.logout();
+      return null;
+    }
     return this.session?.accessToken ?? null;
   }
 
@@ -116,14 +124,20 @@ export class AuthService {
 
   logout(): void {
     this.session = null;
-    if (typeof localStorage !== 'undefined') localStorage.removeItem(this.storageKey);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(this.storageKey);
+      localStorage.removeItem(SELECTED_RESTAURANT_STORAGE_KEY);
+    }
   }
 
   getErrorMessage(error: unknown, mode: 'login' | 'register'): string {
     if (error instanceof HttpErrorResponse) {
+      const apiMessage = extractApiMessage(error);
       if (error.status === 0) return 'Não foi possível conectar à API. Verifique a disponibilidade do serviço e a configuração de CORS.';
       if (error.status === 401) return 'E-mail ou senha inválidos. Confira os dados e tente novamente.';
+      if (error.status === 403) return apiMessage ?? 'Acesso negado para esta operação.';
       if (error.status === 409) return 'Este e-mail já possui uma conta. Faça login ou use outro e-mail.';
+      if (error.status === 429) return apiMessage ?? 'Muitas tentativas em sequência. Aguarde alguns minutos para tentar novamente.';
       if (error.status === 400) return 'Confira os campos. O nome deve ter pelo menos 2 caracteres e a senha, no mínimo 8.';
       if (error.status >= 500) return 'O servidor encontrou um problema. Tente novamente em instantes.';
     }
@@ -143,7 +157,7 @@ export class AuthService {
       const raw = localStorage.getItem(this.storageKey);
       if (!raw) return null;
       const parsed = JSON.parse(raw) as AuthResponse;
-      if (!parsed.accessToken || !parsed.user?.email) {
+      if (!parsed.accessToken || !parsed.user?.email || isJwtExpired(parsed.accessToken)) {
         localStorage.removeItem(this.storageKey);
         return null;
       }
@@ -152,5 +166,28 @@ export class AuthService {
       localStorage.removeItem(this.storageKey);
       return null;
     }
+  }
+}
+
+function extractApiMessage(error: HttpErrorResponse): string | null {
+  const body = error.error;
+  if (body && typeof body === 'object' && 'message' in body && typeof body.message === 'string') {
+    const trimmed = body.message.trim();
+    if (trimmed) return trimmed;
+  }
+  return null;
+}
+
+/** Verificação apenas de UX (o backend continua sendo a autoridade de expiração/assinatura do JWT). */
+function isJwtExpired(token: string): boolean {
+  const parts = token.split('.');
+  if (parts.length !== 3) return false;
+  try {
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+    const payload = JSON.parse(atob(padded)) as { exp?: unknown };
+    return typeof payload.exp === 'number' && payload.exp * 1000 <= Date.now();
+  } catch {
+    return false;
   }
 }

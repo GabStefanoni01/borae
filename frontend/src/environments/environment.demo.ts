@@ -6,7 +6,8 @@ import { demoApiInterceptor } from '../app/demo/demo-api.interceptor';
  * Credenciais de teste: src/app/demo/demo-data.ts.
  */
 export const environment = {
-  demo: true
+  demo: true,
+  apiUrl: 'https://borae.onrender.com'
 };
 
 export const environmentInterceptors: HttpInterceptorFn[] = [demoApiInterceptor];

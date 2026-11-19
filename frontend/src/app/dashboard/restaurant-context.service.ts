@@ -124,11 +124,15 @@ export class RestaurantContext {
 /** Mensagens padronizadas para erros HTTP do painel. */
 export function describeHttpError(error: unknown, action: string): string {
   if (error instanceof HttpErrorResponse) {
+    const apiMessage = typeof error.error?.message === 'string' && error.error.message.trim()
+      ? error.error.message.trim()
+      : null;
     if (error.status === 0) return `Não foi possível conectar ao Boraê para ${action}. Verifique sua conexão e tente novamente.`;
     if (error.status === 401) return 'Sua sessão expirou. Entre novamente para continuar.';
     if (error.status === 403) return 'Seu papel neste restaurante não permite esta ação.';
     if (error.status === 404) return 'O recurso solicitado não foi encontrado ou não está mais ativo.';
     if (error.status === 409) return 'Esta operação entra em conflito com dados existentes.';
+    if (error.status === 429) return apiMessage ?? 'Muitas solicitações em sequência. Aguarde alguns instantes e tente novamente.';
     if (error.status === 400) return 'Confira as informações enviadas e tente novamente.';
     if (error.status >= 500) return 'O servidor encontrou um problema. Tente novamente em instantes.';
   }
