@@ -1,19 +1,25 @@
 package com.borae.security;
 
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 /**
  * Armazenamento distribuído de rate limit no PostgreSQL via UPSERT atômico,
  * adaptado de {@code sql/limites_de_uso.sql} e {@code src/limite-compartilhado/postgres.ts} do Neves Shield.
  *
- * <p>Garante que múltiplas instâncias do Boraê no Render enxerguem a mesma contagem
- * sem exigir Redis externo no MVP. A limpeza oportunista é limitada em lotes ({@code LIMIT 500})
- * apoiada pelo índice {@code idx_security_rate_limit_reset_at} para não impactar a latência.</p>
+ * <p>Executa cada incremento, consulta e remoção em uma transação independente de leitura e escrita
+ * ({@code PROPAGATION_REQUIRES_NEW}, {@code readOnly = false}), garantindo que o contador seja
+ * imediatamente confirmado no PostgreSQL e nunca sofra rollback ou bloqueio por transações
+ * externas {@code readOnly} ou exceções de autenticação (HTTP 401).</p>
  */
 public class PostgresRateLimitStorage implements RateLimitStorage {
 
@@ -59,10 +65,27 @@ public class PostgresRateLimitStorage implements RateLimitStorage {
     private static final long CLEANUP_INTERVAL_MS = 10 * 60 * 1000L;
 
     private final JdbcTemplate jdbcTemplate;
+    private final TransactionTemplate requiresNewTransactionTemplate;
     private final AtomicLong lastCleanup = new AtomicLong(System.currentTimeMillis());
 
     public PostgresRateLimitStorage(JdbcTemplate jdbcTemplate) {
+        this(jdbcTemplate, null);
+    }
+
+    public PostgresRateLimitStorage(JdbcTemplate jdbcTemplate, PlatformTransactionManager transactionManager) {
         this.jdbcTemplate = jdbcTemplate;
+        PlatformTransactionManager effectiveTransactionManager = transactionManager;
+        if (effectiveTransactionManager == null && jdbcTemplate != null && jdbcTemplate.getDataSource() != null) {
+            effectiveTransactionManager = new DataSourceTransactionManager(jdbcTemplate.getDataSource());
+        }
+        if (effectiveTransactionManager != null) {
+            TransactionTemplate template = new TransactionTemplate(effectiveTransactionManager);
+            template.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            template.setReadOnly(false);
+            this.requiresNewTransactionTemplate = template;
+        } else {
+            this.requiresNewTransactionTemplate = null;
+        }
     }
 
     @Override
@@ -81,36 +104,40 @@ public class PostgresRateLimitStorage implements RateLimitStorage {
         if (windowMs < 1000L || windowMs > 604_800_000L) {
             throw new IllegalArgumentException("Janela de rate limit inválida.");
         }
-        RateLimitWindow window = jdbcTemplate.queryForObject(
-                ATOMIC_UPSERT_SQL,
-                (rs, rowNum) -> {
-                    int count = rs.getInt("request_count");
-                    Timestamp resetAt = rs.getTimestamp("reset_at");
-                    return new RateLimitWindow(count, resetAt.toInstant().toEpochMilli());
-                },
-                key,
-                windowMs,
-                windowMs
-        );
-        if (window == null) {
-            throw new IllegalStateException("Resposta nula ao atualizar contador de rate limit no PostgreSQL.");
-        }
-        cleanupExpiredIfDue();
-        return window;
+        return executeInIndependentTransaction(() -> {
+            RateLimitWindow window = jdbcTemplate.queryForObject(
+                    ATOMIC_UPSERT_SQL,
+                    (rs, rowNum) -> {
+                        int count = rs.getInt("request_count");
+                        Timestamp resetAt = rs.getTimestamp("reset_at");
+                        return new RateLimitWindow(count, resetAt.toInstant().toEpochMilli());
+                    },
+                    key,
+                    windowMs,
+                    windowMs
+            );
+            if (window == null) {
+                throw new IllegalStateException("Resposta nula ao atualizar contador de rate limit no PostgreSQL.");
+            }
+            cleanupExpiredIfDue();
+            return window;
+        });
     }
 
     @Override
     public Optional<RateLimitWindow> getActiveWindow(String key) {
         validateKey(key);
-        List<RateLimitWindow> rows = jdbcTemplate.query(
-                SELECT_ACTIVE_SQL,
-                (rs, rowNum) -> new RateLimitWindow(
-                        rs.getInt("request_count"),
-                        rs.getTimestamp("reset_at").toInstant().toEpochMilli()
-                ),
-                key
-        );
-        return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
+        return executeInIndependentTransaction(() -> {
+            List<RateLimitWindow> rows = jdbcTemplate.query(
+                    SELECT_ACTIVE_SQL,
+                    (rs, rowNum) -> new RateLimitWindow(
+                            rs.getInt("request_count"),
+                            rs.getTimestamp("reset_at").toInstant().toEpochMilli()
+                    ),
+                    key
+            );
+            return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
+        });
     }
 
     @Override
@@ -118,12 +145,25 @@ public class PostgresRateLimitStorage implements RateLimitStorage {
         if (key == null || key.length() < 3 || key.length() > 200) {
             return;
         }
-        jdbcTemplate.update(DELETE_KEY_SQL, key);
+        executeInIndependentTransaction(() -> {
+            jdbcTemplate.update(DELETE_KEY_SQL, key);
+            return null;
+        });
     }
 
     @Override
     public void reset() {
-        jdbcTemplate.update("DELETE FROM security_rate_limit");
+        executeInIndependentTransaction(() -> {
+            jdbcTemplate.update("DELETE FROM security_rate_limit");
+            return null;
+        });
+    }
+
+    private <T> T executeInIndependentTransaction(Supplier<T> action) {
+        if (requiresNewTransactionTemplate != null) {
+            return requiresNewTransactionTemplate.execute(status -> action.get());
+        }
+        return action.get();
     }
 
     private static void validateKey(String key) {

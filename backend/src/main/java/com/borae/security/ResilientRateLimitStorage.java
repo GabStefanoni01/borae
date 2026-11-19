@@ -1,5 +1,10 @@
 package com.borae.security;
 
+import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.transaction.TransactionUsageException;
+
+import java.sql.SQLException;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -13,10 +18,16 @@ import java.util.function.LongSupplier;
  * <p>Se o banco primário falhar ou não estiver disponível, degrada para contagem por instância
  * registrando alerta no canal de segurança com throttling (no máximo 1 log detalhado a cada 60 segundos)
  * para evitar inundação de logs sob falha persistente, e registra a recuperação quando o banco volta.</p>
+ *
+ * <p>Erros de programação ou de configuração transacional (ex.: {@link IllegalArgumentException},
+ * {@link TransactionUsageException}, {@link InvalidDataAccessApiUsageException} ou tentativa de escrita
+ * em transação {@code read-only} SQLState {@code 25006}) não são mascarados pelo fallback e são
+ * propagados imediatamente.</p>
  */
 public class ResilientRateLimitStorage implements RateLimitStorage {
 
     private static final long LOG_THROTTLE_WINDOW_MS = 60_000L;
+    private static final String POSTGRES_READ_ONLY_TX_SQL_STATE = "25006";
 
     private final RateLimitStorage primary;
     private final RateLimitStorage fallback;
@@ -64,6 +75,7 @@ public class ResilientRateLimitStorage implements RateLimitStorage {
             recordRecoveryIfNeeded();
             return result;
         } catch (RuntimeException exception) {
+            rethrowIfConfigurationOrTransactionalError(exception);
             logDegradationThrottled(exception);
             return fallback.increment(key, windowMs);
         }
@@ -79,6 +91,7 @@ public class ResilientRateLimitStorage implements RateLimitStorage {
             }
             return fallback.getActiveWindow(key);
         } catch (RuntimeException exception) {
+            rethrowIfConfigurationOrTransactionalError(exception);
             logDegradationThrottled(exception);
             return fallback.getActiveWindow(key);
         }
@@ -90,6 +103,7 @@ public class ResilientRateLimitStorage implements RateLimitStorage {
             primary.remove(key);
             recordRecoveryIfNeeded();
         } catch (RuntimeException exception) {
+            rethrowIfConfigurationOrTransactionalError(exception);
             logDegradationThrottled(exception);
         } finally {
             fallback.remove(key);
@@ -107,6 +121,32 @@ public class ResilientRateLimitStorage implements RateLimitStorage {
             lastWarningLoggedAt.set(0L);
             suppressedWarnings.set(0L);
             degraded.set(false);
+        }
+    }
+
+    public boolean isDegraded() {
+        return degraded.get();
+    }
+
+    private static void rethrowIfConfigurationOrTransactionalError(RuntimeException exception) {
+        if (exception instanceof IllegalArgumentException
+                || exception instanceof TransactionUsageException
+                || exception instanceof InvalidDataAccessApiUsageException) {
+            throw exception;
+        }
+        Throwable cause = exception;
+        int depth = 0;
+        while (cause != null && depth < 10) {
+            if (cause instanceof SQLException sqlException
+                    && POSTGRES_READ_ONLY_TX_SQL_STATE.equals(sqlException.getSQLState())) {
+                throw exception;
+            }
+            String message = cause.getMessage();
+            if (message != null && message.toLowerCase(Locale.ROOT).contains("read-only transaction")) {
+                throw exception;
+            }
+            cause = cause.getCause();
+            depth++;
         }
     }
 

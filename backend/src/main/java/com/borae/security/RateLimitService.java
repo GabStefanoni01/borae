@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -103,6 +104,7 @@ public class RateLimitService {
     @Autowired
     public RateLimitService(
             JdbcTemplate jdbcTemplate,
+            @Autowired(required = false) PlatformTransactionManager transactionManager,
             SecurityAuditLogger auditLogger,
             @Value("${security.rate-limit.storage-mode:postgres}") String storageMode,
             @Value("${security.jwt.secret:}") String jwtSecretForHmac,
@@ -135,7 +137,7 @@ public class RateLimitService {
             this.sharedStorage = localMemory;
         } else {
             this.sharedStorage = new ResilientRateLimitStorage(
-                    new PostgresRateLimitStorage(jdbcTemplate),
+                    new PostgresRateLimitStorage(jdbcTemplate, transactionManager),
                     new InMemoryRateLimitStorage(this.clock),
                     auditLogger,
                     this.clock

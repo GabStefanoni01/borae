@@ -79,12 +79,10 @@ public class AuthService {
         return createResponse(user);
     }
 
-    @Transactional(readOnly = true)
     public AuthResponse login(LoginRequest request) {
         return login(request, ClientIpResolver.UNKNOWN_IP);
     }
 
-    @Transactional(readOnly = true)
     public AuthResponse login(LoginRequest request, String clientIp) {
         String email = normalizeEmail(request.email());
         String safeIp = (clientIp == null || clientIp.isBlank()) ? ClientIpResolver.UNKNOWN_IP : clientIp;
