@@ -2,11 +2,11 @@
 
 **Data:** 19/11/2026  
 **Branch:** `feature/gastronomic-assistant-integration`  
-**Base:** `origin/main` (`3326bff`)
+**Base sincronizada:** `origin/main` (`b86b51d`, incluindo PR #34 da Sessão 02)
 
 ## 1. Resumo da entrega
 
-Esta entrega consolida o backend do Assistente Gastronômico originado na PR #29 (`origin/feat/ai-gastronomic-assistant`), corrige conflitos arquiteturais e de segurança identificados na auditoria em relação à `main` (Sessão 01), atualiza o adaptador Gemini Flash-Lite para o endpoint oficial estável e integra a experiência conversacional completa ao cardápio público (`/r/:slug`) no frontend Angular.
+Esta entrega consolida o backend do Assistente Gastronômico originado na PR #29 (`origin/feat/ai-gastronomic-assistant`), sincroniza integralmente com a `main` atualizada (`b86b51d` — Sessões 01 e 02), corrige conflitos arquiteturais e de segurança identificados na auditoria (incluindo validação fail-closed em produção para segredos independentes do assistente e cookie `Secure`), atualiza o adaptador Gemini Flash-Lite para o endpoint oficial estável e integra a experiência conversacional completa ao cardápio público (`/r/:slug`) no frontend Angular.
 
 ## 2. Correções e evoluções no Backend (`backend/`)
 

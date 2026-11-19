@@ -212,9 +212,9 @@ class PublicAssistantFlowPostgresIntegrationTest {
                 .andExpect(jsonPath("$.quota.remainingConsumer").value(19))
                 .andExpect(jsonPath("$.quota.remainingRestaurant").value(99));
 
-        // 6. Recommendation click tracking works for available product, rejects unavailable & foreign
+        // 6. Case-insensitive slug normalization from Session 02 works seamlessly with assistant interaction & click
         mockMvc.perform(post("/api/v1/public/restaurants/{slug}/assistant/recommendations/{productId}/click",
-                        restaurantSlug, availableProductId).cookie(sessionCookie))
+                        restaurantSlug.toUpperCase(), availableProductId).cookie(sessionCookie))
                 .andExpect(status().isNoContent());
 
         mockMvc.perform(post("/api/v1/public/restaurants/{slug}/assistant/recommendations/{productId}/click",

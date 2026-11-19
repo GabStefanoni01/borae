@@ -517,6 +517,8 @@ class SecurityHardeningTest {
     void shouldFailStartupWhenProductionConfigurationIsIncompleteOrInsecure() {
         MockEnvironment prodEnv = new MockEnvironment();
         prodEnv.setActiveProfiles("prod");
+        String assistantSessionSecret = "AssistantSessionProdSecret#2026-Strong-Key-Alpha-987654";
+        String assistantRateLimitSecret = "AssistantRateLimitProdSecret#2026-Strong-Key-Beta-123456";
 
         ProductionSecurityConfigValidator defaultDbPasswordValidator = new ProductionSecurityConfigValidator(
                 prodEnv,
@@ -525,7 +527,10 @@ class SecurityHardeningTest {
                 "change-me",
                 "https://borae-web.onrender.com",
                 "https://borae-web.onrender.com/r/",
-                VALID_SECRET
+                VALID_SECRET,
+                assistantSessionSecret,
+                assistantRateLimitSecret,
+                true
         );
         assertThrows(IllegalStateException.class, defaultDbPasswordValidator::validateOnStartup);
 
@@ -536,7 +541,10 @@ class SecurityHardeningTest {
                 "StrongProdDbPass#2026!",
                 "https://borae-web.onrender.com",
                 "https://borae-web.onrender.com/r/",
-                VALID_SECRET
+                VALID_SECRET,
+                assistantSessionSecret,
+                assistantRateLimitSecret,
+                true
         );
         assertThrows(IllegalStateException.class, localhostDbValidator::validateOnStartup);
 
@@ -547,7 +555,10 @@ class SecurityHardeningTest {
                 "StrongProdDbPass#2026!",
                 "http://localhost:4200",
                 "https://borae-web.onrender.com/r/",
-                VALID_SECRET
+                VALID_SECRET,
+                assistantSessionSecret,
+                assistantRateLimitSecret,
+                true
         );
         assertThrows(IllegalStateException.class, insecureCorsValidator::validateOnStartup);
 
@@ -558,9 +569,65 @@ class SecurityHardeningTest {
                 "StrongProdDbPass#2026!",
                 "https://borae-web.onrender.com",
                 "http://borae-web.onrender.com/r/",
-                VALID_SECRET
+                VALID_SECRET,
+                assistantSessionSecret,
+                assistantRateLimitSecret,
+                true
         );
         assertThrows(IllegalStateException.class, insecurePublicUrlValidator::validateOnStartup);
+
+        // Falha fechada se segredos do assistente faltarem, forem fracos, compartilhados com JWT ou entre si, ou cookie inseguro
+        assertThrows(IllegalStateException.class, () -> new ProductionSecurityConfigValidator(
+                prodEnv,
+                "jdbc:postgresql://ep-neon-pooler.us-east-2.aws.neon.tech:5432/borae",
+                "borae_prod",
+                "StrongProdDbPass#2026!",
+                "https://borae-web.onrender.com",
+                "https://borae-web.onrender.com/r/",
+                VALID_SECRET,
+                VALID_SECRET,
+                assistantRateLimitSecret,
+                true
+        ).validateOnStartup());
+
+        assertThrows(IllegalStateException.class, () -> new ProductionSecurityConfigValidator(
+                prodEnv,
+                "jdbc:postgresql://ep-neon-pooler.us-east-2.aws.neon.tech:5432/borae",
+                "borae_prod",
+                "StrongProdDbPass#2026!",
+                "https://borae-web.onrender.com",
+                "https://borae-web.onrender.com/r/",
+                VALID_SECRET,
+                assistantSessionSecret,
+                assistantSessionSecret,
+                true
+        ).validateOnStartup());
+
+        assertThrows(IllegalStateException.class, () -> new ProductionSecurityConfigValidator(
+                prodEnv,
+                "jdbc:postgresql://ep-neon-pooler.us-east-2.aws.neon.tech:5432/borae",
+                "borae_prod",
+                "StrongProdDbPass#2026!",
+                "https://borae-web.onrender.com",
+                "https://borae-web.onrender.com/r/",
+                VALID_SECRET,
+                "short-secret",
+                assistantRateLimitSecret,
+                true
+        ).validateOnStartup());
+
+        assertThrows(IllegalStateException.class, () -> new ProductionSecurityConfigValidator(
+                prodEnv,
+                "jdbc:postgresql://ep-neon-pooler.us-east-2.aws.neon.tech:5432/borae",
+                "borae_prod",
+                "StrongProdDbPass#2026!",
+                "https://borae-web.onrender.com",
+                "https://borae-web.onrender.com/r/",
+                VALID_SECRET,
+                assistantSessionSecret,
+                assistantRateLimitSecret,
+                false
+        ).validateOnStartup());
 
         ProductionSecurityConfigValidator validProdValidator = new ProductionSecurityConfigValidator(
                 prodEnv,
@@ -569,7 +636,10 @@ class SecurityHardeningTest {
                 "StrongProdDbPass#2026!",
                 "https://borae-web.onrender.com",
                 "https://borae-web.onrender.com/r/",
-                VALID_SECRET
+                VALID_SECRET,
+                assistantSessionSecret,
+                assistantRateLimitSecret,
+                true
         );
         validProdValidator.validateOnStartup();
     }

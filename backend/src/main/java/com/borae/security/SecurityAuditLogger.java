@@ -25,7 +25,8 @@ public class SecurityAuditLogger {
     private static final String LOG_PREFIX = "[BORAE SECURITY]";
     private static final int MAX_RECENT_EVENTS = 500;
     private static final Pattern SENSITIVE_PATTERN = Pattern.compile(
-            "(?i)(bearer\\s+[a-z0-9._\\-~+/]+=*|eyJ[a-z0-9._\\-]+|password\\s*[:=]\\s*[^,\\s\"'}]+|token\\s*[:=]\\s*[^,\\s\"'}]+)"
+            "(?i)(bearer\\s+[a-z0-9._\\-~+/]+=*|eyJ[a-z0-9._\\-]+|"
+                    + "(?:password|token|secret|api[_-]?key|x-goog-api-key|BORA_ASSISTANT_SESSION)\\s*[:=]\\s*[^,\\s\"';}]+)"
     );
 
     private final Deque<SecurityEvent> recentEvents = new ConcurrentLinkedDeque<>();

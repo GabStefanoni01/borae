@@ -1,6 +1,5 @@
 import { HttpErrorResponse, HttpInterceptorFn, HttpRequest, HttpResponse } from '@angular/common/http';
 import { Observable, delay, from, of, switchMap, throwError } from 'rxjs';
-import { API_URL } from '../auth.service';
 import { DemoHelpers, handleCatalog, handlePublicCatalog } from './demo-catalog';
 import { DemoDatabase, DemoMembership, DemoRestaurant, DemoRole, DemoUser, createDemoSeed } from './demo-data';
 
@@ -8,28 +7,27 @@ import { DemoDatabase, DemoMembership, DemoRestaurant, DemoRole, DemoUser, creat
  * MODO DEMONSTRAÇÃO — simulador local da API do Boraê.
  *
  * Ativo somente na configuração "demo" (src/environments/environment.demo.ts).
- * Responde às chamadas para API_URL sem nunca acessar a rede, reproduzindo os contratos
- * e regras atuais do backend (docs/API.md e RestaurantTeamService):
- *   auth/login, auth/register, users/me, users/me/restaurants, POST restaurants,
- *   members (GET/PATCH/DELETE), invitations (POST) e restaurant-invitations/accept.
+ * Responde às chamadas para /api/v1/* sem acessar a rede e sem criar dependência circular
+ * com environment.demo.ts -> auth.service.ts, reproduzindo os contratos atuais do backend.
  * O "banco" fica no sessionStorage da aba: some ao fechar a aba.
  */
 const STORAGE_KEY = 'borae.demo.db';
 const LATENCY_MS = 350;
-const PREFIX = `${API_URL}/api/v1`;
+const API_PREFIX = '/api/v1';
 
 export const demoApiInterceptor: HttpInterceptorFn = (request, next) => {
-  if (!request.url.startsWith(API_URL)) return next(request);
+  const prefixIndex = request.url.indexOf(API_PREFIX);
+  if (prefixIndex < 0) return next(request);
   try {
-    return handle(request);
+    const path = request.url.slice(prefixIndex + API_PREFIX.length).split('?')[0];
+    return handle(request, path);
   } catch (error) {
     return fail(500, 'Erro inesperado no modo demonstração.');
   }
 };
 
-function handle(req: HttpRequest<unknown>): Observable<HttpResponse<unknown>> {
+function handle(req: HttpRequest<unknown>, path: string): Observable<HttpResponse<unknown>> {
   const db = load();
-  const path = req.url.slice(PREFIX.length).split('?')[0];
   const body = (req.body ?? {}) as Record<string, string>;
   const method = req.method;
 
