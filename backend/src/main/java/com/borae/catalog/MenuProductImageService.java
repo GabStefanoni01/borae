@@ -119,6 +119,9 @@ public class MenuProductImageService {
         }
         MenuProduct product = productRepository.findByIdAndCategory_Menu_Id(productId, menuId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado neste cardápio."));
+        if (product.getLifecycleStatus() == ProductLifecycleStatus.ARCHIVED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Produto arquivado não pode ter sua imagem removida.");
+        }
         RestaurantMedia image = product.getImage();
         if (image == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Este produto não possui imagem.");
