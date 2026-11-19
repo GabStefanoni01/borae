@@ -21,6 +21,7 @@ Esta documentação é a referência de produto e engenharia do Boraê. Ela sepa
 15. [Decisões comerciais e operacionais](DECISIONS_COMMERCIAL_AND_OPERATIONS.md): preços, provedores e políticas aprovadas em 13/11/2026.
 16. [Registro de decisões e pendências restantes](OPEN_DECISIONS.md): decisões aprovadas e parâmetros técnicos ainda a definir.
 17. [Contribuição](CONTRIBUTING.md): Git, testes, PRs e Definition of Done.
+18. [Auditoria e fortalecimento de segurança do backend (MVP)](SECURITY_HARDENING_MVP.md): vulnerabilidades corrigidas, adaptação do Neves Shield, rate limiting distribuído, WAF, cabeçalhos HTTP e validação de produção.
 
 ## Como interpretar o status
 
