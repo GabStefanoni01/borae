@@ -233,6 +233,11 @@ export class PublicMenuPage {
           this.title.setTitle('Restaurante não encontrado | Boraê');
           return;
         }
+        if (status === 429) {
+          this.errorText.set('Muitas solicitações em sequência. Aguarde alguns instantes e tente novamente.');
+          this.state.set('error');
+          return;
+        }
         this.errorText.set(status === 0
           ? 'Verifique sua conexão com a internet e tente novamente.'
           : 'O serviço pode estar iniciando. Tente novamente em alguns segundos.');

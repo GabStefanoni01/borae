@@ -8,7 +8,14 @@ import { RestaurantContext, RestaurantRole } from '../restaurant-context.service
 import { ToastService } from '../ui/feedback';
 import { PublicationPage, sanitizeFileName } from './publication.page';
 
-const PROFILE = { id: 'r1', name: 'Cantina Bella Vista!', slug: 'cantina-bella-vista', publicationStatus: 'DRAFT' } as RestaurantProfile;
+const PROFILE = {
+  id: 'r1',
+  name: 'Cantina Bella Vista!',
+  slug: 'cantina-bella-vista',
+  category: 'Italiana',
+  address: 'Rua Augusta, 500 - São Paulo/SP',
+  publicationStatus: 'DRAFT'
+} as RestaurantProfile;
 
 function setup(role: RestaurantRole = 'OWNER', profile: RestaurantProfile = PROFILE) {
   const profiles = {
@@ -78,6 +85,13 @@ describe('PublicationPage', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(text(el.querySelector('.c-qr-error'))).toContain('Não foi possível gerar o QR Code');
     expect(buttonByText(el, 'Tentar novamente')).toBeTruthy();
+  });
+
+  it('alerta quando faltam campos obrigatórios de D-01 antes da publicação', () => {
+    const incomplete = { id: 'r1', name: 'Cantina Bella Vista!', slug: 'cantina-bella-vista', category: null, address: null, publicationStatus: 'DRAFT' } as RestaurantProfile;
+    const { el } = setup('OWNER', incomplete);
+    expect(text(el)).toContain('Categoria gastronômica');
+    expect(text(el)).toContain('Endereço');
   });
 
   it('STAFF não vê publicação nem QR Code', () => {

@@ -29,4 +29,13 @@ describe('catalogErrorMessage', () => {
     const detailed = new HttpErrorResponse({ status: 500, error: { message: 'NullPointerException at MenuService' } });
     expect(catalogErrorMessage(detailed, 'save-menu')).not.toContain('Exception');
   });
+
+  it('trata HTTP 429 e campos obrigatórios D-01 (400) na publicação do restaurante', () => {
+    const missingFields = new HttpErrorResponse({
+      status: 400,
+      error: { message: 'Para publicar o restaurante, preencha os campos obrigatórios do perfil: categoria gastronômica, endereço.' }
+    });
+    expect(catalogErrorMessage(missingFields, 'publish-restaurant')).toContain('categoria gastronômica');
+    expect(catalogErrorMessage(err(429), 'upload-image')).toContain('Muitas solicitações');
+  });
 });

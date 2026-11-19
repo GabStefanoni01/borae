@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, ElementRef, HostListener, inject, output, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { IconComponent } from '../../shared/icon.component';
 import { RestaurantContext, ROLE_LABEL } from '../restaurant-context.service';
 
@@ -52,14 +52,20 @@ import { RestaurantContext, ROLE_LABEL } from '../restaurant-context.service';
 })
 export class RestaurantSwitcherComponent {
   protected readonly ctx = inject(RestaurantContext);
+  private readonly router = inject(Router);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   protected readonly open = signal(false);
-  protected readonly roleLabel = ROLE_LABEL;
+  protected get roleLabel() { return ROLE_LABEL; }
   readonly navigated = output<void>();
 
   protected choose(restaurantId: string): void {
+    const changed = this.ctx.selectedId() !== restaurantId;
     this.ctx.select(restaurantId);
     this.close();
+    // Evita permanecer em /app/cardapios/:menuId com o ID de um cardápio do restaurante anterior (404).
+    if (changed && /^\/app\/cardapios\/[^/?#]+/.test(this.router.url)) {
+      void this.router.navigateByUrl('/app/cardapios');
+    }
   }
 
   protected close(): void {

@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
@@ -37,8 +38,9 @@ public class PublicRestaurantMenuService {
 
     @Transactional(readOnly = true)
     public PublicRestaurantMenuResponse getBySlug(String slug) {
+        String normalizedSlug = slug == null ? "" : slug.trim().toLowerCase(Locale.ROOT);
         Restaurant restaurant = restaurantRepository
-                .findBySlugAndActiveTrueAndPublicationStatus(slug, RestaurantPublicationStatus.PUBLISHED)
+                .findBySlugAndActiveTrueAndPublicationStatus(normalizedSlug, RestaurantPublicationStatus.PUBLISHED)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Restaurante não encontrado ou não publicado."));
 

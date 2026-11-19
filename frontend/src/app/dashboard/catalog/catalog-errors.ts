@@ -23,9 +23,13 @@ export function httpStatus(error: unknown): number {
  */
 export function catalogErrorMessage(error: unknown, action: CatalogAction): string {
   const status = httpStatus(error);
+  const apiMessage = error instanceof HttpErrorResponse && typeof error.error?.message === 'string' && error.error.message.trim()
+    ? error.error.message.trim()
+    : null;
   if (status === 0) return 'Não foi possível conectar ao Boraê. Verifique sua conexão e tente novamente.';
   if (status === 401) return 'Sua sessão expirou. Entre novamente para continuar.';
   if (status === 403) return FORBIDDEN_MESSAGE;
+  if (status === 429) return apiMessage ?? 'Muitas solicitações em sequência. Aguarde alguns instantes e tente novamente.';
   if (status === 404) {
     if (action === 'remove-image') return 'Este produto já não possui imagem.';
     if (action === 'publish-model' || action === 'delete-model') return 'Este produto não possui mais um modelo 3D.';
@@ -63,6 +67,8 @@ export function catalogErrorMessage(error: unknown, action: CatalogAction): stri
 
   if (status === 400) {
     switch (action) {
+      case 'publish-restaurant':
+        return apiMessage ?? 'Para publicar o restaurante, preencha os campos obrigatórios do perfil (nome, endereço público, categoria gastronômica e endereço).';
       case 'save-product':
         return 'Confira as informações: nome obrigatório, preço não negativo, ingredientes e adicionais sem repetição.';
       case 'reorder-categories':

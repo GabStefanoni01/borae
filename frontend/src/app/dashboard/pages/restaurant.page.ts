@@ -40,7 +40,7 @@ import { PageHeaderComponent, RoleBadgeComponent, StateComponent } from '../ui/u
           </div>
         </section>
         @if (store.profile()?.publicationStatus === 'DRAFT') {
-          <p class="d-note rp-note"><bo-icon name="info" [size]="14" /> O perfil está em rascunho. A publicação ainda não é feita pelo painel; quando estiver disponível, o perfil completo poderá ser publicado daqui.</p>
+          <p class="d-note rp-note"><bo-icon name="info" [size]="14" /> <span>O perfil está em rascunho. Preencha os dados obrigatórios (categoria gastronômica e endereço) e publique seu estabelecimento em <a routerLink="/app/qr-code" class="d-link">Página pública e QR Code</a>.</span></p>
         }
 
         <nav class="rp-tabs" aria-label="Seções do restaurante">
@@ -79,7 +79,7 @@ import { PageHeaderComponent, RoleBadgeComponent, StateComponent } from '../ui/u
 export class RestaurantPage {
   protected readonly ctx = inject(RestaurantContext);
   protected readonly store = inject(ProfileStore);
-  protected readonly publicationLabel = PUBLICATION_LABEL;
+  protected get publicationLabel() { return PUBLICATION_LABEL; }
 
   protected initials(name: string): string {
     return name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase();

@@ -86,6 +86,13 @@ public class RestaurantService {
             );
         }
 
+        String updatedAddress = request.address() == null ? restaurant.getAddress() : optionalText(request.address());
+        String updatedCategory = request.category() == null ? restaurant.getCategory() : optionalText(request.category());
+
+        if (restaurant.getPublicationStatus() == RestaurantPublicationStatus.PUBLISHED) {
+            validateRequiredFieldsForPublication(name, slug, updatedCategory, updatedAddress);
+        }
+
         restaurant.updateProfile(
                 name,
                 slug,
@@ -94,10 +101,10 @@ public class RestaurantService {
                 request.whatsapp() == null ? restaurant.getWhatsapp() : optionalText(request.whatsapp()),
                 request.instagram() == null ? restaurant.getInstagram() : optionalText(request.instagram()),
                 request.website() == null ? restaurant.getWebsite() : optionalText(request.website()),
-                request.address() == null ? restaurant.getAddress() : optionalText(request.address()),
+                updatedAddress,
                 latitude,
                 longitude,
-                request.category() == null ? restaurant.getCategory() : optionalText(request.category())
+                updatedCategory
         );
         return RestaurantProfileResponse.from(restaurant);
     }
@@ -109,8 +116,37 @@ public class RestaurantService {
         if (restaurant.getPublicationStatus() == RestaurantPublicationStatus.SUSPENDED) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Este restaurante está suspenso e não pode ser publicado pelo painel.");
         }
+        validateRequiredFieldsForPublication(
+                restaurant.getName(),
+                restaurant.getSlug(),
+                restaurant.getCategory(),
+                restaurant.getAddress()
+        );
         restaurant.publish();
         return RestaurantProfileResponse.from(restaurant);
+    }
+
+    private void validateRequiredFieldsForPublication(String name, String slug, String category, String address) {
+        List<String> missingFields = new ArrayList<>();
+        if (name == null || name.isBlank()) {
+            missingFields.add("nome do restaurante");
+        }
+        if (slug == null || slug.isBlank()) {
+            missingFields.add("endereço público (slug)");
+        }
+        if (category == null || category.isBlank()) {
+            missingFields.add("categoria gastronômica");
+        }
+        if (address == null || address.isBlank()) {
+            missingFields.add("endereço");
+        }
+        if (!missingFields.isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Para publicar o restaurante, preencha os campos obrigatórios do perfil: "
+                            + String.join(", ", missingFields) + "."
+            );
+        }
     }
 
     @Transactional

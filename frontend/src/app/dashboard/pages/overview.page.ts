@@ -44,7 +44,9 @@ import { PageHeaderComponent, RoleBadgeComponent, StateComponent, StatusBadgeCom
           <div class="d-card-head">
             <span class="d-card-icon"><bo-icon name="store" [size]="18" /></span>
             <h2>Estabelecimento</h2>
-            <a routerLink="/app/restaurante" class="d-link">Detalhes <bo-icon name="chevron-right" [size]="14" /></a>
+            @if (ctx.canEditProfile()) {
+              <a routerLink="/app/restaurante" class="d-link">Detalhes <bo-icon name="chevron-right" [size]="14" /></a>
+            }
           </div>
           <dl class="d-kv">
             <div><dt>Nome</dt><dd>{{ r.restaurantName }}</dd></div>
@@ -98,6 +100,10 @@ import { PageHeaderComponent, RoleBadgeComponent, StateComponent, StatusBadgeCom
       <section class="d-section">
         <h2 class="d-section-title">Ações rápidas</h2>
         <div class="ov-actions">
+          <a routerLink="/app/cardapios" class="ov-action"><bo-icon name="book-open" [size]="18" /><span><strong>Cardápios</strong><small>Categorias, produtos e disponibilidade</small></span></a>
+          @if (ctx.canManageCatalog()) {
+            <a routerLink="/app/qr-code" class="ov-action"><bo-icon name="qr-code" [size]="18" /><span><strong>Página pública e QR Code</strong><small>Publicar restaurante e baixar QR Code</small></span></a>
+          }
           @if (ctx.canViewTeam()) {
             <a routerLink="/app/equipe" class="ov-action"><bo-icon name="users" [size]="18" /><span><strong>Ver equipe</strong><small>Membros e papéis do restaurante</small></span></a>
           }
