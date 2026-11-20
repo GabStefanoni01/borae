@@ -197,7 +197,9 @@ public class BoraeSecurityShieldFilter extends OncePerRequestFilter {
         response.setHeader("X-Permitted-Cross-Domain-Policies", "none");
         response.setHeader("Content-Security-Policy", DEFAULT_CSP);
 
-        if (!path.startsWith("/api/v1/public/")) {
+        boolean isPublicAssistantPath = path.startsWith("/api/v1/public/assistant")
+                || (path.startsWith("/api/v1/public/restaurants/") && path.contains("/assistant/"));
+        if (!path.startsWith("/api/v1/public/") || isPublicAssistantPath) {
             response.setHeader("Cache-Control", PRIVATE_NO_STORE);
         }
 

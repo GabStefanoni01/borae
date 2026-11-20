@@ -162,7 +162,9 @@ public class SecurityConfig {
                 "X-RateLimit-Remaining",
                 "X-RateLimit-Reset"
         ));
-        configuration.setAllowCredentials(false);
+        // Necessário para o cookie HttpOnly da sessão anônima do assistente gastronômico,
+        // sempre restrito às origens explícitas validadas acima (sem wildcard).
+        configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
