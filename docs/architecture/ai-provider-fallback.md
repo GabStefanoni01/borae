@@ -1,205 +1,198 @@
 # Arquitetura Multi-Provider de IA e Fallback (`Gemini → Grok`)
 
-**Status:** estrutura técnica implementada e validada com provedores simulados (Sessão 04).  
-**Ativação operacional:** pendente de homologação futura com credenciais reais, validação de endpoints/modelos oficiais e aprovação dos termos de processamento de dados de cada fornecedor.  
+**Status:** estrutura técnica implementada e endurecida (Sessões 04 e 04.1), validada integralmente com provedores simulados e testes determinísticos.  
+**Ativação operacional:** pendente de homologação futura com credenciais reais, validação de faturamento e aprovação dos termos de processamento de dados de cada fornecedor.  
 **Prioridade obrigatória:** `PRIORIDADE 1 — GEMINI` → `PRIORIDADE 2 — GROK (xAI)` → `Contingência segura do backend`.
 
 ---
 
-## 1. Arquitetura de provedores
+## 1. Arquitetura de provedores (`Gemini → Grok`)
 
-O módulo `com.borae.assistant` mantém o domínio desacoplado de SDKs e protocolos proprietários através de um conjunto pequeno e explícito de abstrações:
+O módulo `com.borae.assistant` mantém o domínio isolado dos protocolos proprietários por meio de abstrações enxutas:
 
 | Componente | Responsabilidade |
 | --- | --- |
 | `AiProvider` | Interface comum (`id()`, `isAvailable()`, `recommend(AiProviderRequest)`). |
-| `AiProviderId` | Enum determinístico de provedores suportados (`GEMINI`, `GROK`). |
-| `AiProviderRequest` | Contrato único de entrada contendo instruções de sistema, mensagem do consumidor, catálogo público delimitado (JSON <= 4.000 chars) e limite de tokens de saída. |
-| `AiProviderResponse` | Contrato normalizado de saída (`provider`, `answer`, `recommendations[]`, `inputTokens`, `outputTokens`, `usedFallbackProvider`, `primaryFailureCode`). |
-| `AiProviderFailure` / `AiProviderException` | Classificação tipada de falhas técnicas, operacionais e recusas de segurança, sempre com mensagens sanitizadas. |
-| `GeminiFlashLiteProvider` | Adaptador do provedor principal (**Prioridade 1**), usando Google Gemini REST `POST /v1beta/models/{model}:generateContent` com cabeçalho `x-goog-api-key`. |
-| `GrokAiProvider` | Adaptador do provedor secundário de contingência (**Prioridade 2**), preparado para xAI REST `POST {baseUrl}/v1/chat/completions` com cabeçalho `Authorization: Bearer`. |
-| `AiProviderCircuitBreaker` | Circuit breaker leve e independente por provedor (`CLOSED` → `OPEN` → `HALF_OPEN`). |
-| `AiProviderConfiguration` | Centraliza prioridades, políticas de fallback, orçamento total de tempo e limites dos circuit breakers. |
-| `AiProviderOrchestrator` | Executa rigorosamente a ordem `Gemini → Grok` com no máximo 1 tentativa de contingência. |
-| `GastronomicAssistantService` | Monta o contexto autorizado do restaurante, impede chamadas simultâneas duplicadas, controla cotas e executa toda validação final de negócio, catálogo, preços, alergias e prompt injection. |
-
----
-
-## 2. Ordem de prioridade (`Gemini → Grok`)
+| `AiProviderId` | Enum determinístico dos provedores suportados (`GEMINI`, `GROK`). |
+| `AiRequestDeadline` | Deadline absoluto compartilhado por solicitação (`remainingMillis()`, `isExpired()`, `hasOperationalBudget()`, `timeoutForProvider(...)`). |
+| `DeadlineAwareClientHttpRequestFactory` | Compartilha um único `java.net.http.HttpClient` por adaptador (sem explosão de threads/pools) e aplica o timeout efetivo por requisição com cancelamento real do stream HTTP. |
+| `AiProviderRequest` | Contrato único de entrada (`systemInstruction`, `userMessage`, `catalogJson` <= 4.000 chars, `maxOutputTokens`, `deadline`). |
+| `AiProviderResponse` | Contrato normalizado de saída (`provider`, `answer`, `recommendations[]`, `inputTokens`, `outputTokens`, `usedFallbackProvider`, `primaryFailureCode`, `attempts[]`). |
+| `AiProviderFailure` / `AiProviderException` | Classificação tipada de falhas com preservação de tokens eventualmente faturados antes da falha e mensagens sempre sanitizadas. |
+| `GeminiFlashLiteProvider` | Adaptador principal (**Prioridade 1**): Google Gemini REST `POST /v1beta/models/{model}:generateContent` com cabeçalho `x-goog-api-key`. |
+| `GrokAiProvider` | Adaptador de contingência (**Prioridade 2**): xAI **Responses API** `POST {baseUrl}/v1/responses` com `Authorization: Bearer`, `store=false` e `text.format` (`json_schema`). |
+| `AiProviderCircuitBreaker` | Circuit breaker independente por provedor (`CLOSED` → `OPEN` → `HALF_OPEN`). |
+| `AiProviderConfiguration` | Centraliza prioridades, deadline global, mínimo operacional, política de erro de autenticação e circuit breakers. |
+| `AiProviderOrchestrator` | Executa rigorosamente `Gemini → Grok` com no máximo 1 tentativa de contingência. |
+| `GastronomicAssistantService` | Monta o contexto autorizado, bloqueia chamadas simultâneas duplicadas (`HTTP 429`), gerencia cotas e centraliza toda validação final de negócio e segurança. |
 
 ```text
 Consumidor (/r/:slug)
   └─ PublicAssistantInteractionController (IP rate limit HMAC 30/min)
        └─ GastronomicAssistantService (sessão anônima, in-flight guard, catálogo elegível, cota diária)
-            └─ AiProviderOrchestrator
-                 ├─ [Prioridade 1] GeminiFlashLiteProvider (circuit breaker independente)
-                 │    ├─ Sucesso ─────────────────────────► Validação centralizada no backend ──► Resposta 200
-                 │    ├─ SAFETY_REFUSAL / INVALID_REQUEST ─► NÃO chama Grok ──► Recusa segura (sem fallback)
-                 │    └─ Falha técnica elegível + orçamento de tempo restante
-                 │         └─ [Prioridade 2] GrokAiProvider (máx. 1 tentativa, circuit breaker independente)
-                 │              ├─ Sucesso ───────────────► Mesma validação centralizada ──► Resposta 200
-                 │              └─ Falha ─────────────────► Contingência segura (`fallback: true`, `AI_UNAVAILABLE`)
-                 └─ Ambos indisponíveis/desabilitados ────► Contingência segura (`fallback: true`, `AI_UNAVAILABLE`)
+            └─ AiProviderOrchestrator [AiRequestDeadline global: AI_TOTAL_TIMEOUT_MS]
+                 ├─ [Prioridade 1] GeminiFlashLiteProvider (timeout efetivo = min(GEMINI_TIMEOUT_MS, restante))
+                 │    ├─ Sucesso ─────────────────────────────► Validação centralizada ──► HTTP 200
+                 │    ├─ SAFETY_REFUSAL / INVALID_REQUEST ────► NÃO chama Grok ──► Recusa segura
+                 │    ├─ AUTH_OR_CONFIG_ERROR (padrão=false) ─► NÃO chama Grok ──► Alerta + Contingência segura
+                 │    └─ Falha técnica elegível + remainingMillis >= AI_MIN_FALLBACK_BUDGET_MS
+                 │         └─ [Prioridade 2] GrokAiProvider (timeout efetivo = min(GROK_TIMEOUT_MS, restante))
+                 │              ├─ Sucesso ───────────────────► Mesma validação centralizada ──► HTTP 200
+                 │              └─ Falha ─────────────────────► Contingência segura (AI_UNAVAILABLE)
+                 └─ Ambos indisponíveis/desabilitados ────────► Contingência segura (AI_UNAVAILABLE)
 ```
 
-Regras invioláveis desta arquitetura:
+---
 
-- **O Grok nunca é chamado antes do Gemini.** `AiProviderConfiguration` rejeita na inicialização qualquer configuração que tente promover `grok` como provedor principal.
-- **Sem balanceamento aleatório, sem split por custo e sem chamadas paralelas** entre provedores.
-- **No máximo 1 tentativa de contingência ao Grok** por solicitação.
+## 2. Deadline global efetivo e timeout individual
+
+- No início de cada solicitação em `AiProviderOrchestrator.recommend(...)`, cria-se um `AiRequestDeadline` absoluto com orçamento `AI_TOTAL_TIMEOUT_MS` (padrão `15000 ms`) e mínimo operacional `AI_MIN_FALLBACK_BUDGET_MS` (padrão `500 ms`).
+- O mesmo `AiRequestDeadline` é propagado em `AiProviderRequest` para o Gemini e, em caso de fallback, para o Grok.
+- Antes de cada chamada HTTP:
+  - Se `deadline.isExpired()` for `true`, a chamada é abortada imediatamente com `FailureType.TIMEOUT` sem abrir conexão.
+  - O timeout efetivo é calculado por `deadline.timeoutForProvider(providerTimeoutMs) = min(providerTimeoutMs, remainingMillis())`.
+  - Exemplo prático: se o orçamento global for `15000 ms`, o Gemini consumir `12000 ms` e falhar, e o timeout individual do Grok for `8000 ms`, o Grok receberá timeout efetivo de **3000 ms** (nunca `8000 ms`).
+  - Se o tempo restante for inferior a `AI_MIN_FALLBACK_BUDGET_MS` (`500 ms`), o fallback ao Grok não é iniciado.
 
 ---
 
-## 3. Fluxo completo de fallback
+## 3. Comportamento de timeout e cancelamento HTTP
 
-1. O controlador público aplica proteção de borda (`BoraeSecurityShieldFilter`) e rate limit distribuído por IP pseudonimizado (`AssistantIpRateLimitService`).
-2. `GastronomicAssistantService` valida o cookie assinado `BORA_ASSISTANT_SESSION`, carrega o restaurante publicado pelo `slug` normalizado e bloqueia chamadas simultâneas duplicadas da mesma sessão/restaurante (`HTTP 429`).
-3. O serviço filtra somente cardápios `PUBLISHED`, categorias ativas e produtos `ACTIVE` + `AVAILABLE`, aplicando filtros de `menuId`, categoria, preço máximo e ingredientes excluídos. Se nenhum produto for elegível, responde honestamente sem chamar IA e sem consumir cota.
-4. Se nenhum provedor estiver habilitado/configurado, retorna `fallback: true` (`AI_UNAVAILABLE`) sem consumir cota.
-5. A cota diária (20/sessão/dia e 100/restaurante/dia em `America/Sao_Paulo`) é consumida atomicamente no PostgreSQL antes da chamada externa.
-6. `AiProviderOrchestrator` chama o Gemini (**Prioridade 1**) com `AiProviderRequest`.
-7. Se o Gemini falhar por motivo técnico elegível e houver orçamento de tempo restante, o orquestrador executa **uma única** chamada de contingência ao Grok (**Prioridade 2**) com exatamente o mesmo `AiProviderRequest`.
-8. A resposta normalizada (seja do Gemini ou do Grok) passa pela mesma validação centralizada no backend (pertencimento ao restaurante, disponibilidade, preço oficial em centavos, sanitização contra preços fabricados/prompt injection e cautela conservadora para alergias).
-9. Se ambos os provedores falharem, o usuário recebe a resposta segura de contingência (`fallback: true`, `fallbackCode: "AI_UNAVAILABLE"`) e o cardápio tradicional continua 100% utilizável.
+- Cada adaptador compartilha uma única instância de `java.net.http.HttpClient` encapsulada por `DeadlineAwareClientHttpRequestFactory` (sem criar pools ou threads ilimitadas por requisição).
+- Em cada chamada, `DeadlineAwareClientHttpRequestFactory.executeWithTimeout(effectiveTimeoutMs, ...)` aplica `readTimeout = Duration.ofMillis(effectiveTimeoutMs)` em um `JdkClientHttpRequestFactory` delegado sobre o `HttpClient` compartilhado.
+- No Spring Framework 6.2 / Java 21, isso configura tanto o timeout nativo do `java.net.http.HttpRequest` quanto o `CompletableFuture.get(timeout)` com `future.cancel(true)` no expirar do prazo, cancelando efetivamente o stream HTTP/1.1 ou HTTP/2 subjacente e liberando recursos sem deixar tarefas zumbis em execução.
+- Tolerância técnica esperada: pequena margem de agendamento de SO/rede ao redor do deadline; nenhum loop de retry é executado após cancelamento ou timeout.
 
 ---
 
-## 4. Contrato compartilhado de requisição e resposta
+## 4. Estratégia atual do adaptador Grok (xAI Responses API)
 
-### Entrada (`AiProviderRequest`)
-- `systemInstruction`: instrução de sistema fixa definindo regras de fidelidade ao catálogo, anti prompt-injection, proibição de mencionar preços em texto livre, limite de 4 recomendações e postura conservadora sobre alergias.
-- `userMessage`: mensagem do consumidor (máx. 500 caracteres), marcada explicitamente como dado não confiável.
-- `catalogJson`: JSON delimitado (máx. 4.000 caracteres) contendo `restaurant`, `category` e lista de produtos elegíveis (`productId`, `name`, `description`, `priceInCents`, `menu`, `category`, `ingredients`, `addons` ativos).
-- `maxOutputTokens`: teto de tokens de saída (padrão `500`, limitado entre `64` e `1000`).
+Auditoria realizada diretamente contra a documentação oficial da xAI (`https://docs.x.ai/`, `https://docs.x.ai/docs/models` e `https://docs.x.ai/docs/guides/structured-outputs`):
 
-### Saída normalizada (`AiProviderResponse`)
-- `provider`: `GEMINI` ou `GROK`.
-- `answer`: texto curto em português do Brasil (posteriormente sanitizado pelo backend).
-- `recommendations`: lista de até 4 candidatos `{ productId: UUID, reason: String }` (todos validados contra o mapa de produtos elegíveis do restaurante).
-- `inputTokens` / `outputTokens`: contadores de uso reportados pelo provedor para métricas agregadas.
-- `usedFallbackProvider` / `primaryFailureCode`: metadados internos para observabilidade agregada (nunca expostos com detalhes internos ao cliente).
+- **API adotada:** **Responses API** (`POST {baseUrl}/v1/responses`), interface oficialmente recomendada pela xAI para novas integrações (substituindo o endpoint legado `/v1/chat/completions`).
+- **Autenticação:** cabeçalho HTTP `Authorization: Bearer <GROK_API_KEY>` (nunca na URL, logs ou respostas).
+- **Structured Outputs:** enviados via `text.format` com `type: "json_schema"`, `name: "gastronomic_recommendation"`, `strict: true` e `additionalProperties: false`.
+- **Instruções e limites:** `instructions` (instrução de sistema), `input` (prompt delimitado do catálogo), `max_output_tokens` (padrão `500`), `temperature: 0.3`. Sem ferramentas externas nem function calling.
+- **Parsing normalizado:** lê `output[].content[]` (`type="output_text"` -> `text`, com fallback para `output_text`), detecta recusas de segurança (`incomplete_details.reason == "content_filter"` ou parte `type="refusal"`) como `SAFETY_REFUSAL` e extrai `usage.input_tokens` / `usage.output_tokens`.
 
 ---
 
-## 5. Classificação de falhas e política de fallback
+## 5. Modelo Grok selecionado e justificativa
 
-| Situação do Gemini | Classificação (`FailureType`) | Ação do Orquestrador | Abre Circuit Breaker? |
+- **Modelo padrão configurável (`GROK_MODEL`):** **`grok-4.3`** (100% substituível por variável de ambiente sem recompilação).
+- **Justificativa técnica e econômica (referência `docs.x.ai`, 24/11/2026):**
+  - `grok-4-fast` / `grok-4-1-fast` foram descontinuados pela xAI e redirecionados à linha geral atual (`grok-4.3`).
+  - `grok-3-mini` pertence à geração anterior.
+  - `grok-4.7` (flagship) tem custo significativamente superior (\$2,00/1M input e \$6,00/1M output) para uma tarefa de recomendação curta sobre catálogo JSON limitado.
+  - `grok-4.3` é o tier ativo intermediário/econômico da xAI (contexto 1M, suporte nativo à Responses API, `store: false` e Structured Outputs `json_schema` com \$1,25/1M input e \$2,50/1M output na data de referência), adequado para atuar exclusivamente como contingência secundária do Gemini Flash-Lite.
+
+---
+
+## 6. Política de privacidade e não persistência (D-11)
+
+- **No provedor Grok (xAI):** a Responses API armazena contexto no servidor por padrão; por isso o adaptador envia explicitamente **`"store": false`** em toda requisição, garantindo operação estritamente stateless e aderência à Decisão **D-11**.
+- **No provedor Gemini (Google):** endpoint `generateContent` stateless, sem histórico persistido no provedor.
+- **No Boraê (PostgreSQL, frontend e logs):** nenhuma conversa, prompt ou resposta completa é gravada em banco, `localStorage`, `sessionStorage` ou logs. `SecurityAuditLogger` redige `bearer`, `token`, `secret`, `api_key`, `x-goog-api-key`, `password` e `BORA_ASSISTANT_SESSION`.
+
+---
+
+## 7. Métricas e cálculo de custos por provedor
+
+Todas as métricas reaproveitam a tabela existente `assistant_daily_metrics` (`metric_key VARCHAR(40)`, retenção de 180 dias, sem necessidade de nova migration):
+
+| Métrica | Significado |
+| --- | --- |
+| `PROVIDER_GEMINI_SUCCESS` / `PROVIDER_GROK_SUCCESS` | Interações respondidas com sucesso por cada provedor. |
+| `PROVIDER_FALLBACK_TO_GROK` | Quantidade de interações atendidas via contingência Grok. |
+| `PROVIDER_SAFETY_REFUSALS` | Recusas de segurança (sem acionar fallback). |
+| `PROVIDER_GEMINI_INPUT_TOKENS` / `PROVIDER_GEMINI_OUTPUT_TOKENS` | Tokens de entrada e saída contabilizados no Gemini. |
+| `PROVIDER_GROK_INPUT_TOKENS` / `PROVIDER_GROK_OUTPUT_TOKENS` | Tokens de entrada e saída contabilizados no Grok. |
+| `PROVIDER_GEMINI_COST_MICRO_USD` / `PROVIDER_GROK_COST_MICRO_USD` | Custo estimado em micro-USD (`10^-6 USD`) usando exclusivamente a tarifa do respectivo provedor. |
+| `PROVIDER_GEMINI_COST_UNAVAILABLE` / `PROVIDER_GROK_COST_UNAVAILABLE` / `ESTIMATED_COST_UNAVAILABLE` | Marcadores registrados quando falta tarifa configurada ou metadados confiáveis de tokens. |
+| `INPUT_TOKENS` / `OUTPUT_TOKENS` / `ESTIMATED_COST_MICRO_USD` | Totais agregados diários do restaurante. |
+
+**Regras de cálculo:**
+1. Cada tentativa em `AiProviderResponse.attempts()` (ou `AiProviderException.getAttemptUsages()`, incluindo tokens consumidos antes de um JSON malformado ou recusa) é contabilizada separadamente no seu provedor.
+2. Em um fallback onde o Gemini consumiu tokens antes de falhar e o Grok respondeu, **ambos** os consumos são somados usando a tarifa individual de cada provedor.
+3. **Nunca** se substitui uma tarifa ausente pela tarifa de outro provedor e **nunca** se grava custo `0` quando a tarifa não está configurada ou não há metadados de tokens: os contadores de tokens disponíveis são preservados e `*_COST_UNAVAILABLE` é incrementado.
+
+---
+
+## 8. Tarifas configuráveis e fontes oficiais
+
+As tarifas **não são presumidas como permanentes** e vêm configuradas como `-1` (indisponível) por padrão até parametrização operacional explícita:
+
+- **Unidade:** dólares americanos (**USD**) por **1.000.000 (1M) de tokens**; persistência interna em **micro-USD** (`1 micro-USD = US$ 0,000001`).
+- **Propriedades / variáveis:**
+  - `GEMINI_INPUT_PRICE_PER_MILLION_USD` (`app.assistant.gemini.input-price-per-million-usd`)
+  - `GEMINI_OUTPUT_PRICE_PER_MILLION_USD` (`app.assistant.gemini.output-price-per-million-usd`)
+  - `GROK_INPUT_PRICE_PER_MILLION_USD` (`app.assistant.grok.input-price-per-million-usd`)
+  - `GROK_OUTPUT_PRICE_PER_MILLION_USD` (`app.assistant.grok.output-price-per-million-usd`)
+- **Referências oficiais (data de consulta: 24/11/2026 — confirmar novamente antes da ativação em produção):**
+  - Google Gemini API Pricing: `https://ai.google.dev/gemini-api/docs/pricing` (referência `gemini-2.5-flash-lite`: \$0,10/1M input, \$0,40/1M output).
+  - xAI Models & Pricing: `https://docs.x.ai/docs/models` (referência `grok-4.3` contexto padrão < 200k: \$1,25/1M input, \$2,50/1M output; endpoint regional US aplica multiplicador 1,1x).
+- **Como atualizar:** alterar exclusivamente as variáveis de ambiente correspondentes no serviço `borae-api` (sem alteração de código) sempre que o fornecedor ajustar preços ou quando o modelo configurado mudar.
+
+---
+
+## 9. Política de fallback em erros de autenticação e falhas
+
+| Situação do Gemini | `FailureType` | Comportamento padrão | Circuit Breaker |
 | --- | --- | --- | --- |
-| Resposta válida | — | Retorna resposta validada do Gemini (Grok não é chamado) | Não (reseta para `CLOSED`) |
-| Timeout de rede/leitura | `TIMEOUT` | Tenta Grok (se houver tempo restante no orçamento) | Sim |
-| Erro HTTP 5xx | `HTTP_5XX` | Tenta Grok | Sim |
-| Limite de requisições / HTTP 429 | `RATE_LIMITED` | Tenta Grok (respeitando limite total de tempo) | Sim |
-| Indisponibilidade / erro de conexão / desabilitado / circuit aberto | `SERVICE_UNAVAILABLE` | Tenta Grok | Sim |
-| Resposta vazia, JSON inválido ou fora do schema | `MALFORMED_RESPONSE` | Registra falha técnica e tenta Grok | Sim |
-| Erro HTTP 401/403/400/404 (autenticação/configuração) | `AUTH_OR_CONFIG_ERROR` | Emite alerta operacional (`ERROR` sanitizado) e tenta Grok se `AI_FALLBACK_ON_AUTH_OR_CONFIG_ERROR=true` | Sim |
-| Recusa de segurança (`SAFETY`, `PROHIBITED_CONTENT`, `content_filter`) | `SAFETY_REFUSAL` | **Não chama Grok.** Retorna recusa segura e registra `PROVIDER_SAFETY_REFUSALS` | Não |
-| Solicitação inválida do usuário | `INVALID_USER_REQUEST` | **Não chama Grok.** | Não |
-| Produto inexistente/indisponível/de outro restaurante ou sem resultados | Regra de negócio (pós-provedor) | **Não chama Grok.** Backend descarta IDs inválidos e responde honestamente | Não |
+| Resposta válida | — | Retorna resposta validada do Gemini (Grok não é chamado) | Fecha (`CLOSED`) |
+| Timeout | `TIMEOUT` | Tenta Grok (limitado ao orçamento restante) | Incrementa |
+| Erro HTTP 5xx | `HTTP_5XX` | Tenta Grok (limitado ao orçamento restante) | Incrementa |
+| HTTP 429 | `RATE_LIMITED` | Tenta Grok (limitado ao orçamento restante) | Incrementa |
+| Indisponibilidade / rede / circuit aberto | `SERVICE_UNAVAILABLE` | Tenta Grok (limitado ao orçamento restante) | Incrementa |
+| Resposta vazia ou JSON inválido | `MALFORMED_RESPONSE` | Registra falha técnica/tokens e tenta Grok | Incrementa |
+| HTTP 401 / 403 / 400 / 404 (autenticação ou configuração) | `AUTH_OR_CONFIG_ERROR` | **Não chama Grok por padrão** (`AI_FALLBACK_ON_AUTH_OR_CONFIG_ERROR=false`). Emite alerta `ERROR` sanitizado e retorna `AI_UNAVAILABLE` sem detalhes internos. | Incrementa |
+| Recusa de segurança (`SAFETY`, `PROHIBITED_CONTENT`, `content_filter`, `refusal`) | `SAFETY_REFUSAL` | **Nunca chama Grok.** Retorna recusa cordial. | Não abre |
+| Solicitação inválida do usuário | `INVALID_USER_REQUEST` | **Nunca chama Grok.** | Não abre |
+| Produto inexistente/indisponível/outro restaurante | Regra de negócio | **Nunca chama Grok.** Backend descarta IDs inválidos. | Não abre |
 
 ---
 
-## 6. Timeouts, retries, proteção contra duplicidade e circuit breakers
+## 10. Circuit breakers independentes e proteção contra duplicidade
 
-- **Timeout individual por provedor:** `GEMINI_TIMEOUT_MS` (fallback compatível com `GEMINI_TIMEOUT_SECONDS`, padrão `12s`; recomendação futura com fallback ativo: `7000`–`8000 ms`) e `GROK_TIMEOUT_MS` (padrão `8000 ms`).
-- **Tempo total máximo da solicitação:** `AI_TOTAL_TIMEOUT_MS` (padrão `15000 ms`). Se o tempo consumido na chamada primária deixar menos de `500 ms` disponíveis, o fallback ao Grok é pulado imediatamente para não prender o consumidor.
-- **Política de retry:** sem loops de retry em cada provedor; no máximo **1 tentativa no Gemini + 1 tentativa de contingência no Grok**.
-- **Circuit breaker independente por provedor:**
-  - Padrão: `AI_CIRCUIT_BREAKER_FAILURE_THRESHOLD=3` falhas técnicas consecutivas abre o circuito por `AI_CIRCUIT_BREAKER_OPEN_DURATION_MS=30000` ms.
-  - Quando o circuito do Gemini está `OPEN`, o orquestrador evita latência desperdiçada e aciona o Grok diretamente (se disponível e com circuito próprio fechado).
-  - Após a janela de abertura, entra em `HALF_OPEN` permitindo uma única sondagem ao Gemini; sucesso fecha imediatamente o circuito e restaura o Gemini como provedor ativo.
-  - Recusas de segurança (`SAFETY_REFUSAL`) nunca abrem o circuit breaker.
-- **Proteção contra chamadas simultâneas duplicadas:** `GastronomicAssistantService` controla chaves em voo por `quotaKey + restaurantId`, rejeitando chamadas concorrentes sobrepostas da mesma sessão com `HTTP 429`.
+- Gemini e Grok possuem instâncias independentes de `AiProviderCircuitBreaker` (`AI_CIRCUIT_BREAKER_FAILURE_THRESHOLD=3`, `AI_CIRCUIT_BREAKER_OPEN_DURATION_MS=30000`).
+- Falhas técnicas no Gemini abrem apenas o circuito do Gemini, permitindo contingência direta ao Grok sem desperdiçar latência; após `30s`, entra em `HALF_OPEN` para sondar a recuperação do Gemini.
+- `GastronomicAssistantService` impede chamadas simultâneas duplicadas para o mesmo par `quotaKey + restaurantId` (`HTTP 429`).
 
 ---
 
-## 7. Validação centralizada de conteúdo
+## 11. Matriz de variáveis futuras (sem credenciais)
 
-Independentemente de o provedor responder via Gemini ou Grok, o backend sempre impõe:
-
-1. **Multi-tenancy e catálogo real:** somente `productId` pertencente ao conjunto elegível (`PUBLISHED` + `ACTIVE` + `AVAILABLE`) do `slug` consultado.
-2. **Fonte única de verdade:** `name`, `priceInCents`, `availability`, `imageUrl` e `ingredients` vêm exclusivamente do PostgreSQL.
-3. **Bloqueio de preços fabricados e vazamento de prompt:** `answer` e `reason` passam por sanitização que rejeita valores monetários em prosa (`R$ ...`) e termos de vazamento (`system prompt`, `api_key`, `x-goog-api-key`, `gemini_api_key`, `grok_api_key`).
-4. **Cautela para alergias e restrições alimentares:** bloqueio de garantias inseguras (*"100% livre de glúten"*, *"zero contaminação cruzada"*) e inclusão obrigatória de aviso orientando confirmação direta com o restaurante.
-
----
-
-## 8. Segurança e privacidade (D-11)
-
-- Nenhuma chave de API no frontend, bundle Angular, repositório Git, respostas HTTP ou logs.
-- Gemini recebe chave apenas via header `x-goog-api-key`; Grok recebe chave apenas via header `Authorization: Bearer`.
-- `SecurityAuditLogger` redige `bearer`, `token`, `secret`, `api_key`, `x-goog-api-key`, `password` e `BORA_ASSISTANT_SESSION`.
-- Nenhuma conversa, prompt ou resposta completa é persistida no PostgreSQL ou em logs; apenas métricas agregadas diárias por restaurante (`assistant_daily_metrics`, retenção de 180 dias): `INTERACTIONS`, `FALLBACKS`, `NO_RESULTS`, `PROVIDER_ERRORS`, `PROVIDER_GEMINI_SUCCESS`, `PROVIDER_GROK_SUCCESS`, `PROVIDER_FALLBACK_TO_GROK`, `PROVIDER_SAFETY_REFUSALS`, tokens e custo estimado.
-- Sessões anônimas (`BORA_ASSISTANT_SESSION`), segredos independentes de produção (`ASSISTANT_SESSION_SECRET`, `ASSISTANT_RATE_LIMIT_SECRET`), CORS explícito, `ClientIpResolver` e cotas permanecem inalterados.
-
----
-
-## 9. Matriz de variáveis de ambiente futuras
-
-> **Importante:** nenhuma credencial deve ser versionada ou configurada nesta etapa. Antes da ativação real, confirmar endpoints, identificadores de modelo estáveis, faturamento e termos de dados na documentação oficial do Google AI (Gemini) e da xAI (Grok).
-
-| Variável | Propriedade Spring | Padrão seguro | Finalidade |
+| Grupo | Variável | Padrão | Finalidade |
 | --- | --- | --- | --- |
-| `AI_PRIMARY_PROVIDER` | `app.assistant.ai.primary-provider` | `gemini` | Provedor principal (deve permanecer `gemini`). |
-| `AI_FALLBACK_PROVIDER` | `app.assistant.ai.fallback-provider` | `grok` | Provedor secundário de contingência. |
-| `AI_FALLBACK_ENABLED` | `app.assistant.ai.fallback-enabled` | `true` | Habilita/desabilita contingência automática Gemini → Grok. |
-| `AI_FALLBACK_ON_AUTH_OR_CONFIG_ERROR` | `app.assistant.ai.fallback-on-auth-or-config-error` | `true` | Define se erro 401/403/400 do primário pode acionar contingência após alerta operacional. |
-| `AI_TOTAL_TIMEOUT_MS` | `app.assistant.ai.total-timeout-ms` | `15000` | Orçamento máximo de tempo total da solicitação (ms). |
-| `AI_CIRCUIT_BREAKER_FAILURE_THRESHOLD` | `app.assistant.ai.circuit-breaker.failure-threshold` | `3` | Falhas técnicas consecutivas para abrir o circuito do provedor. |
-| `AI_CIRCUIT_BREAKER_OPEN_DURATION_MS` | `app.assistant.ai.circuit-breaker.open-duration-ms` | `30000` | Tempo de abertura do circuito antes da sondagem `HALF_OPEN` (ms). |
-| `GEMINI_ENABLED` | `app.assistant.gemini.enabled` | `false` | Habilita/desabilita o adaptador Gemini. |
-| `GEMINI_DATA_PROCESSING_APPROVED` | `app.assistant.gemini.data-processing-approved` | `false` | Trava de aprovação formal dos termos/tier do Google AI. |
-| `GEMINI_API_KEY` | `app.assistant.gemini.api-key` | *(vazio)* | Credencial privada do Google Gemini (somente backend). |
-| `GEMINI_MODEL` | `app.assistant.gemini.model` | `gemini-2.5-flash-lite` | Identificador configurável do modelo Gemini Flash-Lite. |
-| `GEMINI_TIMEOUT_MS` | `app.assistant.gemini.timeout-ms` | `0` *(usa `GEMINI_TIMEOUT_SECONDS`)* | Timeout individual do Gemini em ms (sobrepõe `GEMINI_TIMEOUT_SECONDS` quando > 0). |
-| `GEMINI_TIMEOUT_SECONDS` | `app.assistant.gemini.timeout-seconds` | `12` | Timeout legado em segundos (compatibilidade mantida). |
-| `GEMINI_MAX_OUTPUT_TOKENS` | `app.assistant.gemini.max-output-tokens` | `500` | Limite de tokens de saída do Gemini. |
-| `GROK_ENABLED` | `app.assistant.grok.enabled` | `false` | Habilita/desabilita o adaptador Grok (contingência). |
-| `GROK_DATA_PROCESSING_APPROVED` | `app.assistant.grok.data-processing-approved` | `false` | Trava de aprovação formal dos termos/tier da xAI. |
-| `GROK_API_KEY` | `app.assistant.grok.api-key` | *(vazio)* | Credencial privada da xAI (somente backend). |
-| `GROK_MODEL` | `app.assistant.grok.model` | `grok-3-mini` | Identificador configurável do modelo Grok (validar versão estável oficial antes de ativar). |
-| `GROK_BASE_URL` | `app.assistant.grok.base-url` | `https://api.x.ai` | URL base oficial configurável da API da xAI. |
-| `GROK_TIMEOUT_MS` | `app.assistant.grok.timeout-ms` | `8000` | Timeout individual do Grok em ms. |
-| `GROK_MAX_OUTPUT_TOKENS` | `app.assistant.grok.max-output-tokens` | `500` | Limite de tokens de saída do Grok. |
+| Orquestração | `AI_PRIMARY_PROVIDER` | `gemini` | Provedor principal (deve permanecer `gemini`). |
+| Orquestração | `AI_FALLBACK_PROVIDER` | `grok` | Provedor secundário de contingência. |
+| Orquestração | `AI_FALLBACK_ENABLED` | `true` | Habilita contingência automática Gemini → Grok. |
+| Orquestração | `AI_FALLBACK_ON_AUTH_OR_CONFIG_ERROR` | **`false`** | Desabilitado por padrão para não mascarar erro de credencial/configuração. |
+| Orquestração | `AI_TOTAL_TIMEOUT_MS` | `15000` | Deadline global absoluto por solicitação (ms). |
+| Orquestração | `AI_MIN_FALLBACK_BUDGET_MS` | `500` | Orçamento mínimo restante (ms) para iniciar fallback ao Grok. |
+| Orquestração | `AI_CIRCUIT_BREAKER_FAILURE_THRESHOLD` | `3` | Falhas consecutivas para abrir circuito. |
+| Orquestração | `AI_CIRCUIT_BREAKER_OPEN_DURATION_MS` | `30000` | Janela de abertura do circuito (ms). |
+| Gemini | `GEMINI_ENABLED` | `false` | Liga/desliga Gemini (kill switch). |
+| Gemini | `GEMINI_DATA_PROCESSING_APPROVED` | `false` | Trava de aprovação de termos do Google AI. |
+| Gemini | `GEMINI_API_KEY` | *(vazio)* | Secret exclusivo do backend. |
+| Gemini | `GEMINI_MODEL` | `gemini-2.5-flash-lite` | Modelo Gemini configurável. |
+| Gemini | `GEMINI_TIMEOUT_MS` / `GEMINI_TIMEOUT_SECONDS` | `0` / `12` | Timeout individual do Gemini (`GEMINI_TIMEOUT_MS` prevalece quando > 0). |
+| Gemini | `GEMINI_MAX_OUTPUT_TOKENS` | `500` | Limite de saída em tokens. |
+| Gemini | `GEMINI_INPUT_PRICE_PER_MILLION_USD` / `GEMINI_OUTPUT_PRICE_PER_MILLION_USD` | `-1` / `-1` | Tarifas USD/1M tokens (negativo = indisponível). |
+| Grok | `GROK_ENABLED` | `false` | Liga/desliga Grok (kill switch). |
+| Grok | `GROK_DATA_PROCESSING_APPROVED` | `false` | Trava de aprovação de termos da xAI. |
+| Grok | `GROK_API_KEY` | *(vazio)* | Secret exclusivo do backend. |
+| Grok | `GROK_MODEL` | `grok-4.3` | Modelo Grok configurável. |
+| Grok | `GROK_BASE_URL` | `https://api.x.ai` | Endpoint base oficial configurável da xAI. |
+| Grok | `GROK_TIMEOUT_MS` | `8000` | Timeout individual do Grok (limitado ao deadline global). |
+| Grok | `GROK_MAX_OUTPUT_TOKENS` | `500` | Limite de saída em tokens. |
+| Grok | `GROK_INPUT_PRICE_PER_MILLION_USD` / `GROK_OUTPUT_PRICE_PER_MILLION_USD` | `-1` / `-1` | Tarifas USD/1M tokens (negativo = indisponível). |
 
 ---
 
-## 10. Processo de ativação em staging
+## 12. Procedimento futuro de homologação real e kill switch
 
-1. Confirmar aprovação comercial/jurídica dos termos de processamento de dados do Google AI e (se desejado para contingência) da xAI.
-2. Confirmar o identificador exato do modelo estável na documentação oficial de cada fornecedor.
-3. Configurar no serviço de **staging** (nunca em arquivos versionados):
-   - Segredos independentes (`ASSISTANT_SESSION_SECRET`, `ASSISTANT_RATE_LIMIT_SECRET`), `ASSISTANT_SESSION_COOKIE_SECURE=true` e `CORS_ALLOWED_ORIGINS`.
-   - `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_TIMEOUT_MS=7000`, `GEMINI_ENABLED=true`, `GEMINI_DATA_PROCESSING_APPROVED=true`.
-   - Opcionalmente para validar contingência: `GROK_API_KEY`, `GROK_BASE_URL=https://api.x.ai`, `GROK_MODEL`, `GROK_TIMEOUT_MS=7000`, `GROK_ENABLED=true`, `GROK_DATA_PROCESSING_APPROVED=true`, `AI_FALLBACK_ENABLED=true`, `AI_TOTAL_TIMEOUT_MS=15000`.
-4. Executar smoke tests controlados em staging:
-   - Cenário normal: confirmar `PROVIDER_GEMINI_SUCCESS` incrementando e `PROVIDER_GROK_SUCCESS` em zero.
-   - Simulação de contingência (ex.: `GEMINI_ENABLED=false` temporariamente em staging): confirmar resposta validada via Grok e incremento em `PROVIDER_GROK_SUCCESS` + `PROVIDER_FALLBACK_TO_GROK`.
-   - Verificar latência, consumo de tokens, sanitização de preços/alergias e ausência de chaves/conversas em logs e tabelas.
-
----
-
-## 11. Processo de ativação em produção
-
-1. Concluir e aprovar todos os smoke tests em staging.
-2. Configurar as variáveis aprovadas no cofre de secrets do Render (serviço `borae-api`), mantendo `GEMINI_ENABLED=true` como principal e `GROK_ENABLED` conforme aprovação operacional.
-3. Monitorar nas primeiras 24h: taxa de erro (`PROVIDER_ERRORS`), acionamentos de fallback (`PROVIDER_FALLBACK_TO_GROK`), latência (`LATENCY_TOTAL_MS / LATENCY_SAMPLES`), recusas de segurança (`PROVIDER_SAFETY_REFUSALS`) e custo estimado (`ESTIMATED_COST_MICRO_USD`).
-
----
-
-## 12. Como desabilitar um provedor emergencialmente (Kill Switch)
-
-- **Desabilitar somente o Gemini (forçando contingência via Grok temporariamente):** definir `GEMINI_ENABLED=false` no ambiente e reiniciar o serviço.
-- **Desabilitar somente o Grok (mantendo apenas Gemini + fallback estático seguro):** definir `GROK_ENABLED=false` ou `AI_FALLBACK_ENABLED=false` e reiniciar.
-- **Desabilitar toda IA mantendo o cardápio público 100% funcional:** definir `GEMINI_ENABLED=false` e `GROK_ENABLED=false`. O endpoint responderá `fallback: true` (`AI_UNAVAILABLE`) sem consumir cota do consumidor ou do restaurante.
-
----
-
-## 13. Como adicionar um terceiro provedor futuramente
-
-1. Adicionar o novo identificador em `AiProviderId`.
-2. Criar uma nova classe `@Component` implementando `AiProvider`:
-   - Reaproveitar `AiProviderRequest` (mesmo `systemInstruction` e `buildUserPrompt()`).
-   - Mapear a saída para `AiProviderResponse` e classificar erros exclusivamente via `AiProviderFailure.FailureType` (incluindo mapeamento correto de `SAFETY_REFUSAL`).
-   - Enviar credencial apenas via cabeçalho HTTP e manter flag `enabled=false` + `data-processing-approved=false` por padrão.
-3. Registrar o provedor na cadeia ordenada do `AiProviderOrchestrator` com seu próprio `AiProviderCircuitBreaker`, preservando o orçamento total `AI_TOTAL_TIMEOUT_MS` e sem alterar nenhuma regra de negócio de `GastronomicAssistantService`.
+1. **Staging:** confirmar termos/tier e preços vigentes na data da ativação; configurar segredos e tarifas no cofre de variáveis de staging (nunca no Git); validar smoke test normal (Gemini), contingência controlada (Gemini desabilitado -> Grok Responses API com `store=false`), métricas por provedor (`PROVIDER_*`), latência dentro de `AI_TOTAL_TIMEOUT_MS` e redação de logs.
+2. **Produção:** promover apenas após aprovação do staging; monitorar `PROVIDER_ERRORS`, `PROVIDER_FALLBACK_TO_GROK`, `PROVIDER_SAFETY_REFUSALS`, `*_COST_MICRO_USD` e `ESTIMATED_COST_UNAVAILABLE`.
+3. **Kill switch emergencial:** `GEMINI_ENABLED=false` (contingência imediata via Grok), `GROK_ENABLED=false` ou `AI_FALLBACK_ENABLED=false` (somente Gemini), ou ambos `false` (cardápio 100% operacional com resposta `AI_UNAVAILABLE` sem consumo de cota).
+4. **Terceiro provedor futuro:** implementar `AiProvider` com `AiRequestDeadline`, `store=false` / não persistência, `FailureType` tipado e tarifa independente em `AssistantMetricsService`.

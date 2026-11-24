@@ -65,6 +65,10 @@ class AssistantQuotaPostgresIntegrationTest {
         registry.add("spring.flyway.enabled", () -> true);
         registry.add("app.assistant.rate-limit.secret", () -> "test-rate-limit-secret-with-enough-entropy");
         registry.add("security.trusted-proxies", () -> "");
+        registry.add("app.assistant.gemini.input-price-per-million-usd", () -> "0.10");
+        registry.add("app.assistant.gemini.output-price-per-million-usd", () -> "0.40");
+        registry.add("app.assistant.grok.input-price-per-million-usd", () -> "1.25");
+        registry.add("app.assistant.grok.output-price-per-million-usd", () -> "2.50");
     }
 
     @Autowired
@@ -238,6 +242,44 @@ class AssistantQuotaPostgresIntegrationTest {
         assertEquals(1, productCounts.size());
         assertEquals(1, productCounts.getFirst()[0]);
         assertEquals(1, productCounts.getFirst()[1]);
+    }
+
+    @Test
+    void calculatesSeparatePerProviderCostsAcrossMultiAttemptFallbackAndMarksUnconfiguredTariffsUnavailable() {
+        // Multi-tentativa: Gemini consumiu (150, 20) -> 150*0.10 + 20*0.40 = 23 micro-USD
+        //                  Grok respondeu (200, 40) -> 200*1.25 + 40*2.50 = 350 micro-USD
+        metricsService.recordInteractionOutcome(
+                RESTAURANT_ID, 250, false, false, java.util.List.of(PRODUCT_ID),
+                java.util.List.of(
+                        new AiProviderResponse.AttemptUsage(AiProviderId.GEMINI, 150, 20),
+                        new AiProviderResponse.AttemptUsage(AiProviderId.GROK, 200, 40)
+                )
+        );
+
+        assertEquals(150, metric("PROVIDER_GEMINI_INPUT_TOKENS"));
+        assertEquals(20, metric("PROVIDER_GEMINI_OUTPUT_TOKENS"));
+        assertEquals(23, metric("PROVIDER_GEMINI_COST_MICRO_USD"));
+        assertEquals(200, metric("PROVIDER_GROK_INPUT_TOKENS"));
+        assertEquals(40, metric("PROVIDER_GROK_OUTPUT_TOKENS"));
+        assertEquals(350, metric("PROVIDER_GROK_COST_MICRO_USD"));
+        assertEquals(350, metric("INPUT_TOKENS"));
+        assertEquals(60, metric("OUTPUT_TOKENS"));
+        assertEquals(373, metric("ESTIMATED_COST_MICRO_USD"));
+
+        // Quando Grok não tem tarifa configurada (-1), NÃO usa tarifa do Gemini e marca indisponível
+        AssistantMetricsService grokUnpricedService = new AssistantMetricsService(
+                jdbc, 0.10, 0.40, -1.0, -1.0
+        );
+        grokUnpricedService.recordInteractionOutcome(
+                RESTAURANT_ID, 120, false, false, java.util.List.of(),
+                java.util.List.of(new AiProviderResponse.AttemptUsage(AiProviderId.GROK, 300, 50))
+        );
+
+        assertEquals(500, metric("PROVIDER_GROK_INPUT_TOKENS"));
+        assertEquals(90, metric("PROVIDER_GROK_OUTPUT_TOKENS"));
+        assertEquals(350, metric("PROVIDER_GROK_COST_MICRO_USD")); // inalterado: não substituiu pela tarifa do Gemini!
+        assertEquals(1, metric("PROVIDER_GROK_COST_UNAVAILABLE"));
+        assertEquals(1, metric("ESTIMATED_COST_UNAVAILABLE"));
     }
 
     @Test

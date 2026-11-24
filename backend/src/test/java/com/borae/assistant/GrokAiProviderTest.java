@@ -32,43 +32,51 @@ class GrokAiProviderTest {
     void reportsUnavailableWhenDisabledOrMissingApprovalOrKey() {
         RestClient.Builder builder = RestClient.builder();
         assertFalse(new GrokAiProvider(builder, "https://api.x.ai", objectMapper,
-                TEST_API_KEY, "grok-3-mini", false, true, 500).isAvailable());
+                TEST_API_KEY, "grok-4.3", false, true, 500).isAvailable());
         assertFalse(new GrokAiProvider(builder, "https://api.x.ai", objectMapper,
-                TEST_API_KEY, "grok-3-mini", true, false, 500).isAvailable());
+                TEST_API_KEY, "grok-4.3", true, false, 500).isAvailable());
         assertFalse(new GrokAiProvider(builder, "https://api.x.ai", objectMapper,
-                "", "grok-3-mini", true, true, 500).isAvailable());
+                "", "grok-4.3", true, true, 500).isAvailable());
     }
 
     @Test
-    void callsChatCompletionsWithBearerHeaderAndParsesNormalizedResponse() throws Exception {
+    void callsResponsesApiWithBearerHeaderStoreFalseAndStructuredOutputFormat() throws Exception {
         RestClient.Builder builder = RestClient.builder();
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
 
         GrokAiProvider provider = new GrokAiProvider(
                 builder, "https://api.x.ai", objectMapper,
-                TEST_API_KEY, "grok-3-mini", true, true, 500
+                TEST_API_KEY, "grok-4.3", true, true, 500
         );
 
         String modelJson = """
                 {"answer":"O salmão grelhado é uma opção leve do cardápio.","recommendations":[{"productId":"22222222-2222-2222-2222-222222222222","reason":"Peixe grelhado com legumes frescos."}]}
                 """;
         String xaiPayload = objectMapper.writeValueAsString(Map.of(
-                "choices", List.of(Map.of(
-                        "finish_reason", "stop",
-                        "message", Map.of("role", "assistant", "content", modelJson)
+                "id", "resp_001",
+                "status", "completed",
+                "output", List.of(Map.of(
+                        "type", "message",
+                        "role", "assistant",
+                        "content", List.of(Map.of(
+                                "type", "output_text",
+                                "text", modelJson
+                        ))
                 )),
-                "usage", Map.of("prompt_tokens", 280, "completion_tokens", 62)
+                "usage", Map.of("input_tokens", 280, "output_tokens", 62)
         ));
 
-        server.expect(requestTo("https://api.x.ai/v1/chat/completions"))
+        server.expect(requestTo("https://api.x.ai/v1/responses"))
                 .andExpect(requestTo(not(containsString(TEST_API_KEY))))
                 .andExpect(method(HttpMethod.POST))
                 .andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer " + TEST_API_KEY))
-                .andExpect(jsonPath("$.model").value("grok-3-mini"))
-                .andExpect(jsonPath("$.max_tokens").value(500))
-                .andExpect(jsonPath("$.response_format.type").value("json_schema"))
-                .andExpect(jsonPath("$.messages[0].role").value("system"))
-                .andExpect(jsonPath("$.messages[1].role").value("user"))
+                .andExpect(jsonPath("$.model").value("grok-4.3"))
+                .andExpect(jsonPath("$.store").value(false))
+                .andExpect(jsonPath("$.max_output_tokens").value(500))
+                .andExpect(jsonPath("$.instructions").exists())
+                .andExpect(jsonPath("$.input").exists())
+                .andExpect(jsonPath("$.text.format.type").value("json_schema"))
+                .andExpect(jsonPath("$.text.format.strict").value(true))
                 .andRespond(withSuccess(xaiPayload, MediaType.APPLICATION_JSON));
 
         AiProviderResponse response = provider.recommend(
@@ -85,80 +93,101 @@ class GrokAiProviderTest {
     }
 
     @Test
-    void classifiesContentFilterAsSafetyRefusal() throws Exception {
-        RestClient.Builder builder = RestClient.builder();
-        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
-
-        GrokAiProvider provider = new GrokAiProvider(
-                builder, "https://api.x.ai", objectMapper,
-                TEST_API_KEY, "grok-3-mini", true, true, 500
+    void classifiesRefusalPartAndContentFilterAsSafetyRefusal() throws Exception {
+        RestClient.Builder builderRefusal = RestClient.builder();
+        MockRestServiceServer serverRefusal = MockRestServiceServer.bindTo(builderRefusal).build();
+        GrokAiProvider providerRefusal = new GrokAiProvider(
+                builderRefusal, "https://api.x.ai", objectMapper,
+                TEST_API_KEY, "grok-4.3", true, true, 500
         );
-
-        String xaiPayload = objectMapper.writeValueAsString(Map.of(
-                "choices", List.of(Map.of(
-                        "finish_reason", "content_filter",
-                        "message", Map.of("role", "assistant", "content", "")
-                ))
+        String refusalPayload = objectMapper.writeValueAsString(Map.of(
+                "status", "completed",
+                "output", List.of(Map.of(
+                        "type", "message",
+                        "content", List.of(Map.of("type", "refusal", "refusal", "Cannot comply."))
+                )),
+                "usage", Map.of("input_tokens", 110, "output_tokens", 12)
         ));
+        serverRefusal.expect(requestTo("https://api.x.ai/v1/responses"))
+                .andRespond(withSuccess(refusalPayload, MediaType.APPLICATION_JSON));
+        AiProviderException refusalEx = assertThrows(AiProviderException.class,
+                () -> providerRefusal.recommend(AiProviderRequest.forCatalog("Conteúdo bloqueado", "{}", 500)));
+        assertEquals(FailureType.SAFETY_REFUSAL, refusalEx.getFailure().type());
+        assertEquals(110, refusalEx.getFailure().inputTokens());
+        assertEquals(12, refusalEx.getFailure().outputTokens());
+        assertFalse(refusalEx.getMessage().contains(TEST_API_KEY));
 
-        server.expect(requestTo("https://api.x.ai/v1/chat/completions"))
-                .andRespond(withSuccess(xaiPayload, MediaType.APPLICATION_JSON));
-
-        AiProviderException exception = assertThrows(AiProviderException.class,
-                () -> provider.recommend(AiProviderRequest.forCatalog("Conteúdo bloqueado", "{}", 500)));
-
-        assertEquals(FailureType.SAFETY_REFUSAL, exception.getFailure().type());
-        assertFalse(exception.getMessage().contains(TEST_API_KEY));
+        RestClient.Builder builderFilter = RestClient.builder();
+        MockRestServiceServer serverFilter = MockRestServiceServer.bindTo(builderFilter).build();
+        GrokAiProvider providerFilter = new GrokAiProvider(
+                builderFilter, "https://api.x.ai", objectMapper,
+                TEST_API_KEY, "grok-4.3", true, true, 500
+        );
+        String filterPayload = objectMapper.writeValueAsString(Map.of(
+                "status", "incomplete",
+                "incomplete_details", Map.of("reason", "content_filter"),
+                "output", List.of()
+        ));
+        serverFilter.expect(requestTo("https://api.x.ai/v1/responses"))
+                .andRespond(withSuccess(filterPayload, MediaType.APPLICATION_JSON));
+        AiProviderException filterEx = assertThrows(AiProviderException.class,
+                () -> providerFilter.recommend(AiProviderRequest.forCatalog("Conteúdo filtrado", "{}", 500)));
+        assertEquals(FailureType.SAFETY_REFUSAL, filterEx.getFailure().type());
     }
 
     @Test
-    void classifiesHttp5xxRateLimitAuthAndMalformedResponsesWithoutLeakingKey() throws Exception {
-        RestClient.Builder builder5xx = RestClient.builder();
-        MockRestServiceServer server5xx = MockRestServiceServer.bindTo(builder5xx).build();
-        GrokAiProvider provider5xx = new GrokAiProvider(
-                builder5xx, "https://api.x.ai", objectMapper, TEST_API_KEY, "grok-3-mini", true, true, 500
-        );
-        server5xx.expect(requestTo("https://api.x.ai/v1/chat/completions")).andRespond(withServerError());
-        AiProviderException err5xx = assertThrows(AiProviderException.class,
-                () -> provider5xx.recommend(AiProviderRequest.forCatalog("Oi", "{}", 500)));
-        assertEquals(FailureType.HTTP_5XX, err5xx.getFailure().type());
-        assertFalse(err5xx.getMessage().contains(TEST_API_KEY));
+    void classifiesHttp400_401_403_429_5xxEmptyAndMalformedResponsesWithoutLeakingKey() throws Exception {
+        assertHttpFailure(HttpStatus.BAD_REQUEST, FailureType.AUTH_OR_CONFIG_ERROR);
+        assertHttpFailure(HttpStatus.UNAUTHORIZED, FailureType.AUTH_OR_CONFIG_ERROR);
+        assertHttpFailure(HttpStatus.FORBIDDEN, FailureType.AUTH_OR_CONFIG_ERROR);
+        assertHttpFailure(HttpStatus.TOO_MANY_REQUESTS, FailureType.RATE_LIMITED);
+        assertHttpFailure(HttpStatus.INTERNAL_SERVER_ERROR, FailureType.HTTP_5XX);
 
-        RestClient.Builder builder429 = RestClient.builder();
-        MockRestServiceServer server429 = MockRestServiceServer.bindTo(builder429).build();
-        GrokAiProvider provider429 = new GrokAiProvider(
-                builder429, "https://api.x.ai", objectMapper, TEST_API_KEY, "grok-3-mini", true, true, 500
+        // Resposta vazia
+        RestClient.Builder builderEmpty = RestClient.builder();
+        MockRestServiceServer serverEmpty = MockRestServiceServer.bindTo(builderEmpty).build();
+        GrokAiProvider providerEmpty = new GrokAiProvider(
+                builderEmpty, "https://api.x.ai", objectMapper, TEST_API_KEY, "grok-4.3", true, true, 500
         );
-        server429.expect(requestTo("https://api.x.ai/v1/chat/completions"))
-                .andRespond(withStatus(HttpStatus.TOO_MANY_REQUESTS));
-        AiProviderException err429 = assertThrows(AiProviderException.class,
-                () -> provider429.recommend(AiProviderRequest.forCatalog("Oi", "{}", 500)));
-        assertEquals(FailureType.RATE_LIMITED, err429.getFailure().type());
+        serverEmpty.expect(requestTo("https://api.x.ai/v1/responses"))
+                .andRespond(withSuccess(objectMapper.writeValueAsString(Map.of("output", List.of())), MediaType.APPLICATION_JSON));
+        AiProviderException errEmpty = assertThrows(AiProviderException.class,
+                () -> providerEmpty.recommend(AiProviderRequest.forCatalog("Oi", "{}", 500)));
+        assertEquals(FailureType.MALFORMED_RESPONSE, errEmpty.getFailure().type());
 
-        RestClient.Builder builder401 = RestClient.builder();
-        MockRestServiceServer server401 = MockRestServiceServer.bindTo(builder401).build();
-        GrokAiProvider provider401 = new GrokAiProvider(
-                builder401, "https://api.x.ai", objectMapper, TEST_API_KEY, "grok-3-mini", true, true, 500
-        );
-        server401.expect(requestTo("https://api.x.ai/v1/chat/completions"))
-                .andRespond(withStatus(HttpStatus.UNAUTHORIZED));
-        AiProviderException err401 = assertThrows(AiProviderException.class,
-                () -> provider401.recommend(AiProviderRequest.forCatalog("Oi", "{}", 500)));
-        assertEquals(FailureType.AUTH_OR_CONFIG_ERROR, err401.getFailure().type());
-        assertFalse(err401.getMessage().contains(TEST_API_KEY));
-
+        // JSON malformado preserva tokens faturados
         RestClient.Builder builderBad = RestClient.builder();
         MockRestServiceServer serverBad = MockRestServiceServer.bindTo(builderBad).build();
         GrokAiProvider providerBad = new GrokAiProvider(
-                builderBad, "https://api.x.ai", objectMapper, TEST_API_KEY, "grok-3-mini", true, true, 500
+                builderBad, "https://api.x.ai", objectMapper, TEST_API_KEY, "grok-4.3", true, true, 500
         );
         String badPayload = objectMapper.writeValueAsString(Map.of(
-                "choices", List.of(Map.of("finish_reason", "stop", "message", Map.of("content", "not-json")))
+                "output", List.of(Map.of(
+                        "type", "message",
+                        "content", List.of(Map.of("type", "output_text", "text", "not-json"))
+                )),
+                "usage", Map.of("input_tokens", 95, "output_tokens", 18)
         ));
-        serverBad.expect(requestTo("https://api.x.ai/v1/chat/completions"))
+        serverBad.expect(requestTo("https://api.x.ai/v1/responses"))
                 .andRespond(withSuccess(badPayload, MediaType.APPLICATION_JSON));
         AiProviderException errBad = assertThrows(AiProviderException.class,
                 () -> providerBad.recommend(AiProviderRequest.forCatalog("Oi", "{}", 500)));
         assertEquals(FailureType.MALFORMED_RESPONSE, errBad.getFailure().type());
+        assertEquals(95, errBad.getFailure().inputTokens());
+        assertEquals(18, errBad.getFailure().outputTokens());
+    }
+
+    private void assertHttpFailure(HttpStatus status, FailureType expectedType) {
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        GrokAiProvider provider = new GrokAiProvider(
+                builder, "https://api.x.ai", objectMapper, TEST_API_KEY, "grok-4.3", true, true, 500
+        );
+        server.expect(requestTo("https://api.x.ai/v1/responses")).andRespond(withStatus(status));
+        AiProviderException ex = assertThrows(AiProviderException.class,
+                () -> provider.recommend(AiProviderRequest.forCatalog("Oi", "{}", 500)));
+        assertEquals(expectedType, ex.getFailure().type());
+        assertEquals(status.value(), ex.getFailure().httpStatus());
+        assertFalse(ex.getMessage().contains(TEST_API_KEY));
     }
 }

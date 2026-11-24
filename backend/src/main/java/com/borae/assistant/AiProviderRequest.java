@@ -2,14 +2,15 @@ package com.borae.assistant;
 
 /**
  * Contrato único e autorizado de entrada enviado de forma idêntica a qualquer provedor de IA.
- * Contém exclusivamente instruções de segurança/formato, a mensagem do consumidor e o catálogo
- * público elegível já filtrado pelo backend.
+ * Carrega opcionalmente o {@link AiRequestDeadline} global para limitar o timeout efetivo
+ * de cada chamada HTTP ao orçamento restante da solicitação.
  */
 public record AiProviderRequest(
         String systemInstruction,
         String userMessage,
         String catalogJson,
-        int maxOutputTokens
+        int maxOutputTokens,
+        AiRequestDeadline deadline
 ) {
     public static final String DEFAULT_SYSTEM_INSTRUCTION = """
             Você é o assistente gastronômico oficial do cardápio digital Boraê.
@@ -31,11 +32,19 @@ public record AiProviderRequest(
                 : systemInstruction;
         userMessage = userMessage == null ? "" : userMessage;
         catalogJson = catalogJson == null ? "{}" : catalogJson;
-        maxOutputTokens = Math.max(64, Math.min(maxOutputTokens, 1000));
+        maxOutputTokens = Math.max(64, Math.min(maxOutputTokens, 1_000));
+    }
+
+    public AiProviderRequest(String systemInstruction, String userMessage, String catalogJson, int maxOutputTokens) {
+        this(systemInstruction, userMessage, catalogJson, maxOutputTokens, null);
     }
 
     public static AiProviderRequest forCatalog(String userMessage, String catalogJson, int maxOutputTokens) {
-        return new AiProviderRequest(DEFAULT_SYSTEM_INSTRUCTION, userMessage, catalogJson, maxOutputTokens);
+        return new AiProviderRequest(DEFAULT_SYSTEM_INSTRUCTION, userMessage, catalogJson, maxOutputTokens, null);
+    }
+
+    public AiProviderRequest withDeadline(AiRequestDeadline requestDeadline) {
+        return new AiProviderRequest(systemInstruction, userMessage, catalogJson, maxOutputTokens, requestDeadline);
     }
 
     public String buildUserPrompt() {

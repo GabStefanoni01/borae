@@ -184,7 +184,7 @@ public class GastronomicAssistantService {
             metricsService.recordInteractionOutcome(
                     menu.id(), elapsedMillis(startedAt), false, recommendations.isEmpty(),
                     recommendations.stream().map(AssistantInteractionResponse.Recommendation::productId).toList(),
-                    providerResponse.inputTokens(), providerResponse.outputTokens()
+                    providerResponse.attempts()
             );
             return new AssistantInteractionResponse(answer, List.copyOf(recommendations), quotaDto, false, null);
         } catch (AiProviderException exception) {
@@ -192,7 +192,7 @@ public class GastronomicAssistantService {
             if (type == FailureType.SAFETY_REFUSAL) {
                 metricsService.recordSafetyRefusal(menu.id());
                 metricsService.recordInteractionOutcome(menu.id(), elapsedMillis(startedAt),
-                        false, true, List.of(), 0, 0);
+                        false, true, List.of(), exception.getAttemptUsages());
                 return new AssistantInteractionResponse(
                         "Não consigo responder a esse pedido. Posso ajudar apenas com recomendações sobre os itens disponíveis neste cardápio.",
                         List.of(), quotaDto, false, null
@@ -200,7 +200,7 @@ public class GastronomicAssistantService {
             }
             metricsService.recordProviderError(menu.id());
             metricsService.recordInteractionOutcome(menu.id(), elapsedMillis(startedAt),
-                    true, false, List.of(), 0, 0);
+                    true, false, List.of(), exception.getAttemptUsages());
             return new AssistantInteractionResponse(
                     "Não consegui consultar o assistente agora. Você ainda pode explorar o cardápio normalmente.",
                     List.of(), quotaDto, true, "AI_UNAVAILABLE"

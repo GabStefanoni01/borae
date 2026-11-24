@@ -5,6 +5,7 @@ import com.borae.assistant.AiProviderFailure.FailureType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -47,34 +48,42 @@ class AiProviderOrchestratorTest {
                 List.of(new AiProviderResponse.RecommendationCandidate(PRODUCT_ID, "Leve e artesanal.")),
                 120, 40
         );
-        when(gemini.recommend(sampleRequest)).thenReturn(geminiResp);
+        when(gemini.recommend(any())).thenReturn(geminiResp);
 
         AiProviderResponse result = orchestrator.recommend(sampleRequest);
 
         assertEquals(AiProviderId.GEMINI, result.provider());
         assertFalse(result.usedFallbackProvider());
         assertNull(result.primaryFailureCode());
-        verify(gemini, times(1)).recommend(sampleRequest);
+        verify(gemini, times(1)).recommend(any());
         verify(grok, never()).recommend(any());
     }
 
     @Test
-    void scenarioBAndI_geminiTimeoutTriggersGrokOnceInStrictOrderWithSameRequest() {
-        when(gemini.recommend(sampleRequest)).thenThrow(
-                new AiProviderException(AiProviderId.GEMINI, FailureType.TIMEOUT, "Timeout Gemini")
-        );
-        AiProviderResponse grokResp = AiProviderResponse.of(
+    void scenarioBAndI_geminiConsumesPartOfBudgetAndGrokReceivesCappedRemainingDeadline() {
+        when(gemini.recommend(any())).thenAnswer(invocation -> {
+            clock.addAndGet(12_000L); // Gemini consome 12s dos 15s globais
+            throw new AiProviderException(AiProviderId.GEMINI, FailureType.TIMEOUT, "Timeout Gemini");
+        });
+
+        ArgumentCaptor<AiProviderRequest> grokRequestCaptor = ArgumentCaptor.forClass(AiProviderRequest.class);
+        when(grok.recommend(grokRequestCaptor.capture())).thenReturn(AiProviderResponse.of(
                 AiProviderId.GROK, "Sugestão via contingência.",
                 List.of(new AiProviderResponse.RecommendationCandidate(PRODUCT_ID, "Disponível hoje.")),
                 115, 38
-        );
-        when(grok.recommend(sampleRequest)).thenReturn(grokResp);
+        ));
 
         AiProviderResponse result = orchestrator.recommend(sampleRequest);
 
         InOrder order = inOrder(gemini, grok);
-        order.verify(gemini, times(1)).recommend(sampleRequest);
-        order.verify(grok, times(1)).recommend(sampleRequest);
+        order.verify(gemini, times(1)).recommend(any());
+        order.verify(grok, times(1)).recommend(any());
+
+        AiRequestDeadline sharedDeadline = grokRequestCaptor.getValue().deadline();
+        assertNotNull(sharedDeadline);
+        assertEquals(3_000L, sharedDeadline.remainingMillis());
+        // Grok com timeout individual de 8s fica efetivamente limitado aos 3s restantes do deadline global
+        assertEquals(3_000L, sharedDeadline.timeoutForProvider(8_000L));
 
         assertEquals(AiProviderId.GROK, result.provider());
         assertTrue(result.usedFallbackProvider());
@@ -83,10 +92,10 @@ class AiProviderOrchestratorTest {
 
     @Test
     void scenarioC_geminiHttp5xxAnd429TriggerFallbackToGrok() {
-        when(gemini.recommend(sampleRequest))
+        when(gemini.recommend(any()))
                 .thenThrow(new AiProviderException(AiProviderId.GEMINI, FailureType.HTTP_5XX, 503, "Erro 503"))
                 .thenThrow(new AiProviderException(AiProviderId.GEMINI, FailureType.RATE_LIMITED, 429, "Erro 429"));
-        when(grok.recommend(sampleRequest)).thenReturn(
+        when(grok.recommend(any())).thenReturn(
                 AiProviderResponse.of(AiProviderId.GROK, "Resposta válida.", List.of(), 90, 25)
         );
 
@@ -97,18 +106,19 @@ class AiProviderOrchestratorTest {
         assertEquals("HTTP_5XX", first.primaryFailureCode());
         assertEquals(AiProviderId.GROK, second.provider());
         assertEquals("RATE_LIMITED", second.primaryFailureCode());
-        verify(grok, times(2)).recommend(sampleRequest);
+        verify(grok, times(2)).recommend(any());
     }
 
     @Test
-    void scenarioD_geminiMalformedResponseTriggersFallbackToGrok() {
-        when(gemini.recommend(sampleRequest)).thenThrow(
-                new AiProviderException(AiProviderId.GEMINI, FailureType.MALFORMED_RESPONSE, "JSON inválido")
+    void scenarioD_geminiMalformedResponseWithTokensPreservesBothAttemptsInFallbackResponse() {
+        when(gemini.recommend(any())).thenThrow(
+                new AiProviderException(AiProviderId.GEMINI, FailureType.MALFORMED_RESPONSE, null,
+                        "JSON inválido", 150, 20, List.of())
         );
-        when(grok.recommend(sampleRequest)).thenReturn(
+        when(grok.recommend(any())).thenReturn(
                 AiProviderResponse.of(AiProviderId.GROK, "Opção válida.",
                         List.of(new AiProviderResponse.RecommendationCandidate(PRODUCT_ID, "No cardápio.")),
-                        100, 30)
+                        180, 45)
         );
 
         AiProviderResponse result = orchestrator.recommend(sampleRequest);
@@ -116,14 +126,21 @@ class AiProviderOrchestratorTest {
         assertEquals(AiProviderId.GROK, result.provider());
         assertTrue(result.usedFallbackProvider());
         assertEquals("MALFORMED_RESPONSE", result.primaryFailureCode());
+        assertEquals(2, result.attempts().size());
+        assertEquals(AiProviderId.GEMINI, result.attempts().get(0).provider());
+        assertEquals(150, result.attempts().get(0).inputTokens());
+        assertEquals(20, result.attempts().get(0).outputTokens());
+        assertEquals(AiProviderId.GROK, result.attempts().get(1).provider());
+        assertEquals(180, result.attempts().get(1).inputTokens());
+        assertEquals(45, result.attempts().get(1).outputTokens());
     }
 
     @Test
     void scenarioE_bothProvidersUnavailableFailsWithoutRetryLoop() {
-        when(gemini.recommend(sampleRequest)).thenThrow(
+        when(gemini.recommend(any())).thenThrow(
                 new AiProviderException(AiProviderId.GEMINI, FailureType.HTTP_5XX, 503, "Gemini fora")
         );
-        when(grok.recommend(sampleRequest)).thenThrow(
+        when(grok.recommend(any())).thenThrow(
                 new AiProviderException(AiProviderId.GROK, FailureType.TIMEOUT, "Grok timeout")
         );
 
@@ -132,13 +149,13 @@ class AiProviderOrchestratorTest {
 
         assertEquals(AiProviderId.GROK, exception.getFailure().provider());
         assertEquals(FailureType.TIMEOUT, exception.getFailure().type());
-        verify(gemini, times(1)).recommend(sampleRequest);
-        verify(grok, times(1)).recommend(sampleRequest);
+        verify(gemini, times(1)).recommend(any());
+        verify(grok, times(1)).recommend(any());
     }
 
     @Test
     void scenarioF_safetyRefusalNeverFallsBackToGrokAndDoesNotOpenCircuitBreaker() {
-        when(gemini.recommend(sampleRequest)).thenThrow(
+        when(gemini.recommend(any())).thenThrow(
                 new AiProviderException(AiProviderId.GEMINI, FailureType.SAFETY_REFUSAL, "Recusa de segurança")
         );
 
@@ -146,15 +163,15 @@ class AiProviderOrchestratorTest {
                 () -> orchestrator.recommend(sampleRequest));
 
         assertEquals(FailureType.SAFETY_REFUSAL, exception.getFailure().type());
-        verify(gemini, times(1)).recommend(sampleRequest);
+        verify(gemini, times(1)).recommend(any());
         verify(grok, never()).recommend(any());
         assertEquals(AiProviderCircuitBreaker.State.CLOSED, orchestrator.primaryCircuitState());
     }
 
     @Test
     void respectsTotalTimeBudgetAndSkipsFallbackWhenBudgetExhausted() {
-        when(gemini.recommend(sampleRequest)).thenAnswer(invocation -> {
-            clock.addAndGet(14_800L); // Consome quase todo o orçamento de 15.000 ms
+        when(gemini.recommend(any())).thenAnswer(invocation -> {
+            clock.addAndGet(14_800L);
             throw new AiProviderException(AiProviderId.GEMINI, FailureType.TIMEOUT, "Timeout longo");
         });
 
@@ -167,15 +184,67 @@ class AiProviderOrchestratorTest {
     }
 
     @Test
+    void expiredDeadlineBeforeCallPreventsBothGeminiAndGrok() {
+        AiRequestDeadline expired = AiRequestDeadline.start(1_000L, 500L, clock::get);
+        clock.addAndGet(1_200L);
+
+        AiProviderException ex = assertThrows(AiProviderException.class,
+                () -> orchestrator.recommend(sampleRequest.withDeadline(expired)));
+
+        assertEquals(FailureType.TIMEOUT, ex.getFailure().type());
+        verify(gemini, never()).recommend(any());
+        verify(grok, never()).recommend(any());
+    }
+
+    @Test
+    void authAndConfigErrorsDoNotFallbackToGrokByDefault() {
+        // 401, 403 e 400/404 não acionam Grok com a política padrão (AI_FALLBACK_ON_AUTH_OR_CONFIG_ERROR=false)
+        assertFalse(AiProviderConfiguration.defaults().isFallbackOnAuthOrConfigError());
+
+        for (int status : List.of(401, 403, 400, 404)) {
+            reset(gemini, grok);
+            orchestrator.resetCircuitBreakers();
+            when(gemini.isAvailable()).thenReturn(true);
+            when(gemini.recommend(any())).thenThrow(
+                    new AiProviderException(AiProviderId.GEMINI, FailureType.AUTH_OR_CONFIG_ERROR, status, "Erro config/auth")
+            );
+
+            AiProviderException ex = assertThrows(AiProviderException.class,
+                    () -> orchestrator.recommend(sampleRequest));
+            assertEquals(FailureType.AUTH_OR_CONFIG_ERROR, ex.getFailure().type());
+            verify(grok, never()).recommend(any());
+        }
+    }
+
+    @Test
+    void authAndConfigFallbackCanBeExplicitlyEnabledInConfiguration() {
+        AiProviderConfiguration explicitOptIn = new AiProviderConfiguration(
+                "gemini", "grok", true, true, 15_000L, 500, 3, 30_000L
+        );
+        AiProviderOrchestrator optInOrchestrator = new AiProviderOrchestrator(gemini, grok, explicitOptIn, clock::get);
+
+        when(gemini.recommend(any())).thenThrow(
+                new AiProviderException(AiProviderId.GEMINI, FailureType.AUTH_OR_CONFIG_ERROR, 401, "Chave inválida")
+        );
+        when(grok.recommend(any())).thenReturn(
+                AiProviderResponse.of(AiProviderId.GROK, "Fallback autorizado.", List.of(), 90, 20)
+        );
+
+        AiProviderResponse response = optInOrchestrator.recommend(sampleRequest);
+        assertEquals(AiProviderId.GROK, response.provider());
+        assertTrue(response.usedFallbackProvider());
+        assertEquals("AUTH_OR_CONFIG_ERROR", response.primaryFailureCode());
+    }
+
+    @Test
     void independentCircuitBreakersIsolateGeminiFailuresFromGrokAndRecoverAfterCooldown() {
-        when(gemini.recommend(sampleRequest)).thenThrow(
+        when(gemini.recommend(any())).thenThrow(
                 new AiProviderException(AiProviderId.GEMINI, FailureType.HTTP_5XX, 502, "Falha temporária")
         );
-        when(grok.recommend(sampleRequest)).thenReturn(
+        when(grok.recommend(any())).thenReturn(
                 AiProviderResponse.of(AiProviderId.GROK, "Fallback Grok", List.of(), 80, 20)
         );
 
-        // 3 falhas consecutivas abrem o circuit breaker do Gemini
         for (int i = 0; i < 3; i++) {
             AiProviderResponse resp = orchestrator.recommend(sampleRequest);
             assertEquals(AiProviderId.GROK, resp.provider());
@@ -183,16 +252,14 @@ class AiProviderOrchestratorTest {
         assertEquals(AiProviderCircuitBreaker.State.OPEN, orchestrator.primaryCircuitState());
         assertEquals(AiProviderCircuitBreaker.State.CLOSED, orchestrator.fallbackCircuitState());
 
-        // 4ª chamada: Gemini é pulado (circuit OPEN) e Grok responde diretamente
         orchestrator.recommend(sampleRequest);
-        verify(gemini, times(3)).recommend(sampleRequest);
-        verify(grok, times(4)).recommend(sampleRequest);
+        verify(gemini, times(3)).recommend(any());
+        verify(grok, times(4)).recommend(any());
 
-        // Após janela de 30s, Gemini entra em HALF_OPEN e volta a ser tentado primeiro
         clock.addAndGet(31_000L);
         reset(gemini);
         when(gemini.isAvailable()).thenReturn(true);
-        when(gemini.recommend(sampleRequest)).thenReturn(
+        when(gemini.recommend(any())).thenReturn(
                 AiProviderResponse.of(AiProviderId.GEMINI, "Gemini recuperado!", List.of(), 100, 30)
         );
 
@@ -205,22 +272,7 @@ class AiProviderOrchestratorTest {
     @Test
     void configurationRejectsSettingGrokAheadOfGemini() {
         assertThrows(IllegalStateException.class, () -> new AiProviderConfiguration(
-                "grok", "gemini", true, true, 15_000L, 500, 3, 30_000L
+                "grok", "gemini", true, false, 15_000L, 500, 3, 30_000L
         ));
-    }
-
-    @Test
-    void respectsFallbackOnAuthOrConfigPolicyFlag() {
-        AiProviderConfiguration noAuthFallback = new AiProviderConfiguration(
-                "gemini", "grok", true, false, 15_000L, 500, 3, 30_000L
-        );
-        AiProviderOrchestrator strictOrchestrator = new AiProviderOrchestrator(gemini, grok, noAuthFallback, clock::get);
-
-        when(gemini.recommend(sampleRequest)).thenThrow(
-                new AiProviderException(AiProviderId.GEMINI, FailureType.AUTH_OR_CONFIG_ERROR, 401, "Chave inválida")
-        );
-
-        assertThrows(AiProviderException.class, () -> strictOrchestrator.recommend(sampleRequest));
-        verify(grok, never()).recommend(any());
     }
 }

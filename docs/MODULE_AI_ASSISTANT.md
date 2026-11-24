@@ -1,6 +1,6 @@
 # Especificação de módulo — Assistente gastronômico
 
-**Status:** integrado no backend e no frontend do cardápio público na `main` (PR #35) e preparado para arquitetura multi-provider com contingência **Gemini (Prioridade 1) → Grok (Prioridade 2)** documentada em [ai-provider-fallback.md](architecture/ai-provider-fallback.md). Ativação em produção depende de configuração humana das variáveis de ambiente e aprovação dos termos dos fornecedores.
+**Status:** integrado no backend e no frontend do cardápio público na `main` (PR #35) e endurecido para arquitetura multi-provider com contingência **Gemini (Prioridade 1) → Grok / xAI Responses API `store=false` (Prioridade 2)**, deadline global efetivo, métricas de custo isoladas por provedor e `AI_FALLBACK_ON_AUTH_OR_CONFIG_ERROR=false` por padrão, conforme [ai-provider-fallback.md](architecture/ai-provider-fallback.md). Ativação em produção depende de configuração humana das variáveis de ambiente e aprovação dos termos dos fornecedores.
 
 ## Provedor e arquitetura de integração — D-10
 

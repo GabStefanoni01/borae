@@ -1,34 +1,55 @@
 package com.borae.assistant;
 
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Métricas agregadas e privacidade (D-11) do Assistente Gastronômico.
+ *
+ * <p>Contabiliza tokens e estimativa de custo estritamente por provedor usando a tabela
+ * existente {@code assistant_daily_metrics}. Quando a tarifa de um provedor não está
+ * configurada (valor negativo) ou não há metadados confiáveis de tokens, os contadores
+ * disponíveis são preservados e a estimativa é marcada como indisponível
+ * ({@code ESTIMATED_COST_UNAVAILABLE}), nunca substituindo pela tarifa de outro provedor.</p>
+ */
 @Service
 public class AssistantMetricsService {
 
     public static final int RETENTION_DAYS = 180;
+    public static final double UNCONFIGURED_PRICE = -1.0;
 
     private final JdbcTemplate jdbcTemplate;
-    private final double inputPricePerMillionUsd;
-    private final double outputPricePerMillionUsd;
+    private final double geminiInputPricePerMillionUsd;
+    private final double geminiOutputPricePerMillionUsd;
+    private final double grokInputPricePerMillionUsd;
+    private final double grokOutputPricePerMillionUsd;
 
+    @Autowired
     public AssistantMetricsService(
             JdbcTemplate jdbcTemplate,
-            @Value("${app.assistant.gemini.input-price-per-million-usd:0.10}") double inputPricePerMillionUsd,
-            @Value("${app.assistant.gemini.output-price-per-million-usd:0.40}") double outputPricePerMillionUsd
+            @Value("${app.assistant.gemini.input-price-per-million-usd:-1}") double geminiInputPricePerMillionUsd,
+            @Value("${app.assistant.gemini.output-price-per-million-usd:-1}") double geminiOutputPricePerMillionUsd,
+            @Value("${app.assistant.grok.input-price-per-million-usd:-1}") double grokInputPricePerMillionUsd,
+            @Value("${app.assistant.grok.output-price-per-million-usd:-1}") double grokOutputPricePerMillionUsd
     ) {
         this.jdbcTemplate = jdbcTemplate;
-        this.inputPricePerMillionUsd = Math.max(0, inputPricePerMillionUsd);
-        this.outputPricePerMillionUsd = Math.max(0, outputPricePerMillionUsd);
+        this.geminiInputPricePerMillionUsd = geminiInputPricePerMillionUsd;
+        this.geminiOutputPricePerMillionUsd = geminiOutputPricePerMillionUsd;
+        this.grokInputPricePerMillionUsd = grokInputPricePerMillionUsd;
+        this.grokOutputPricePerMillionUsd = grokOutputPricePerMillionUsd;
     }
 
+    /**
+     * Sobrecarga compatível para registro simples (assume Gemini como origem dos tokens).
+     */
     @Transactional
     public void recordInteractionOutcome(
             UUID restaurantId,
@@ -39,6 +60,25 @@ public class AssistantMetricsService {
             long inputTokens,
             long outputTokens
     ) {
+        List<AiProviderResponse.AttemptUsage> attempts = (inputTokens > 0 || outputTokens > 0)
+                ? List.of(new AiProviderResponse.AttemptUsage(AiProviderId.GEMINI, inputTokens, outputTokens))
+                : List.of();
+        recordInteractionOutcome(restaurantId, latencyMillis, fallback, noResult, recommendedProductIds, attempts);
+    }
+
+    /**
+     * Registra desfecho da interação com detalhamento fiel de tokens e custo estimado
+     * por tentativa/provedor (inclusive quando houve fallback Gemini → Grok).
+     */
+    @Transactional
+    public void recordInteractionOutcome(
+            UUID restaurantId,
+            long latencyMillis,
+            boolean fallback,
+            boolean noResult,
+            List<UUID> recommendedProductIds,
+            List<AiProviderResponse.AttemptUsage> attempts
+    ) {
         LocalDate today = LocalDate.now(AssistantQuotaService.BUSINESS_ZONE);
         purgeExpired(today);
 
@@ -48,13 +88,11 @@ public class AssistantMetricsService {
 
         if (fallback) incrementMetric(today, restaurantId, "FALLBACKS", 1);
         if (noResult) incrementMetric(today, restaurantId, "NO_RESULTS", 1);
-        if (inputTokens > 0) incrementMetric(today, restaurantId, "INPUT_TOKENS", inputTokens);
-        if (outputTokens > 0) incrementMetric(today, restaurantId, "OUTPUT_TOKENS", outputTokens);
-        long estimatedCostMicroUsd = Math.round(
-                inputTokens * inputPricePerMillionUsd + outputTokens * outputPricePerMillionUsd
-        );
-        if (estimatedCostMicroUsd > 0) {
-            incrementMetric(today, restaurantId, "ESTIMATED_COST_MICRO_USD", estimatedCostMicroUsd);
+
+        if (attempts != null) {
+            for (AiProviderResponse.AttemptUsage attempt : attempts) {
+                recordAttemptUsage(today, restaurantId, attempt);
+            }
         }
 
         if (recommendedProductIds != null) {
@@ -62,6 +100,60 @@ public class AssistantMetricsService {
                 if (productId != null) incrementProductMetric(today, restaurantId, productId, "recommendation_count");
             }
         }
+    }
+
+    private void recordAttemptUsage(LocalDate today, UUID restaurantId, AiProviderResponse.AttemptUsage attempt) {
+        if (attempt == null || attempt.provider() == null) {
+            return;
+        }
+        String prefix = providerMetricPrefix(attempt.provider());
+        long inputTokens = attempt.inputTokens();
+        long outputTokens = attempt.outputTokens();
+
+        if (inputTokens > 0) {
+            incrementMetric(today, restaurantId, "INPUT_TOKENS", inputTokens);
+            incrementMetric(today, restaurantId, prefix + "_INPUT_TOKENS", inputTokens);
+        }
+        if (outputTokens > 0) {
+            incrementMetric(today, restaurantId, "OUTPUT_TOKENS", outputTokens);
+            incrementMetric(today, restaurantId, prefix + "_OUTPUT_TOKENS", outputTokens);
+        }
+
+        double inputPrice = inputPriceFor(attempt.provider());
+        double outputPrice = outputPriceFor(attempt.provider());
+
+        if (!attempt.hasTokens() || inputPrice < 0.0 || outputPrice < 0.0) {
+            incrementMetric(today, restaurantId, "ESTIMATED_COST_UNAVAILABLE", 1);
+            incrementMetric(today, restaurantId, prefix + "_COST_UNAVAILABLE", 1);
+            return;
+        }
+
+        long estimatedCostMicroUsd = Math.round(inputTokens * inputPrice + outputTokens * outputPrice);
+        if (estimatedCostMicroUsd > 0) {
+            incrementMetric(today, restaurantId, "ESTIMATED_COST_MICRO_USD", estimatedCostMicroUsd);
+            incrementMetric(today, restaurantId, prefix + "_COST_MICRO_USD", estimatedCostMicroUsd);
+        }
+    }
+
+    private double inputPriceFor(AiProviderId providerId) {
+        return switch (providerId) {
+            case GEMINI -> geminiInputPricePerMillionUsd;
+            case GROK -> grokInputPricePerMillionUsd;
+        };
+    }
+
+    private double outputPriceFor(AiProviderId providerId) {
+        return switch (providerId) {
+            case GEMINI -> geminiOutputPricePerMillionUsd;
+            case GROK -> grokOutputPricePerMillionUsd;
+        };
+    }
+
+    private static String providerMetricPrefix(AiProviderId providerId) {
+        return switch (providerId) {
+            case GEMINI -> "PROVIDER_GEMINI";
+            case GROK -> "PROVIDER_GROK";
+        };
     }
 
     @Transactional

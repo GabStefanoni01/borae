@@ -287,8 +287,44 @@ class PublicAssistantFlowPostgresIntegrationTest {
                 "SELECT metric_value FROM assistant_daily_metrics WHERE restaurant_id = ? AND metric_key = 'PROVIDER_FALLBACK_TO_GROK'",
                 Long.class, restaurantId
         );
+        Long grokInputTokens = jdbcTemplate.queryForObject(
+                "SELECT metric_value FROM assistant_daily_metrics WHERE restaurant_id = ? AND metric_key = 'PROVIDER_GROK_INPUT_TOKENS'",
+                Long.class, restaurantId
+        );
+        Long costUnavailable = jdbcTemplate.queryForObject(
+                "SELECT metric_value FROM assistant_daily_metrics WHERE restaurant_id = ? AND metric_key = 'PROVIDER_GROK_COST_UNAVAILABLE'",
+                Long.class, restaurantId
+        );
         assertEquals(1L, grokSuccess);
         assertEquals(1L, fallbackCount);
+        assertEquals(200L, grokInputTokens);
+        assertEquals(1L, costUnavailable);
+    }
+
+    @Test
+    void doesNotFallbackToGrokOnGeminiAuthErrorByDefaultAndExposesNoInternalDetails() throws Exception {
+        Cookie sessionCookie = extractSessionCookie(mockMvc.perform(post("/api/v1/public/assistant/sessions"))
+                .andExpect(status().isNoContent()).andReturn());
+
+        when(geminiProvider.recommend(any(AiProviderRequest.class))).thenThrow(
+                new AiProviderException(AiProviderId.GEMINI, FailureType.AUTH_OR_CONFIG_ERROR, 401, "Erro de autenticação")
+        );
+
+        MvcResult result = mockMvc.perform(post("/api/v1/public/restaurants/{slug}/assistant/interactions", restaurantSlug)
+                        .cookie(sessionCookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("message", "O que recomenda?"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.fallback").value(true))
+                .andExpect(jsonPath("$.fallbackCode").value("AI_UNAVAILABLE"))
+                .andExpect(jsonPath("$.recommendations", hasSize(0)))
+                .andReturn();
+
+        String responseBody = result.getResponse().getContentAsString();
+        assertFalse(responseBody.toLowerCase().contains("401"));
+        assertFalse(responseBody.toLowerCase().contains("autentica"));
+        assertFalse(responseBody.toLowerCase().contains("api_key"));
+        verify(grokProvider, never()).recommend(any());
     }
 
     @Test

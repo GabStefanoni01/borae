@@ -78,8 +78,10 @@ app:
       primary-provider: ${AI_PRIMARY_PROVIDER:gemini}
       fallback-provider: ${AI_FALLBACK_PROVIDER:grok}
       fallback-enabled: ${AI_FALLBACK_ENABLED:true}
-      fallback-on-auth-or-config-error: ${AI_FALLBACK_ON_AUTH_OR_CONFIG_ERROR:true}
+      # Desabilitado por padrão: erros 401/403 ou configuração inválida não mascaram falha chamando o Grok.
+      fallback-on-auth-or-config-error: ${AI_FALLBACK_ON_AUTH_OR_CONFIG_ERROR:false}
       total-timeout-ms: ${AI_TOTAL_TIMEOUT_MS:15000}
+      min-fallback-budget-ms: ${AI_MIN_FALLBACK_BUDGET_MS:500}
       circuit-breaker:
         failure-threshold: ${AI_CIRCUIT_BREAKER_FAILURE_THRESHOLD:3}
         open-duration-ms: ${AI_CIRCUIT_BREAKER_OPEN_DURATION_MS:30000}
@@ -92,17 +94,21 @@ app:
       timeout-ms: ${GEMINI_TIMEOUT_MS:0}
       timeout-seconds: ${GEMINI_TIMEOUT_SECONDS:12}
       max-output-tokens: ${GEMINI_MAX_OUTPUT_TOKENS:500}
-      input-price-per-million-usd: ${GEMINI_INPUT_PRICE_PER_MILLION_USD:0.10}
-      output-price-per-million-usd: ${GEMINI_OUTPUT_PRICE_PER_MILLION_USD:0.40}
+      # Tarifas configuráveis por provedor (USD por 1M tokens). Valor negativo = indisponível (nunca substitui por outro provedor).
+      input-price-per-million-usd: ${GEMINI_INPUT_PRICE_PER_MILLION_USD:-1}
+      output-price-per-million-usd: ${GEMINI_OUTPUT_PRICE_PER_MILLION_USD:-1}
     grok:
       enabled: ${GROK_ENABLED:false}
-      # Provedor secundário de contingência (Prioridade 2). Habilite apenas após homologação futura e aprovação de termos da xAI.
+      # Provedor secundário de contingência (Prioridade 2 — xAI Responses API). Habilite apenas após homologação futura e aprovação de termos da xAI.
       data-processing-approved: ${GROK_DATA_PROCESSING_APPROVED:false}
       api-key: ${GROK_API_KEY:}
       base-url: ${GROK_BASE_URL:https://api.x.ai}
-      model: ${GROK_MODEL:grok-3-mini}
+      model: ${GROK_MODEL:grok-4.3}
       timeout-ms: ${GROK_TIMEOUT_MS:8000}
       max-output-tokens: ${GROK_MAX_OUTPUT_TOKENS:500}
+      # Tarifas configuráveis por provedor (USD por 1M tokens). Valor negativo = indisponível.
+      input-price-per-million-usd: ${GROK_INPUT_PRICE_PER_MILLION_USD:-1}
+      output-price-per-million-usd: ${GROK_OUTPUT_PRICE_PER_MILLION_USD:-1}
   storage:
     imagekit:
       private-key: ${IMAGEKIT_PRIVATE_KEY:}

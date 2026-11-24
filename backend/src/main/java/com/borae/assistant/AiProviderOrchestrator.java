@@ -7,25 +7,25 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.function.LongSupplier;
 
 /**
  * Orquestrador multi-provider do Assistente Gastronômico.
  *
  * <p>Aplica rigorosamente a prioridade determinística:
- * <strong>Prioridade 1 — Gemini → Prioridade 2 — Grok (xAI)</strong>.
- * Sem balanceamento aleatório, sem chamadas paralelas entre provedores e com no máximo
- * uma tentativa de contingência ao Grok respeitando o limite total de tempo e circuit breakers
- * independentes por provedor.</p>
+ * <strong>Prioridade 1 — Gemini → Prioridade 2 — Grok (xAI)</strong>, compartilhando
+ * um {@link AiRequestDeadline} absoluto por solicitação para que o timeout HTTP efetivo
+ * de cada provedor jamais ultrapasse o orçamento global ({@code AI_TOTAL_TIMEOUT_MS}).</p>
  *
- * <p>Recusas de segurança ({@link FailureType#SAFETY_REFUSAL}) e solicitações inválidas
- * ({@link FailureType#INVALID_USER_REQUEST}) jamais acionam fallback para o segundo provedor.</p>
+ * <p>Recusas de segurança ({@link FailureType#SAFETY_REFUSAL}), solicitações inválidas
+ * ({@link FailureType#INVALID_USER_REQUEST}) e (por padrão) erros de autenticação/configuração
+ * ({@link FailureType#AUTH_OR_CONFIG_ERROR}) não acionam fallback para o Grok.</p>
  */
 @Service
 public class AiProviderOrchestrator {
 
     private static final Logger LOG = LoggerFactory.getLogger(AiProviderOrchestrator.class);
-    private static final long MIN_REMAINING_BUDGET_FOR_FALLBACK_MS = 500L;
 
     private final AiProvider primaryProvider;
     private final AiProvider fallbackProvider;
@@ -70,9 +70,6 @@ public class AiProviderOrchestrator {
         );
     }
 
-    /**
-     * Indica se ao menos um provedor elegível está habilitado e configurado para atender requisições.
-     */
     public boolean hasAnyAvailableProvider() {
         if (primaryProvider.isAvailable()) {
             return true;
@@ -100,10 +97,19 @@ public class AiProviderOrchestrator {
     }
 
     /**
-     * Executa a recomendação respeitando estritamente a ordem Gemini → Grok.
+     * Executa a recomendação respeitando estritamente a ordem Gemini → Grok e o deadline global.
      */
     public AiProviderResponse recommend(AiProviderRequest request) {
-        long startedAtMs = clock.getAsLong();
+        AiRequestDeadline deadline = request.deadline() != null
+                ? request.deadline()
+                : AiRequestDeadline.start(configuration.totalTimeoutMs(), configuration.minFallbackBudgetMs(), clock);
+
+        if (deadline.isExpired()) {
+            throw new AiProviderException(AiProviderId.GEMINI, FailureType.TIMEOUT,
+                    "Orçamento global de tempo expirado antes da chamada de IA.");
+        }
+
+        AiProviderRequest scopedRequest = request.withDeadline(deadline);
         AiProviderFailure primaryFailure = null;
 
         // Prioridade 1 — Gemini sempre precede o Grok
@@ -120,7 +126,7 @@ public class AiProviderOrchestrator {
             LOG.warn("AI provider {} skipped: circuit breaker OPEN", AiProviderId.GEMINI.key());
         } else {
             try {
-                AiProviderResponse response = primaryProvider.recommend(request);
+                AiProviderResponse response = primaryProvider.recommend(scopedRequest);
                 primaryBreaker.recordSuccess();
                 return response;
             } catch (AiProviderException exception) {
@@ -128,45 +134,43 @@ public class AiProviderOrchestrator {
                 primaryBreaker.recordFailure(primaryFailure.type());
                 logFailure(primaryFailure);
 
-                // Nunca contornar recusa de segurança ou erro de entrada tentando outro modelo
                 if (!primaryFailure.allowsFallback(configuration.isFallbackOnAuthOrConfigError())) {
                     throw exception;
                 }
             }
         }
 
-        // Prioridade 2 — Grok (no máximo uma tentativa de contingência)
-        if (!canAttemptFallback(primaryFailure, startedAtMs)) {
+        // Prioridade 2 — Grok (no máximo 1 tentativa de contingência limitada ao orçamento restante)
+        if (!canAttemptFallback(primaryFailure, deadline)) {
             throw toException(primaryFailure);
         }
 
-        LOG.info("AI fallback triggered: primary={} reason={} -> secondary={}",
-                AiProviderId.GEMINI.key(), primaryFailure.type().name(), fallbackProvider.id().key());
+        LOG.info("AI fallback triggered: primary={} reason={} -> secondary={} remainingBudgetMs={}",
+                AiProviderId.GEMINI.key(), primaryFailure.type().name(),
+                fallbackProvider.id().key(), deadline.remainingMillis());
 
         try {
-            AiProviderResponse secondaryResponse = fallbackProvider.recommend(request);
+            AiProviderResponse secondaryResponse = fallbackProvider.recommend(scopedRequest);
             fallbackBreaker.recordSuccess();
             return secondaryResponse.asFallbackFor(primaryFailure);
         } catch (AiProviderException secondaryException) {
             AiProviderFailure secondaryFailure = secondaryException.getFailure();
             fallbackBreaker.recordFailure(secondaryFailure.type());
             logFailure(secondaryFailure);
-            throw secondaryException;
+            throw secondaryException.withPriorAttemptUsage(primaryFailure);
         }
     }
 
-    private boolean canAttemptFallback(AiProviderFailure primaryFailure, long startedAtMs) {
+    private boolean canAttemptFallback(AiProviderFailure primaryFailure, AiRequestDeadline deadline) {
         if (!configuration.isFallbackEnabled() || fallbackProvider == null) {
             return false;
         }
         if (primaryFailure == null || !primaryFailure.allowsFallback(configuration.isFallbackOnAuthOrConfigError())) {
             return false;
         }
-        long elapsedMs = Math.max(0L, clock.getAsLong() - startedAtMs);
-        long remainingBudgetMs = configuration.totalTimeoutMs() - elapsedMs;
-        if (remainingBudgetMs < MIN_REMAINING_BUDGET_FOR_FALLBACK_MS) {
-            LOG.warn("AI fallback skipped: total time budget exceeded (elapsedMs={}, budgetMs={})",
-                    elapsedMs, configuration.totalTimeoutMs());
+        if (deadline.isExpired() || !deadline.hasOperationalBudget()) {
+            LOG.warn("AI fallback skipped: total deadline budget exhausted (elapsedMs={}, remainingMs={}, budgetMs={})",
+                    deadline.elapsedMillis(), deadline.remainingMillis(), deadline.totalBudgetMs());
             return false;
         }
         if (!fallbackProvider.isAvailable()) {
@@ -194,7 +198,10 @@ public class AiProviderOrchestrator {
                 failure.provider(),
                 failure.type(),
                 failure.httpStatus(),
-                failure.safeDetail()
+                failure.safeDetail(),
+                failure.inputTokens(),
+                failure.outputTokens(),
+                List.of()
         );
     }
 }
