@@ -1,42 +1,46 @@
 package com.borae.assistant;
 
+import java.util.concurrent.TimeUnit;
 import java.util.function.LongSupplier;
 
 /**
- * Deadline absoluto compartilhado por toda uma solicitação ao Assistente Gastronômico
- * (incluindo tentativa primária no Gemini e eventual contingência no Grok).
+ * Deadline absoluto monotônico compartilhado por toda uma solicitação ao Assistente Gastronômico
+ * (tentativa primária no Gemini e eventual contingência no Grok).
  *
- * <p>Garante que o timeout efetivo de cada chamada HTTP nunca exceda o tempo restante
- * do orçamento global ({@code AI_TOTAL_TIMEOUT_MS}).</p>
+ * <p>Baseado em {@link System#nanoTime()} (relógio monotônico imune a ajustes de relógio de parede
+ * ou sincronização NTP), com cálculo protegido contra overflow e valores negativos.</p>
  */
 public final class AiRequestDeadline {
 
     public static final long DEFAULT_MIN_OPERATIONAL_MS = 500L;
+    private static final long MAX_SAFE_BUDGET_MS = Long.MAX_VALUE / 1_000_000L;
 
-    private final long startedAtMs;
+    private final long startedAtNanos;
     private final long totalBudgetMs;
-    private final long deadlineEpochMs;
-    private final long minOperationalMs;
-    private final LongSupplier clock;
+    private final long totalBudgetNanos;
+    private final long minOperationalNanos;
+    private final LongSupplier nanoClock;
 
-    private AiRequestDeadline(long startedAtMs, long totalBudgetMs, long minOperationalMs, LongSupplier clock) {
-        this.clock = clock == null ? System::currentTimeMillis : clock;
-        this.startedAtMs = startedAtMs;
-        this.totalBudgetMs = Math.max(1L, totalBudgetMs);
-        this.deadlineEpochMs = startedAtMs + this.totalBudgetMs;
-        this.minOperationalMs = Math.max(1L, minOperationalMs);
+    private AiRequestDeadline(long startedAtNanos, long totalBudgetMs, long minOperationalMs, LongSupplier nanoClock) {
+        this.nanoClock = nanoClock == null ? System::nanoTime : nanoClock;
+        this.startedAtNanos = startedAtNanos;
+        long clampedBudgetMs = Math.max(1L, Math.min(totalBudgetMs, MAX_SAFE_BUDGET_MS));
+        long clampedMinMs = Math.max(1L, Math.min(minOperationalMs, MAX_SAFE_BUDGET_MS));
+        this.totalBudgetMs = clampedBudgetMs;
+        this.totalBudgetNanos = TimeUnit.MILLISECONDS.toNanos(clampedBudgetMs);
+        this.minOperationalNanos = TimeUnit.MILLISECONDS.toNanos(clampedMinMs);
     }
 
     public static AiRequestDeadline start(long totalBudgetMs) {
-        return start(totalBudgetMs, DEFAULT_MIN_OPERATIONAL_MS, System::currentTimeMillis);
+        return start(totalBudgetMs, DEFAULT_MIN_OPERATIONAL_MS, System::nanoTime);
     }
 
-    public static AiRequestDeadline start(long totalBudgetMs, LongSupplier clock) {
-        return start(totalBudgetMs, DEFAULT_MIN_OPERATIONAL_MS, clock);
+    public static AiRequestDeadline start(long totalBudgetMs, LongSupplier nanoClock) {
+        return start(totalBudgetMs, DEFAULT_MIN_OPERATIONAL_MS, nanoClock);
     }
 
-    public static AiRequestDeadline start(long totalBudgetMs, long minOperationalMs, LongSupplier clock) {
-        LongSupplier effectiveClock = clock == null ? System::currentTimeMillis : clock;
+    public static AiRequestDeadline start(long totalBudgetMs, long minOperationalMs, LongSupplier nanoClock) {
+        LongSupplier effectiveClock = nanoClock == null ? System::nanoTime : nanoClock;
         return new AiRequestDeadline(effectiveClock.getAsLong(), totalBudgetMs, minOperationalMs, effectiveClock);
     }
 
@@ -44,32 +48,43 @@ public final class AiRequestDeadline {
         return totalBudgetMs;
     }
 
+    public long elapsedNanos() {
+        long delta = nanoClock.getAsLong() - startedAtNanos;
+        return Math.max(0L, delta);
+    }
+
     public long elapsedMillis() {
-        return Math.max(0L, clock.getAsLong() - startedAtMs);
+        return TimeUnit.NANOSECONDS.toMillis(elapsedNanos());
+    }
+
+    public long remainingNanos() {
+        long remaining = totalBudgetNanos - elapsedNanos();
+        return Math.max(0L, remaining);
     }
 
     public long remainingMillis() {
-        return Math.max(0L, deadlineEpochMs - clock.getAsLong());
+        return TimeUnit.NANOSECONDS.toMillis(remainingNanos());
     }
 
     public boolean isExpired() {
-        return remainingMillis() <= 0L;
+        return remainingNanos() <= 0L;
     }
 
     public boolean hasOperationalBudget() {
-        return remainingMillis() >= minOperationalMs;
+        return remainingNanos() >= minOperationalNanos;
     }
 
     /**
      * Retorna o menor valor entre o timeout individual configurado do provedor e o tempo
-     * restante do deadline global. Retorna {@code 0} quando o deadline já expirou.
+     * restante do deadline monotônico global. Retorna {@code 0} quando o deadline já expirou.
      */
     public long timeoutForProvider(long configuredProviderTimeoutMs) {
-        long remaining = remainingMillis();
-        if (remaining <= 0L) {
+        long remainingNanos = remainingNanos();
+        if (remainingNanos <= 0L) {
             return 0L;
         }
+        long remainingMs = Math.max(1L, TimeUnit.NANOSECONDS.toMillis(remainingNanos));
         long safeConfigured = Math.max(1L, configuredProviderTimeoutMs);
-        return Math.min(safeConfigured, remaining);
+        return Math.min(safeConfigured, remainingMs);
     }
 }

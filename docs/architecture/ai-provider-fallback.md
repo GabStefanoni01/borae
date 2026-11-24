@@ -1,6 +1,6 @@
 # Arquitetura Multi-Provider de IA e Fallback (`Gemini → Grok`)
 
-**Status:** estrutura técnica implementada e endurecida (Sessões 04 e 04.1), validada integralmente com provedores simulados e testes determinísticos.  
+**Status:** estrutura técnica implementada e endurecida (Sessões 04, 04.1 e 04.2), validada integralmente com provedores simulados e testes determinísticos.  
 **Ativação operacional:** pendente de homologação futura com credenciais reais, validação de faturamento e aprovação dos termos de processamento de dados de cada fornecedor.  
 **Prioridade obrigatória:** `PRIORIDADE 1 — GEMINI` → `PRIORIDADE 2 — GROK (xAI)` → `Contingência segura do backend`.
 
@@ -14,14 +14,14 @@ O módulo `com.borae.assistant` mantém o domínio isolado dos protocolos propri
 | --- | --- |
 | `AiProvider` | Interface comum (`id()`, `isAvailable()`, `recommend(AiProviderRequest)`). |
 | `AiProviderId` | Enum determinístico dos provedores suportados (`GEMINI`, `GROK`). |
-| `AiRequestDeadline` | Deadline absoluto compartilhado por solicitação (`remainingMillis()`, `isExpired()`, `hasOperationalBudget()`, `timeoutForProvider(...)`). |
+| `AiRequestDeadline` | Deadline monotônico compartilhado por solicitação baseado em `System.nanoTime()` (`remainingMillis()`, `remainingNanos()`, `isExpired()`, `hasOperationalBudget()`, `timeoutForProvider(...)`), imune a ajustes de relógio de parede (NTP/DST) e protegido contra overflow/wrap-around. |
 | `DeadlineAwareClientHttpRequestFactory` | Compartilha um único `java.net.http.HttpClient` por adaptador (sem explosão de threads/pools) e aplica o timeout efetivo por requisição com cancelamento real do stream HTTP. |
 | `AiProviderRequest` | Contrato único de entrada (`systemInstruction`, `userMessage`, `catalogJson` <= 4.000 chars, `maxOutputTokens`, `deadline`). |
 | `AiProviderResponse` | Contrato normalizado de saída (`provider`, `answer`, `recommendations[]`, `inputTokens`, `outputTokens`, `usedFallbackProvider`, `primaryFailureCode`, `attempts[]`). |
-| `AiProviderFailure` / `AiProviderException` | Classificação tipada de falhas com preservação de tokens eventualmente faturados antes da falha e mensagens sempre sanitizadas. |
+| `AiProviderFailure` / `AiProviderException` | Classificação tipada de falhas com distinção explícita entre tentativa executada com uso conhecido (`usageKnown=true`), tentativa executada sem metadados de uso (`usageKnown=false`) e tentativa não executada/pulada (`attemptExecuted=false`), sempre com mensagens sanitizadas. |
 | `GeminiFlashLiteProvider` | Adaptador principal (**Prioridade 1**): Google Gemini REST `POST /v1beta/models/{model}:generateContent` com cabeçalho `x-goog-api-key`. |
-| `GrokAiProvider` | Adaptador de contingência (**Prioridade 2**): xAI **Responses API** `POST {baseUrl}/v1/responses` com `Authorization: Bearer`, `store=false` e `text.format` (`json_schema`). |
-| `AiProviderCircuitBreaker` | Circuit breaker independente por provedor (`CLOSED` → `OPEN` → `HALF_OPEN`). |
+| `GrokAiProvider` | Adaptador de contingência (**Prioridade 2**): xAI **Responses API** `POST {baseUrl}/v1/responses` com `Authorization: Bearer`, `store=false`, `reasoning.effort` explícito (`none` padrão / `low` permitido), validação estrita de `status="completed"` e `text.format` (`json_schema`). |
+| `AiProviderCircuitBreaker` | Circuit breaker independente por provedor (`CLOSED` → `OPEN` → `HALF_OPEN`) baseado em relógio monotônico (`System.nanoTime()`). |
 | `AiProviderConfiguration` | Centraliza prioridades, deadline global, mínimo operacional, política de erro de autenticação e circuit breakers. |
 | `AiProviderOrchestrator` | Executa rigorosamente `Gemini → Grok` com no máximo 1 tentativa de contingência. |
 | `GastronomicAssistantService` | Monta o contexto autorizado, bloqueia chamadas simultâneas duplicadas (`HTTP 429`), gerencia cotas e centraliza toda validação final de negócio e segurança. |
@@ -44,12 +44,14 @@ Consumidor (/r/:slug)
 
 ---
 
-## 2. Deadline global efetivo e timeout individual
+## 2. Deadline global monotônico e timeout individual
 
-- No início de cada solicitação em `AiProviderOrchestrator.recommend(...)`, cria-se um `AiRequestDeadline` absoluto com orçamento `AI_TOTAL_TIMEOUT_MS` (padrão `15000 ms`) e mínimo operacional `AI_MIN_FALLBACK_BUDGET_MS` (padrão `500 ms`).
+- No início de cada solicitação em `AiProviderOrchestrator.recommend(...)`, cria-se um `AiRequestDeadline` monotônico baseado em **`System.nanoTime()`** (nunca `System.currentTimeMillis()`, evitando distorções por NTP, horário de verão ou saltos de relógio do SO), com orçamento `AI_TOTAL_TIMEOUT_MS` (padrão `15000 ms`) e mínimo operacional `AI_MIN_FALLBACK_BUDGET_MS` (padrão `500 ms`).
+- O cálculo de tempo decorrido usa subtração segura de diferenças (`nanoClock.getAsLong() - startedAtNanos`) com proteção contra overflow na conversão de milissegundos para nanossegundos e clamping não negativo (`remainingMillis() >= 0`).
+- O `AiProviderCircuitBreaker` também utiliza relógio monotônico (`System.nanoTime()`) para a janela `AI_CIRCUIT_BREAKER_OPEN_DURATION_MS`.
 - O mesmo `AiRequestDeadline` é propagado em `AiProviderRequest` para o Gemini e, em caso de fallback, para o Grok.
 - Antes de cada chamada HTTP:
-  - Se `deadline.isExpired()` for `true`, a chamada é abortada imediatamente com `FailureType.TIMEOUT` sem abrir conexão.
+  - Se `deadline.isExpired()` for `true`, a chamada é abortada imediatamente com `AiProviderException.skipped(..., FailureType.TIMEOUT)` sem abrir conexão e sem registrar tentativa executada.
   - O timeout efetivo é calculado por `deadline.timeoutForProvider(providerTimeoutMs) = min(providerTimeoutMs, remainingMillis())`.
   - Exemplo prático: se o orçamento global for `15000 ms`, o Gemini consumir `12000 ms` e falhar, e o timeout individual do Grok for `8000 ms`, o Grok receberá timeout efetivo de **3000 ms** (nunca `8000 ms`).
   - Se o tempo restante for inferior a `AI_MIN_FALLBACK_BUDGET_MS` (`500 ms`), o fallback ao Grok não é iniciado.
@@ -72,8 +74,14 @@ Auditoria realizada diretamente contra a documentação oficial da xAI (`https:/
 - **API adotada:** **Responses API** (`POST {baseUrl}/v1/responses`), interface oficialmente recomendada pela xAI para novas integrações (substituindo o endpoint legado `/v1/chat/completions`).
 - **Autenticação:** cabeçalho HTTP `Authorization: Bearer <GROK_API_KEY>` (nunca na URL, logs ou respostas).
 - **Structured Outputs:** enviados via `text.format` com `type: "json_schema"`, `name: "gastronomic_recommendation"`, `strict: true` e `additionalProperties: false`.
+- **Esforço de raciocínio explícito (`GROK_REASONING_EFFORT`):** enviado em toda requisição via `"reasoning": { "effort": "<valor>" }`, com padrão **`none`** (priorizando latência e custo previsíveis) e opção **`low`** aceita explicitamente. Valores fora do conjunto `{none, low}` falham na inicialização (`IllegalArgumentException`, fail-closed).
 - **Instruções e limites:** `instructions` (instrução de sistema), `input` (prompt delimitado do catálogo), `max_output_tokens` (padrão `500`), `temperature: 0.3`. Sem ferramentas externas nem function calling.
-- **Parsing normalizado:** lê `output[].content[]` (`type="output_text"` -> `text`, com fallback para `output_text`), detecta recusas de segurança (`incomplete_details.reason == "content_filter"` ou parte `type="refusal"`) como `SAFETY_REFUSAL` e extrai `usage.input_tokens` / `usage.output_tokens`.
+- **Validação estrita do `status` da Responses API (antes do parsing):**
+  - Recusas de segurança (`incomplete_details.reason == "content_filter"` ou parte `type="refusal"`) são classificadas prioritariamente como `SAFETY_REFUSAL` (nunca geram fallback nem abrem circuit breaker), preservando metadados de uso.
+  - Apenas **`status == "completed"`** é aceito para parsing do JSON estruturado.
+  - `status == "incomplete"` (ex.: truncamento por `max_output_tokens`) é rejeitado imediatamente como `MALFORMED_RESPONSE` **sem tentar interpretar JSON parcial**, preservando `usage` (inclusive `reasoning_tokens`).
+  - `status` ausente ou desconhecido (ex.: `in_progress`, `queued`) é rejeitado com segurança como `MALFORMED_RESPONSE`, e `status == "failed"` como `SERVICE_UNAVAILABLE`, preservando `usage` quando disponível.
+- **Parsing normalizado:** após confirmar `status == "completed"`, lê `output[].content[]` (`type="output_text"` -> `text`, com fallback para `output_text`) e extrai `usage.input_tokens`, `usage.output_tokens` e `usage.output_tokens_details.reasoning_tokens` (ou `completion_tokens_details.reasoning_tokens`).
 
 ---
 
@@ -105,16 +113,21 @@ Todas as métricas reaproveitam a tabela existente `assistant_daily_metrics` (`m
 | `PROVIDER_GEMINI_SUCCESS` / `PROVIDER_GROK_SUCCESS` | Interações respondidas com sucesso por cada provedor. |
 | `PROVIDER_FALLBACK_TO_GROK` | Quantidade de interações atendidas via contingência Grok. |
 | `PROVIDER_SAFETY_REFUSALS` | Recusas de segurança (sem acionar fallback). |
-| `PROVIDER_GEMINI_INPUT_TOKENS` / `PROVIDER_GEMINI_OUTPUT_TOKENS` | Tokens de entrada e saída contabilizados no Gemini. |
-| `PROVIDER_GROK_INPUT_TOKENS` / `PROVIDER_GROK_OUTPUT_TOKENS` | Tokens de entrada e saída contabilizados no Grok. |
+| `PROVIDER_GEMINI_INPUT_TOKENS` / `PROVIDER_GEMINI_OUTPUT_TOKENS` | Tokens de entrada e saída contabilizados no Gemini (somente quando `usageKnown=true`). |
+| `PROVIDER_GROK_INPUT_TOKENS` / `PROVIDER_GROK_OUTPUT_TOKENS` / `PROVIDER_GROK_REASONING_TOKENS` | Tokens de entrada, saída e raciocínio (`reasoning_tokens`, quando informados) contabilizados no Grok. |
+| `PROVIDER_GEMINI_USAGE_UNKNOWN` / `PROVIDER_GROK_USAGE_UNKNOWN` | Tentativas efetivamente executadas em que o provedor não retornou metadados de uso (ex.: HTTP 503, timeout ou falha de rede). |
 | `PROVIDER_GEMINI_COST_MICRO_USD` / `PROVIDER_GROK_COST_MICRO_USD` | Custo estimado em micro-USD (`10^-6 USD`) usando exclusivamente a tarifa do respectivo provedor. |
-| `PROVIDER_GEMINI_COST_UNAVAILABLE` / `PROVIDER_GROK_COST_UNAVAILABLE` / `ESTIMATED_COST_UNAVAILABLE` | Marcadores registrados quando falta tarifa configurada ou metadados confiáveis de tokens. |
+| `PROVIDER_GEMINI_COST_UNAVAILABLE` / `PROVIDER_GROK_COST_UNAVAILABLE` / `ESTIMATED_COST_UNAVAILABLE` | Marcadores registrados quando a tentativa executada não trouxe metadados de uso (`usageKnown=false`) ou quando falta tarifa configurada para o provedor. |
 | `INPUT_TOKENS` / `OUTPUT_TOKENS` / `ESTIMATED_COST_MICRO_USD` | Totais agregados diários do restaurante. |
 
-**Regras de cálculo:**
-1. Cada tentativa em `AiProviderResponse.attempts()` (ou `AiProviderException.getAttemptUsages()`, incluindo tokens consumidos antes de um JSON malformado ou recusa) é contabilizada separadamente no seu provedor.
-2. Em um fallback onde o Gemini consumiu tokens antes de falhar e o Grok respondeu, **ambos** os consumos são somados usando a tarifa individual de cada provedor.
-3. **Nunca** se substitui uma tarifa ausente pela tarifa de outro provedor e **nunca** se grava custo `0` quando a tarifa não está configurada ou não há metadados de tokens: os contadores de tokens disponíveis são preservados e `*_COST_UNAVAILABLE` é incrementado.
+**Regras de cálculo e limites conhecidos de observabilidade:**
+1. O domínio distingue explicitamente **três estados** para cada provedor:
+   - **Tentativa executada com uso conhecido (`attemptExecuted=true, usageKnown=true`):** contabiliza tokens reais (inclusive se o consumo informado pelo provedor for `0`) e calcula custo com a tarifa do respectivo provedor.
+   - **Tentativa executada sem metadados de uso (`attemptExecuted=true, usageKnown=false`):** preservada em `AiProviderResponse.attempts()` e `AiProviderException.getAttemptUsages()` (ex.: Gemini retornou HTTP 503 ou timeout e o Grok respondeu em fallback). Incrementa `PROVIDER_<ID>_USAGE_UNKNOWN`, `PROVIDER_<ID>_COST_UNAVAILABLE` e `ESTIMATED_COST_UNAVAILABLE`, **sem inventar tokens** e **sem mascarar como custo zero**.
+   - **Tentativa não executada (`attemptExecuted=false`):** quando o provedor estava desabilitado, com circuit breaker `OPEN` ou com deadline já expirado antes da chamada HTTP, não é adicionada como tentativa executada nem polui `USAGE_UNKNOWN`/`COST_UNAVAILABLE`.
+2. Em um fallback onde o Gemini falhou após ser chamado e o Grok respondeu, **ambas** as tentativas executadas são preservadas e contabilizadas isoladamente no seu provedor (com uso conhecido ou marcado como desconhecido/indisponível).
+3. **Nunca** se substitui uma tarifa ausente pela tarifa de outro provedor.
+4. **Limitação conhecida:** quando um provedor falha sem devolver `usage` (ex.: erro de transporte, timeout ou HTTP 5xx), o backend não consegue determinar o custo exato faturado no fornecedor; por isso a tentativa fica explicitamente sinalizada em `PROVIDER_*_USAGE_UNKNOWN` e `*_COST_UNAVAILABLE` para conciliação com o billing oficial do fornecedor.
 
 ---
 
@@ -183,6 +196,7 @@ As tarifas **não são presumidas como permanentes** e vêm configuradas como `-
 | Grok | `GROK_DATA_PROCESSING_APPROVED` | `false` | Trava de aprovação de termos da xAI. |
 | Grok | `GROK_API_KEY` | *(vazio)* | Secret exclusivo do backend. |
 | Grok | `GROK_MODEL` | `grok-4.3` | Modelo Grok configurável. |
+| Grok | `GROK_REASONING_EFFORT` | `none` | Esforço de raciocínio explícito enviado à Responses API (`none` padrão ou `low`; outros valores falham no startup). |
 | Grok | `GROK_BASE_URL` | `https://api.x.ai` | Endpoint base oficial configurável da xAI. |
 | Grok | `GROK_TIMEOUT_MS` | `8000` | Timeout individual do Grok (limitado ao deadline global). |
 | Grok | `GROK_MAX_OUTPUT_TOKENS` | `500` | Limite de saída em tokens. |

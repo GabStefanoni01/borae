@@ -56,7 +56,7 @@ class GastronomicAssistantServiceTest {
         lenient().when(grokProvider.isAvailable()).thenReturn(true);
 
         orchestrator = new AiProviderOrchestrator(
-                geminiProvider, grokProvider, AiProviderConfiguration.defaults(), System::currentTimeMillis
+                geminiProvider, grokProvider, AiProviderConfiguration.defaults(), System::nanoTime
         );
         service = new GastronomicAssistantService(
                 publicMenuService, sessionService, quotaService, metricsService, orchestrator,

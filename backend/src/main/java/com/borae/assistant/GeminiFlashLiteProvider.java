@@ -26,7 +26,7 @@ import java.util.UUID;
  * Adaptador stateless do Google Gemini Flash-Lite (Provedor Principal — Prioridade 1)
  * sobre o endpoint REST oficial {@code POST /v1beta/models/{model}:generateContent}.
  *
- * <p>Respeita o {@link AiRequestDeadline} global limitando cada requisição HTTP ao menor valor
+ * <p>Respeita o {@link AiRequestDeadline} monotônico global limitando cada requisição HTTP ao menor valor
  * entre seu timeout individual e o orçamento restante, com cancelamento real do stream HTTP
  * via {@link DeadlineAwareClientHttpRequestFactory}.</p>
  */
@@ -154,13 +154,13 @@ public class GeminiFlashLiteProvider implements AiProvider {
     @Override
     public AiProviderResponse recommend(AiProviderRequest request) {
         if (!isAvailable()) {
-            throw new AiProviderException(AiProviderId.GEMINI, FailureType.SERVICE_UNAVAILABLE,
+            throw AiProviderException.skipped(AiProviderId.GEMINI, FailureType.SERVICE_UNAVAILABLE,
                     "Provedor Gemini desabilitado ou não configurado.");
         }
 
         long effectiveTimeoutMs = resolveEffectiveTimeoutMs(request.deadline());
         if (effectiveTimeoutMs <= 0L) {
-            throw new AiProviderException(AiProviderId.GEMINI, FailureType.TIMEOUT,
+            throw AiProviderException.skipped(AiProviderId.GEMINI, FailureType.TIMEOUT,
                     "Orçamento global de tempo expirado antes de consultar o provedor Gemini.");
         }
 
@@ -194,14 +194,15 @@ public class GeminiFlashLiteProvider implements AiProvider {
                             .body(JsonNode.class)
             );
 
-            long[] tokens = extractTokenUsage(response);
-            checkSafetyRefusal(response, tokens[0], tokens[1]);
+            UsageInfo usage = extractTokenUsage(response);
+            checkSafetyRefusal(response, usage);
             String output = extractOutputText(response);
             if (output == null || output.isBlank()) {
                 throw new AiProviderException(AiProviderId.GEMINI, FailureType.MALFORMED_RESPONSE, null,
-                        "Resposta vazia do provedor Gemini.", tokens[0], tokens[1], List.of());
+                        "Resposta vazia do provedor Gemini.",
+                        usage.known(), usage.inputTokens(), usage.outputTokens(), 0L, List.of());
             }
-            return parseNormalizedResponse(output, tokens[0], tokens[1]);
+            return parseNormalizedResponse(output, usage);
         } catch (AiProviderException exception) {
             throw exception;
         } catch (RestClientResponseException exception) {
@@ -242,13 +243,13 @@ public class GeminiFlashLiteProvider implements AiProvider {
         }
     }
 
-    private void checkSafetyRefusal(JsonNode response, long inputTokens, long outputTokens) {
+    private void checkSafetyRefusal(JsonNode response, UsageInfo usage) {
         if (response == null) return;
         String blockReason = response.path("promptFeedback").path("blockReason").asText("");
         if (!blockReason.isBlank() && !"BLOCK_REASON_UNSPECIFIED".equalsIgnoreCase(blockReason)) {
             throw new AiProviderException(AiProviderId.GEMINI, FailureType.SAFETY_REFUSAL, null,
                     "Solicitação recusada pela política de segurança do provedor Gemini.",
-                    inputTokens, outputTokens, List.of());
+                    usage.known(), usage.inputTokens(), usage.outputTokens(), 0L, List.of());
         }
         JsonNode candidates = response.path("candidates");
         if (candidates.isArray() && !candidates.isEmpty()) {
@@ -256,7 +257,7 @@ public class GeminiFlashLiteProvider implements AiProvider {
             if (SAFETY_FINISH_REASONS.contains(finishReason.toUpperCase())) {
                 throw new AiProviderException(AiProviderId.GEMINI, FailureType.SAFETY_REFUSAL, null,
                         "Resposta bloqueada pela política de segurança do provedor Gemini.",
-                        inputTokens, outputTokens, List.of());
+                        usage.known(), usage.inputTokens(), usage.outputTokens(), 0L, List.of());
             }
         }
     }
@@ -347,30 +348,32 @@ public class GeminiFlashLiteProvider implements AiProvider {
         return null;
     }
 
-    private long[] extractTokenUsage(JsonNode response) {
-        long inputTokens = 0L;
-        long outputTokens = 0L;
-        if (response == null) return new long[]{0L, 0L};
+    private UsageInfo extractTokenUsage(JsonNode response) {
+        if (response == null) return UsageInfo.UNKNOWN;
 
         JsonNode usageMetadata = response.path("usageMetadata");
-        if (!usageMetadata.isMissingNode()) {
-            inputTokens = Math.max(0L, usageMetadata.path("promptTokenCount").asLong(0L));
-            outputTokens = Math.max(0L, usageMetadata.path("candidatesTokenCount").asLong(0L));
-        } else if (!response.path("usage").isMissingNode()) {
-            JsonNode usage = response.path("usage");
-            inputTokens = Math.max(0L, usage.path("total_input_tokens").asLong(0L));
-            outputTokens = Math.max(0L, usage.path("total_output_tokens").asLong(0L));
+        if (usageMetadata.isObject() && (usageMetadata.has("promptTokenCount") || usageMetadata.has("candidatesTokenCount"))) {
+            long input = Math.max(0L, usageMetadata.path("promptTokenCount").asLong(0L));
+            long output = Math.max(0L, usageMetadata.path("candidatesTokenCount").asLong(0L));
+            return new UsageInfo(true, input, output);
         }
-        return new long[]{inputTokens, outputTokens};
+        JsonNode usage = response.path("usage");
+        if (usage.isObject() && (usage.has("total_input_tokens") || usage.has("total_output_tokens"))) {
+            long input = Math.max(0L, usage.path("total_input_tokens").asLong(0L));
+            long output = Math.max(0L, usage.path("total_output_tokens").asLong(0L));
+            return new UsageInfo(true, input, output);
+        }
+        return UsageInfo.UNKNOWN;
     }
 
-    private AiProviderResponse parseNormalizedResponse(String rawOutput, long inputTokens, long outputTokens) {
+    private AiProviderResponse parseNormalizedResponse(String rawOutput, UsageInfo usage) {
         try {
             String cleaned = stripCodeFences(rawOutput);
             JsonNode root = objectMapper.readTree(cleaned);
             if (!root.isObject() || !root.has("answer") || !root.path("recommendations").isArray()) {
                 throw new AiProviderException(AiProviderId.GEMINI, FailureType.MALFORMED_RESPONSE, null,
-                        "Resposta do Gemini fora do contrato JSON esperado.", inputTokens, outputTokens, List.of());
+                        "Resposta do Gemini fora do contrato JSON esperado.",
+                        usage.known(), usage.inputTokens(), usage.outputTokens(), 0L, List.of());
             }
             String answer = root.path("answer").asText("");
             List<AiProviderResponse.RecommendationCandidate> recommendations = new ArrayList<>();
@@ -384,12 +387,16 @@ public class GeminiFlashLiteProvider implements AiProvider {
                     // IDs inválidos são descartados; o serviço valida pertencimento ao catálogo.
                 }
             }
-            return AiProviderResponse.of(AiProviderId.GEMINI, answer, recommendations, inputTokens, outputTokens);
+            return AiProviderResponse.of(
+                    AiProviderId.GEMINI, answer, recommendations,
+                    usage.known(), usage.inputTokens(), usage.outputTokens(), 0L
+            );
         } catch (AiProviderException exception) {
             throw exception;
         } catch (Exception exception) {
             throw new AiProviderException(AiProviderId.GEMINI, FailureType.MALFORMED_RESPONSE, null,
-                    "JSON malformado retornado pelo provedor Gemini.", inputTokens, outputTokens, List.of());
+                    "JSON malformado retornado pelo provedor Gemini.",
+                    usage.known(), usage.inputTokens(), usage.outputTokens(), 0L, List.of());
         }
     }
 
@@ -405,6 +412,10 @@ public class GeminiFlashLiteProvider implements AiProvider {
             }
         }
         return trimmed.trim();
+    }
+
+    private record UsageInfo(boolean known, long inputTokens, long outputTokens) {
+        static final UsageInfo UNKNOWN = new UsageInfo(false, 0L, 0L);
     }
 
     public record ModelAnswer(String answer, List<ModelRecommendation> recommendations,

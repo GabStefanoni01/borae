@@ -6,8 +6,10 @@ import java.util.UUID;
 
 /**
  * Estrutura normalizada de saída devolvida por qualquer adaptador de IA ao orquestrador.
- * Inclui o detalhamento de consumo por tentativa ({@link AttemptUsage}) para cálculo fiel
- * de tokens e custos estimados por provedor mesmo quando ocorre fallback.
+ *
+ * <p>Preserva todas as tentativas efetivamente executadas ({@link AttemptUsage}), distinguindo
+ * explicitamente entre uso conhecido ({@code usageKnown=true}, inclusive quando o consumo real
+ * for 0 tokens) e metadados ausentes ({@code usageKnown=false}).</p>
  */
 public record AiProviderResponse(
         AiProviderId provider,
@@ -27,7 +29,7 @@ public record AiProviderResponse(
         if (attempts == null || attempts.isEmpty()) {
             attempts = provider == null
                     ? List.of()
-                    : List.of(new AttemptUsage(provider, inputTokens, outputTokens));
+                    : List.of(AttemptUsage.known(provider, inputTokens, outputTokens));
         } else {
             attempts = List.copyOf(attempts);
         }
@@ -40,8 +42,25 @@ public record AiProviderResponse(
             long inputTokens,
             long outputTokens
     ) {
-        long safeIn = Math.max(0L, inputTokens);
-        long safeOut = Math.max(0L, outputTokens);
+        return of(provider, answer, recommendations, true, inputTokens, outputTokens, 0L);
+    }
+
+    public static AiProviderResponse of(
+            AiProviderId provider,
+            String answer,
+            List<RecommendationCandidate> recommendations,
+            boolean usageKnown,
+            long inputTokens,
+            long outputTokens,
+            long reasoningTokens
+    ) {
+        long safeIn = usageKnown ? Math.max(0L, inputTokens) : 0L;
+        long safeOut = usageKnown ? Math.max(0L, outputTokens) : 0L;
+        AttemptUsage attempt = provider == null
+                ? null
+                : (usageKnown
+                        ? AttemptUsage.known(provider, safeIn, safeOut, reasoningTokens)
+                        : AttemptUsage.unknown(provider));
         return new AiProviderResponse(
                 provider,
                 answer,
@@ -50,18 +69,14 @@ public record AiProviderResponse(
                 safeOut,
                 false,
                 null,
-                provider == null ? List.of() : List.of(new AttemptUsage(provider, safeIn, safeOut))
+                attempt == null ? List.of() : List.of(attempt)
         );
     }
 
     public AiProviderResponse asFallbackFor(AiProviderFailure primaryFailure) {
         List<AttemptUsage> combined = new ArrayList<>();
-        if (primaryFailure != null && primaryFailure.hasTokenUsage()) {
-            combined.add(new AttemptUsage(
-                    primaryFailure.provider(),
-                    primaryFailure.inputTokens(),
-                    primaryFailure.outputTokens()
-            ));
+        if (primaryFailure != null && primaryFailure.attemptExecuted()) {
+            combined.add(primaryFailure.toAttemptUsage());
         }
         combined.addAll(attempts);
         return new AiProviderResponse(
@@ -78,14 +93,37 @@ public record AiProviderResponse(
 
     public record RecommendationCandidate(UUID productId, String reason) {}
 
-    public record AttemptUsage(AiProviderId provider, long inputTokens, long outputTokens) {
+    public record AttemptUsage(
+            AiProviderId provider,
+            boolean usageKnown,
+            long inputTokens,
+            long outputTokens,
+            long reasoningTokens
+    ) {
         public AttemptUsage {
-            inputTokens = Math.max(0L, inputTokens);
-            outputTokens = Math.max(0L, outputTokens);
+            inputTokens = usageKnown ? Math.max(0L, inputTokens) : 0L;
+            outputTokens = usageKnown ? Math.max(0L, outputTokens) : 0L;
+            reasoningTokens = usageKnown ? Math.max(0L, reasoningTokens) : 0L;
+        }
+
+        public AttemptUsage(AiProviderId provider, long inputTokens, long outputTokens) {
+            this(provider, true, inputTokens, outputTokens, 0L);
+        }
+
+        public static AttemptUsage known(AiProviderId provider, long inputTokens, long outputTokens) {
+            return new AttemptUsage(provider, true, inputTokens, outputTokens, 0L);
+        }
+
+        public static AttemptUsage known(AiProviderId provider, long inputTokens, long outputTokens, long reasoningTokens) {
+            return new AttemptUsage(provider, true, inputTokens, outputTokens, reasoningTokens);
+        }
+
+        public static AttemptUsage unknown(AiProviderId provider) {
+            return new AttemptUsage(provider, false, 0L, 0L, 0L);
         }
 
         public boolean hasTokens() {
-            return inputTokens > 0L || outputTokens > 0L;
+            return usageKnown && (inputTokens > 0L || outputTokens > 0L || reasoningTokens > 0L);
         }
     }
 }

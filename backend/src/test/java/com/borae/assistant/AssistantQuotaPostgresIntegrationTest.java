@@ -283,6 +283,54 @@ class AssistantQuotaPostgresIntegrationTest {
     }
 
     @Test
+    void recordsUnknownUsageAsCostUnavailableWithoutInventingTokensAndDistinguishesKnownZeroUsage() {
+        // 1. Gemini falhou (ex.: 503/timeout) sem metadados de uso + Grok respondeu com tokens + reasoning_tokens
+        metricsService.recordInteractionOutcome(
+                RESTAURANT_ID, 310, false, false, java.util.List.of(PRODUCT_ID),
+                java.util.List.of(
+                        AiProviderResponse.AttemptUsage.unknown(AiProviderId.GEMINI),
+                        AiProviderResponse.AttemptUsage.known(AiProviderId.GROK, 200, 40, 15)
+                )
+        );
+
+        assertEquals(1, metric("PROVIDER_GEMINI_USAGE_UNKNOWN"));
+        assertEquals(1, metric("PROVIDER_GEMINI_COST_UNAVAILABLE"));
+        assertEquals(1, metric("ESTIMATED_COST_UNAVAILABLE"));
+        assertEquals(0, metric("PROVIDER_GEMINI_INPUT_TOKENS"));
+        assertEquals(0, metric("PROVIDER_GEMINI_OUTPUT_TOKENS"));
+        assertEquals(0, metric("PROVIDER_GEMINI_COST_MICRO_USD"));
+        assertEquals(200, metric("PROVIDER_GROK_INPUT_TOKENS"));
+        assertEquals(40, metric("PROVIDER_GROK_OUTPUT_TOKENS"));
+        assertEquals(15, metric("PROVIDER_GROK_REASONING_TOKENS"));
+        assertEquals(350, metric("PROVIDER_GROK_COST_MICRO_USD"));
+
+        // 2. Ambos falham sem metadados de uso -> ambos registram USAGE_UNKNOWN e COST_UNAVAILABLE
+        metricsService.recordInteractionOutcome(
+                RESTAURANT_ID, 420, true, false, java.util.List.of(),
+                java.util.List.of(
+                        AiProviderResponse.AttemptUsage.unknown(AiProviderId.GEMINI),
+                        AiProviderResponse.AttemptUsage.unknown(AiProviderId.GROK)
+                )
+        );
+
+        assertEquals(2, metric("PROVIDER_GEMINI_USAGE_UNKNOWN"));
+        assertEquals(1, metric("PROVIDER_GROK_USAGE_UNKNOWN"));
+        assertEquals(2, metric("PROVIDER_GEMINI_COST_UNAVAILABLE"));
+        assertEquals(1, metric("PROVIDER_GROK_COST_UNAVAILABLE"));
+        assertEquals(3, metric("ESTIMATED_COST_UNAVAILABLE"));
+
+        // 3. Consumo conhecido igual a zero (usageKnown=true, 0, 0) com tarifa configurada NÃO incrementa USAGE_UNKNOWN nem COST_UNAVAILABLE
+        metricsService.recordInteractionOutcome(
+                RESTAURANT_ID, 90, false, false, java.util.List.of(),
+                java.util.List.of(AiProviderResponse.AttemptUsage.known(AiProviderId.GEMINI, 0, 0))
+        );
+
+        assertEquals(2, metric("PROVIDER_GEMINI_USAGE_UNKNOWN"));
+        assertEquals(2, metric("PROVIDER_GEMINI_COST_UNAVAILABLE"));
+        assertEquals(3, metric("ESTIMATED_COST_UNAVAILABLE"));
+    }
+
+    @Test
     void purgesAggregatedMetricsOlderThanRetentionWindowOnNextWrite() {
         jdbc.update("""
                 INSERT INTO assistant_daily_metrics (metric_date, restaurant_id, metric_key, metric_value)
@@ -301,14 +349,14 @@ class AssistantQuotaPostgresIntegrationTest {
     }
 
     private long metric(String key) {
-        Long value = jdbc.queryForObject("""
+        var values = jdbc.query("""
                 SELECT metric_value
                 FROM assistant_daily_metrics
                 WHERE metric_date = (CURRENT_TIMESTAMP AT TIME ZONE 'America/Sao_Paulo')::date
                   AND restaurant_id = ?
                   AND metric_key = ?
-                """, Long.class, RESTAURANT_ID, key);
-        return value == null ? 0 : value;
+                """, (rs, row) -> rs.getLong(1), RESTAURANT_ID, key);
+        return values.isEmpty() ? 0L : values.getFirst();
     }
 
     private int consumed(String scopeType, String scopeKey) {

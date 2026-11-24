@@ -15,12 +15,8 @@ import java.util.function.LongSupplier;
  *
  * <p>Aplica rigorosamente a prioridade determinística:
  * <strong>Prioridade 1 — Gemini → Prioridade 2 — Grok (xAI)</strong>, compartilhando
- * um {@link AiRequestDeadline} absoluto por solicitação para que o timeout HTTP efetivo
- * de cada provedor jamais ultrapasse o orçamento global ({@code AI_TOTAL_TIMEOUT_MS}).</p>
- *
- * <p>Recusas de segurança ({@link FailureType#SAFETY_REFUSAL}), solicitações inválidas
- * ({@link FailureType#INVALID_USER_REQUEST}) e (por padrão) erros de autenticação/configuração
- * ({@link FailureType#AUTH_OR_CONFIG_ERROR}) não acionam fallback para o Grok.</p>
+ * um {@link AiRequestDeadline} monotônico ({@link System#nanoTime()}) por solicitação e
+ * preservando todas as tentativas efetivamente realizadas no histórico de uso.</p>
  */
 @Service
 public class AiProviderOrchestrator {
@@ -32,7 +28,7 @@ public class AiProviderOrchestrator {
     private final AiProviderConfiguration configuration;
     private final AiProviderCircuitBreaker primaryBreaker;
     private final AiProviderCircuitBreaker fallbackBreaker;
-    private final LongSupplier clock;
+    private final LongSupplier nanoClock;
 
     @Autowired
     public AiProviderOrchestrator(
@@ -40,14 +36,14 @@ public class AiProviderOrchestrator {
             GrokAiProvider grokProvider,
             AiProviderConfiguration configuration
     ) {
-        this(geminiProvider, grokProvider, configuration, System::currentTimeMillis);
+        this(geminiProvider, grokProvider, configuration, System::nanoTime);
     }
 
     AiProviderOrchestrator(
             AiProvider primaryProvider,
             AiProvider fallbackProvider,
             AiProviderConfiguration configuration,
-            LongSupplier clock
+            LongSupplier nanoClock
     ) {
         if (primaryProvider == null || (primaryProvider.id() != null && primaryProvider.id() != AiProviderId.GEMINI)) {
             throw new IllegalArgumentException("O provedor principal do orquestrador deve ser o Gemini.");
@@ -55,18 +51,18 @@ public class AiProviderOrchestrator {
         this.primaryProvider = primaryProvider;
         this.fallbackProvider = fallbackProvider;
         this.configuration = configuration == null ? AiProviderConfiguration.defaults() : configuration;
-        this.clock = clock == null ? System::currentTimeMillis : clock;
+        this.nanoClock = nanoClock == null ? System::nanoTime : nanoClock;
         this.primaryBreaker = new AiProviderCircuitBreaker(
                 AiProviderId.GEMINI,
                 this.configuration.circuitBreakerFailureThreshold(),
                 this.configuration.circuitBreakerOpenDurationMs(),
-                this.clock
+                this.nanoClock
         );
         this.fallbackBreaker = new AiProviderCircuitBreaker(
                 AiProviderId.GROK,
                 this.configuration.circuitBreakerFailureThreshold(),
                 this.configuration.circuitBreakerOpenDurationMs(),
-                this.clock
+                this.nanoClock
         );
     }
 
@@ -97,30 +93,30 @@ public class AiProviderOrchestrator {
     }
 
     /**
-     * Executa a recomendação respeitando estritamente a ordem Gemini → Grok e o deadline global.
+     * Executa a recomendação respeitando estritamente a ordem Gemini → Grok e o deadline monotônico global.
      */
     public AiProviderResponse recommend(AiProviderRequest request) {
         AiRequestDeadline deadline = request.deadline() != null
                 ? request.deadline()
-                : AiRequestDeadline.start(configuration.totalTimeoutMs(), configuration.minFallbackBudgetMs(), clock);
+                : AiRequestDeadline.start(configuration.totalTimeoutMs(), configuration.minFallbackBudgetMs(), nanoClock);
 
         if (deadline.isExpired()) {
-            throw new AiProviderException(AiProviderId.GEMINI, FailureType.TIMEOUT,
+            throw AiProviderException.skipped(AiProviderId.GEMINI, FailureType.TIMEOUT,
                     "Orçamento global de tempo expirado antes da chamada de IA.");
         }
 
         AiProviderRequest scopedRequest = request.withDeadline(deadline);
-        AiProviderFailure primaryFailure = null;
+        AiProviderFailure primaryFailure;
 
         // Prioridade 1 — Gemini sempre precede o Grok
         if (!primaryProvider.isAvailable()) {
-            primaryFailure = new AiProviderFailure(
-                    AiProviderId.GEMINI, FailureType.SERVICE_UNAVAILABLE, null,
+            primaryFailure = AiProviderFailure.skipped(
+                    AiProviderId.GEMINI, FailureType.SERVICE_UNAVAILABLE,
                     "Provedor principal Gemini indisponível ou desabilitado."
             );
         } else if (!primaryBreaker.allowRequest()) {
-            primaryFailure = new AiProviderFailure(
-                    AiProviderId.GEMINI, FailureType.SERVICE_UNAVAILABLE, null,
+            primaryFailure = AiProviderFailure.skipped(
+                    AiProviderId.GEMINI, FailureType.SERVICE_UNAVAILABLE,
                     "Circuit breaker do provedor principal Gemini aberto."
             );
             LOG.warn("AI provider {} skipped: circuit breaker OPEN", AiProviderId.GEMINI.key());
@@ -142,7 +138,7 @@ public class AiProviderOrchestrator {
 
         // Prioridade 2 — Grok (no máximo 1 tentativa de contingência limitada ao orçamento restante)
         if (!canAttemptFallback(primaryFailure, deadline)) {
-            throw toException(primaryFailure);
+            throw new AiProviderException(primaryFailure, List.of());
         }
 
         LOG.info("AI fallback triggered: primary={} reason={} -> secondary={} remainingBudgetMs={}",
@@ -191,17 +187,5 @@ public class AiProviderOrchestrator {
             LOG.warn("AI provider failure: provider={} type={} httpStatus={}",
                     failure.provider().key(), failure.type().name(), failure.httpStatus());
         }
-    }
-
-    private static AiProviderException toException(AiProviderFailure failure) {
-        return new AiProviderException(
-                failure.provider(),
-                failure.type(),
-                failure.httpStatus(),
-                failure.safeDetail(),
-                failure.inputTokens(),
-                failure.outputTokens(),
-                List.of()
-        );
     }
 }

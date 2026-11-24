@@ -27,8 +27,8 @@ class AiRequestDeadlineAndCancellationTest {
 
     @Test
     void capsProviderTimeoutToRemainingGlobalBudgetAndRespectsSmallerIndividualTimeout() {
-        AtomicLong clock = new AtomicLong(10_000L);
-        AiRequestDeadline deadline = AiRequestDeadline.start(15_000L, 500L, clock::get);
+        AtomicLong nanoClock = new AtomicLong(TimeUnit.MILLISECONDS.toNanos(10_000L));
+        AiRequestDeadline deadline = AiRequestDeadline.start(15_000L, 500L, nanoClock::get);
 
         // Timeout individual menor que o global restante -> respeita o individual
         assertEquals(8_000L, deadline.timeoutForProvider(8_000L));
@@ -36,28 +36,66 @@ class AiRequestDeadlineAndCancellationTest {
         assertFalse(deadline.isExpired());
 
         // Simula Gemini consumindo 12.000 ms -> restam apenas 3.000 ms para o Grok (mesmo com timeout individual de 8.000 ms)
-        clock.addAndGet(12_000L);
+        nanoClock.addAndGet(TimeUnit.MILLISECONDS.toNanos(12_000L));
         assertEquals(3_000L, deadline.remainingMillis());
         assertEquals(3_000L, deadline.timeoutForProvider(8_000L));
         assertTrue(deadline.hasOperationalBudget());
 
         // Restam 300 ms (< mínimo operacional de 500 ms) -> não permite fallback
-        clock.addAndGet(2_700L);
+        nanoClock.addAndGet(TimeUnit.MILLISECONDS.toNanos(2_700L));
         assertEquals(300L, deadline.remainingMillis());
         assertFalse(deadline.hasOperationalBudget());
         assertFalse(deadline.isExpired());
 
         // Deadline expirado -> timeout efetivo = 0
-        clock.addAndGet(300L);
+        nanoClock.addAndGet(TimeUnit.MILLISECONDS.toNanos(300L));
         assertTrue(deadline.isExpired());
+        assertEquals(0L, deadline.remainingMillis());
         assertEquals(0L, deadline.timeoutForProvider(8_000L));
     }
 
     @Test
+    void monotonicDeadlineHandlesLargeBudgetAndNanoTimeWrapAroundWithoutOverflowOrNegativeValues() {
+        // 1. Wrap-around do contador monotônico de 64 bits (de perto de Long.MAX_VALUE para negativo)
+        long nearMax = Long.MAX_VALUE - TimeUnit.MILLISECONDS.toNanos(500L);
+        AtomicLong wrappingClock = new AtomicLong(nearMax);
+        AiRequestDeadline deadline = AiRequestDeadline.start(5_000L, 500L, wrappingClock::get);
+
+        // Avança 1.000 ms cruzando Long.MAX_VALUE -> valor negativo no relógio
+        wrappingClock.set(nearMax + TimeUnit.MILLISECONDS.toNanos(1_000L));
+        assertTrue(wrappingClock.get() < 0L);
+        assertEquals(1_000L, deadline.elapsedMillis());
+        assertEquals(4_000L, deadline.remainingMillis());
+        assertTrue(deadline.hasOperationalBudget());
+        assertFalse(deadline.isExpired());
+
+        // Avança mais 4.500 ms -> expirado, mas remainingMillis nunca fica negativo
+        wrappingClock.set(nearMax + TimeUnit.MILLISECONDS.toNanos(5_500L));
+        assertTrue(deadline.isExpired());
+        assertEquals(0L, deadline.remainingMillis());
+        assertEquals(0L, deadline.remainingNanos());
+        assertEquals(0L, deadline.timeoutForProvider(8_000L));
+
+        // 2. Orçamento extremamente grande não gera overflow na conversão ms -> ns
+        AtomicLong largeBudgetClock = new AtomicLong(1_000L);
+        AiRequestDeadline largeDeadline = AiRequestDeadline.start(Long.MAX_VALUE, 500L, largeBudgetClock::get);
+        assertFalse(largeDeadline.isExpired());
+        assertTrue(largeDeadline.remainingMillis() > 0L);
+        assertEquals(8_000L, largeDeadline.timeoutForProvider(8_000L));
+
+        // 3. Relógio sintético andando para trás não gera elapsed negativo nem aumenta orçamento
+        AtomicLong regressiveClock = new AtomicLong(5_000_000_000L);
+        AiRequestDeadline safeDeadline = AiRequestDeadline.start(2_000L, 500L, regressiveClock::get);
+        regressiveClock.addAndGet(-TimeUnit.MILLISECONDS.toNanos(500L));
+        assertEquals(0L, safeDeadline.elapsedMillis());
+        assertEquals(2_000L, safeDeadline.remainingMillis());
+    }
+
+    @Test
     void expiredDeadlinePreventsHttpExecutionInBothAdapters() {
-        AtomicLong clock = new AtomicLong(1_000L);
-        AiRequestDeadline expired = AiRequestDeadline.start(1_000L, 500L, clock::get);
-        clock.addAndGet(1_500L);
+        AtomicLong nanoClock = new AtomicLong(TimeUnit.MILLISECONDS.toNanos(1_000L));
+        AiRequestDeadline expired = AiRequestDeadline.start(1_000L, 500L, nanoClock::get);
+        nanoClock.addAndGet(TimeUnit.MILLISECONDS.toNanos(1_500L));
 
         GeminiFlashLiteProvider gemini = new GeminiFlashLiteProvider(
                 RestClient.builder(), "http://127.0.0.1:1", objectMapper,
@@ -65,16 +103,20 @@ class AiRequestDeadlineAndCancellationTest {
         );
         GrokAiProvider grok = new GrokAiProvider(
                 RestClient.builder(), "http://127.0.0.1:1", objectMapper,
-                "test-key", "grok-4.3", true, true, 8_000L, 500
+                "test-key", "grok-4.3", "none", true, true, 8_000L, 500
         );
 
         AiProviderRequest req = AiProviderRequest.forCatalog("Quero massa", "{}", 500).withDeadline(expired);
 
         AiProviderException geminiEx = assertThrows(AiProviderException.class, () -> gemini.recommend(req));
         assertEquals(FailureType.TIMEOUT, geminiEx.getFailure().type());
+        assertFalse(geminiEx.getFailure().attemptExecuted());
+        assertTrue(geminiEx.getAttemptUsages().isEmpty());
 
         AiProviderException grokEx = assertThrows(AiProviderException.class, () -> grok.recommend(req));
         assertEquals(FailureType.TIMEOUT, grokEx.getFailure().type());
+        assertFalse(grokEx.getFailure().attemptExecuted());
+        assertTrue(grokEx.getAttemptUsages().isEmpty());
     }
 
     @Test
@@ -83,7 +125,7 @@ class AiRequestDeadlineAndCancellationTest {
         AtomicInteger grokCalls = new AtomicInteger(0);
         HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         try {
-            // Gemini responde 503 rapidamente (~20ms)
+            // Gemini responde 503 rapidamente (~20ms) sem metadados de uso
             server.createContext("/v1beta/models/gemini-2.5-flash-lite:generateContent", exchange -> {
                 byte[] body = "{\"error\":\"unavailable\"}".getBytes(StandardCharsets.UTF_8);
                 exchange.sendResponseHeaders(503, body.length);
@@ -120,7 +162,7 @@ class AiRequestDeadlineAndCancellationTest {
             );
             AiProviderOrchestrator orchestrator = new AiProviderOrchestrator(gemini, grok, config);
 
-            AiRequestDeadline tightDeadline = AiRequestDeadline.start(900L, 100L, System::currentTimeMillis);
+            AiRequestDeadline tightDeadline = AiRequestDeadline.start(900L, 100L, System::nanoTime);
             AiProviderRequest request = AiProviderRequest.forCatalog("Sugestão?", "{}", 500)
                     .withDeadline(tightDeadline);
 
@@ -132,6 +174,12 @@ class AiRequestDeadlineAndCancellationTest {
             assertEquals(AiProviderId.GROK, exception.getFailure().provider());
             assertEquals(FailureType.TIMEOUT, exception.getFailure().type());
             assertEquals(1, grokCalls.get());
+            // Ambas as tentativas executadas (Gemini 503 + Grok timeout) são preservadas com usageKnown=false
+            assertEquals(2, exception.getAttemptUsages().size());
+            assertEquals(AiProviderId.GEMINI, exception.getAttemptUsages().get(0).provider());
+            assertFalse(exception.getAttemptUsages().get(0).usageKnown());
+            assertEquals(AiProviderId.GROK, exception.getAttemptUsages().get(1).provider());
+            assertFalse(exception.getAttemptUsages().get(1).usageKnown());
             // Prova que o timeout efetivo do Grok foi limitado ao deadline global (~900ms) e NÃO aos 8.000ms individuais
             assertTrue(elapsedMs < 3_500L, "Esperado cancelamento próximo ao deadline de 900ms, mas levou " + elapsedMs + "ms");
         } finally {

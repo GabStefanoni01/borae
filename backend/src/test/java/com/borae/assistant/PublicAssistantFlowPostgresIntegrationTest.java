@@ -291,14 +291,29 @@ class PublicAssistantFlowPostgresIntegrationTest {
                 "SELECT metric_value FROM assistant_daily_metrics WHERE restaurant_id = ? AND metric_key = 'PROVIDER_GROK_INPUT_TOKENS'",
                 Long.class, restaurantId
         );
-        Long costUnavailable = jdbcTemplate.queryForObject(
+        Long grokCostUnavailable = jdbcTemplate.queryForObject(
                 "SELECT metric_value FROM assistant_daily_metrics WHERE restaurant_id = ? AND metric_key = 'PROVIDER_GROK_COST_UNAVAILABLE'",
+                Long.class, restaurantId
+        );
+        Long geminiUsageUnknown = jdbcTemplate.queryForObject(
+                "SELECT metric_value FROM assistant_daily_metrics WHERE restaurant_id = ? AND metric_key = 'PROVIDER_GEMINI_USAGE_UNKNOWN'",
+                Long.class, restaurantId
+        );
+        Long geminiCostUnavailable = jdbcTemplate.queryForObject(
+                "SELECT metric_value FROM assistant_daily_metrics WHERE restaurant_id = ? AND metric_key = 'PROVIDER_GEMINI_COST_UNAVAILABLE'",
+                Long.class, restaurantId
+        );
+        Long totalCostUnavailable = jdbcTemplate.queryForObject(
+                "SELECT metric_value FROM assistant_daily_metrics WHERE restaurant_id = ? AND metric_key = 'ESTIMATED_COST_UNAVAILABLE'",
                 Long.class, restaurantId
         );
         assertEquals(1L, grokSuccess);
         assertEquals(1L, fallbackCount);
         assertEquals(200L, grokInputTokens);
-        assertEquals(1L, costUnavailable);
+        assertEquals(1L, grokCostUnavailable);
+        assertEquals(1L, geminiUsageUnknown);
+        assertEquals(1L, geminiCostUnavailable);
+        assertEquals(2L, totalCostUnavailable);
     }
 
     @Test

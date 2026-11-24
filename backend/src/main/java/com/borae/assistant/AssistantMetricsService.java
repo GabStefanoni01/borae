@@ -15,10 +15,10 @@ import java.util.UUID;
  * Métricas agregadas e privacidade (D-11) do Assistente Gastronômico.
  *
  * <p>Contabiliza tokens e estimativa de custo estritamente por provedor usando a tabela
- * existente {@code assistant_daily_metrics}. Quando a tarifa de um provedor não está
- * configurada (valor negativo) ou não há metadados confiáveis de tokens, os contadores
- * disponíveis são preservados e a estimativa é marcada como indisponível
- * ({@code ESTIMATED_COST_UNAVAILABLE}), nunca substituindo pela tarifa de outro provedor.</p>
+ * existente {@code assistant_daily_metrics}. Diferencia explicitamente uso desconhecido
+ * ({@code usageKnown=false}) de consumo real de zero tokens ({@code usageKnown=true, 0/0}):
+ * tentativas realizadas sem metadados registram {@code PROVIDER_*_USAGE_UNKNOWN} e
+ * {@code ESTIMATED_COST_UNAVAILABLE} sem inventar tokens nem gravar custo zero fictício.</p>
  */
 @Service
 public class AssistantMetricsService {
@@ -61,14 +61,14 @@ public class AssistantMetricsService {
             long outputTokens
     ) {
         List<AiProviderResponse.AttemptUsage> attempts = (inputTokens > 0 || outputTokens > 0)
-                ? List.of(new AiProviderResponse.AttemptUsage(AiProviderId.GEMINI, inputTokens, outputTokens))
+                ? List.of(AiProviderResponse.AttemptUsage.known(AiProviderId.GEMINI, inputTokens, outputTokens))
                 : List.of();
         recordInteractionOutcome(restaurantId, latencyMillis, fallback, noResult, recommendedProductIds, attempts);
     }
 
     /**
      * Registra desfecho da interação com detalhamento fiel de tokens e custo estimado
-     * por tentativa/provedor (inclusive quando houve fallback Gemini → Grok).
+     * por tentativa efetivamente realizada (inclusive tentativas falhas sem metadados de uso).
      */
     @Transactional
     public void recordInteractionOutcome(
@@ -107,8 +107,17 @@ public class AssistantMetricsService {
             return;
         }
         String prefix = providerMetricPrefix(attempt.provider());
+
+        if (!attempt.usageKnown()) {
+            incrementMetric(today, restaurantId, prefix + "_USAGE_UNKNOWN", 1);
+            incrementMetric(today, restaurantId, prefix + "_COST_UNAVAILABLE", 1);
+            incrementMetric(today, restaurantId, "ESTIMATED_COST_UNAVAILABLE", 1);
+            return;
+        }
+
         long inputTokens = attempt.inputTokens();
         long outputTokens = attempt.outputTokens();
+        long reasoningTokens = attempt.reasoningTokens();
 
         if (inputTokens > 0) {
             incrementMetric(today, restaurantId, "INPUT_TOKENS", inputTokens);
@@ -118,11 +127,14 @@ public class AssistantMetricsService {
             incrementMetric(today, restaurantId, "OUTPUT_TOKENS", outputTokens);
             incrementMetric(today, restaurantId, prefix + "_OUTPUT_TOKENS", outputTokens);
         }
+        if (reasoningTokens > 0) {
+            incrementMetric(today, restaurantId, prefix + "_REASONING_TOKENS", reasoningTokens);
+        }
 
         double inputPrice = inputPriceFor(attempt.provider());
         double outputPrice = outputPriceFor(attempt.provider());
 
-        if (!attempt.hasTokens() || inputPrice < 0.0 || outputPrice < 0.0) {
+        if (inputPrice < 0.0 || outputPrice < 0.0) {
             incrementMetric(today, restaurantId, "ESTIMATED_COST_UNAVAILABLE", 1);
             incrementMetric(today, restaurantId, prefix + "_COST_UNAVAILABLE", 1);
             return;

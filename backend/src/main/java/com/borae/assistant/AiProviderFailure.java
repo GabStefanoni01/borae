@@ -1,31 +1,53 @@
 package com.borae.assistant;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Classificação normalizada de falhas de provedores de IA.
- * Carrega também eventuais tokens consumidos antes da falha (ex.: resposta malformada ou recusa)
- * para contabilização fiel por provedor sem perder metadados de uso.
+ *
+ * <p>Diferencia explicitamente:
+ * <ul>
+ *   <li>Tentativa efetivamente realizada com uso conhecido ({@code attemptExecuted=true, usageKnown=true})</li>
+ *   <li>Tentativa efetivamente realizada sem metadados de uso ({@code attemptExecuted=true, usageKnown=false})</li>
+ *   <li>Tentativa não executada (ex.: provider desabilitado, circuit aberto ou deadline expirado antes da chamada:
+ *       {@code attemptExecuted=false})</li>
+ * </ul></p>
  */
 public record AiProviderFailure(
         AiProviderId provider,
         FailureType type,
         Integer httpStatus,
         String safeDetail,
+        boolean attemptExecuted,
+        boolean usageKnown,
         long inputTokens,
-        long outputTokens
+        long outputTokens,
+        long reasoningTokens
 ) {
     public AiProviderFailure {
-        inputTokens = Math.max(0L, inputTokens);
-        outputTokens = Math.max(0L, outputTokens);
+        usageKnown = attemptExecuted && usageKnown;
+        inputTokens = usageKnown ? Math.max(0L, inputTokens) : 0L;
+        outputTokens = usageKnown ? Math.max(0L, outputTokens) : 0L;
+        reasoningTokens = usageKnown ? Math.max(0L, reasoningTokens) : 0L;
     }
 
     public AiProviderFailure(AiProviderId provider, FailureType type, Integer httpStatus, String safeDetail) {
-        this(provider, type, httpStatus, safeDetail, 0L, 0L);
+        this(provider, type, httpStatus, safeDetail, true, false, 0L, 0L, 0L);
+    }
+
+    public static AiProviderFailure skipped(AiProviderId provider, FailureType type, String safeDetail) {
+        return new AiProviderFailure(provider, type, null, safeDetail, false, false, 0L, 0L, 0L);
     }
 
     public boolean hasTokenUsage() {
-        return inputTokens > 0L || outputTokens > 0L;
+        return usageKnown && (inputTokens > 0L || outputTokens > 0L || reasoningTokens > 0L);
+    }
+
+    public AiProviderResponse.AttemptUsage toAttemptUsage() {
+        return usageKnown
+                ? AiProviderResponse.AttemptUsage.known(provider, inputTokens, outputTokens, reasoningTokens)
+                : AiProviderResponse.AttemptUsage.unknown(provider);
     }
 
     public enum FailureType {
@@ -70,29 +92,44 @@ public record AiProviderFailure(
         private final AiProviderFailure failure;
         private final List<AiProviderResponse.AttemptUsage> attemptUsages;
 
-        public AiProviderException(AiProviderId provider, FailureType type, Integer httpStatus,
-                                   String safeDetail, long inputTokens, long outputTokens,
-                                   List<AiProviderResponse.AttemptUsage> priorUsages) {
-            super(safeDetail != null && !safeDetail.isBlank()
-                    ? safeDetail
-                    : "Falha no provedor de IA (" + provider.key() + "): " + type.name());
-            this.failure = new AiProviderFailure(provider, type, httpStatus, getMessage(), inputTokens, outputTokens);
-            java.util.ArrayList<AiProviderResponse.AttemptUsage> usages = new java.util.ArrayList<>();
+        public AiProviderException(AiProviderFailure failure, List<AiProviderResponse.AttemptUsage> priorUsages) {
+            super(failure.safeDetail() != null && !failure.safeDetail().isBlank()
+                    ? failure.safeDetail()
+                    : "Falha no provedor de IA (" + failure.provider().key() + "): " + failure.type().name());
+            this.failure = failure;
+            List<AiProviderResponse.AttemptUsage> usages = new ArrayList<>();
             if (priorUsages != null) {
                 usages.addAll(priorUsages);
             }
-            if (this.failure.hasTokenUsage()) {
-                usages.add(new AiProviderResponse.AttemptUsage(provider, this.failure.inputTokens(), this.failure.outputTokens()));
+            if (failure.attemptExecuted()) {
+                usages.add(failure.toAttemptUsage());
             }
             this.attemptUsages = List.copyOf(usages);
         }
 
+        public AiProviderException(AiProviderId provider, FailureType type, Integer httpStatus,
+                                   String safeDetail, boolean usageKnown, long inputTokens, long outputTokens,
+                                   long reasoningTokens, List<AiProviderResponse.AttemptUsage> priorUsages) {
+            this(new AiProviderFailure(provider, type, httpStatus, safeDetail, true,
+                    usageKnown, inputTokens, outputTokens, reasoningTokens), priorUsages);
+        }
+
+        public AiProviderException(AiProviderId provider, FailureType type, Integer httpStatus,
+                                   String safeDetail, long inputTokens, long outputTokens,
+                                   List<AiProviderResponse.AttemptUsage> priorUsages) {
+            this(provider, type, httpStatus, safeDetail, true, inputTokens, outputTokens, 0L, priorUsages);
+        }
+
         public AiProviderException(AiProviderId provider, FailureType type, Integer httpStatus, String safeDetail) {
-            this(provider, type, httpStatus, safeDetail, 0L, 0L, List.of());
+            this(new AiProviderFailure(provider, type, httpStatus, safeDetail, true, false, 0L, 0L, 0L), List.of());
         }
 
         public AiProviderException(AiProviderId provider, FailureType type, String safeDetail) {
-            this(provider, type, null, safeDetail, 0L, 0L, List.of());
+            this(provider, type, null, safeDetail);
+        }
+
+        public static AiProviderException skipped(AiProviderId provider, FailureType type, String safeDetail) {
+            return new AiProviderException(AiProviderFailure.skipped(provider, type, safeDetail), List.of());
         }
 
         public AiProviderFailure getFailure() {
@@ -104,17 +141,12 @@ public record AiProviderFailure(
         }
 
         public AiProviderException withPriorAttemptUsage(AiProviderFailure priorFailure) {
-            if (priorFailure == null || !priorFailure.hasTokenUsage()) {
+            if (priorFailure == null || !priorFailure.attemptExecuted()) {
                 return this;
             }
-            java.util.ArrayList<AiProviderResponse.AttemptUsage> combined = new java.util.ArrayList<>();
-            combined.add(new AiProviderResponse.AttemptUsage(
-                    priorFailure.provider(), priorFailure.inputTokens(), priorFailure.outputTokens()
-            ));
-            return new AiProviderException(
-                    failure.provider(), failure.type(), failure.httpStatus(), failure.safeDetail(),
-                    failure.inputTokens(), failure.outputTokens(), combined
-            );
+            List<AiProviderResponse.AttemptUsage> prior = new ArrayList<>();
+            prior.add(priorFailure.toAttemptUsage());
+            return new AiProviderException(failure, prior);
         }
     }
 }
