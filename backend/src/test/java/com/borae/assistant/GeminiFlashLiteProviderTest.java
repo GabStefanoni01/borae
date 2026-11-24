@@ -1,12 +1,17 @@
 package com.borae.assistant;
 
+import com.borae.assistant.AiProviderFailure.AiProviderException;
+import com.borae.assistant.AiProviderFailure.FailureType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
@@ -52,13 +57,13 @@ class GeminiFlashLiteProviderTest {
         String modelJson = """
                 {"answer":"Recomendo o risoto leve de limão.","recommendations":[{"productId":"11111111-1111-1111-1111-111111111111","reason":"Prato leve com limão siciliano."}]}
                 """;
-        String geminiPayload = objectMapper.writeValueAsString(java.util.Map.of(
-                "candidates", java.util.List.of(java.util.Map.of(
-                        "content", java.util.Map.of(
-                                "parts", java.util.List.of(java.util.Map.of("text", modelJson))
+        String geminiPayload = objectMapper.writeValueAsString(Map.of(
+                "candidates", List.of(Map.of(
+                        "content", Map.of(
+                                "parts", List.of(Map.of("text", modelJson))
                         )
                 )),
-                "usageMetadata", java.util.Map.of(
+                "usageMetadata", Map.of(
                         "promptTokenCount", 312,
                         "candidatesTokenCount", 74
                 )
@@ -96,10 +101,10 @@ class GeminiFlashLiteProviderTest {
         );
 
         String fenced = "```json\n{\"answer\":\"Boa escolha!\",\"recommendations\":[]}\n```";
-        String geminiPayload = objectMapper.writeValueAsString(java.util.Map.of(
-                "candidates", java.util.List.of(java.util.Map.of(
-                        "content", java.util.Map.of(
-                                "parts", java.util.List.of(java.util.Map.of("text", fenced))
+        String geminiPayload = objectMapper.writeValueAsString(Map.of(
+                "candidates", List.of(Map.of(
+                        "content", Map.of(
+                                "parts", List.of(Map.of("text", fenced))
                         )
                 ))
         ));
@@ -113,20 +118,46 @@ class GeminiFlashLiteProviderTest {
     }
 
     @Test
-    void throwsUnavailableOnInvalidJsonOrUpstreamError() {
-        RestClient.Builder builder = RestClient.builder();
-        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
-
-        GeminiFlashLiteProvider provider = new GeminiFlashLiteProvider(
-                builder, "https://generativelanguage.googleapis.com", objectMapper,
+    void classifiesSafetyRefusalRateLimitHttp5xxAndAuthErrorsCleanly() throws Exception {
+        RestClient.Builder builderSafety = RestClient.builder();
+        MockRestServiceServer serverSafety = MockRestServiceServer.bindTo(builderSafety).build();
+        GeminiFlashLiteProvider providerSafety = new GeminiFlashLiteProvider(
+                builderSafety, "https://generativelanguage.googleapis.com", objectMapper,
                 TEST_API_KEY, "gemini-2.5-flash-lite", true, true, 500
         );
+        String safetyPayload = objectMapper.writeValueAsString(Map.of(
+                "candidates", List.of(Map.of("finishReason", "SAFETY"))
+        ));
+        serverSafety.expect(requestTo("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent"))
+                .andRespond(withSuccess(safetyPayload, MediaType.APPLICATION_JSON));
+        AiProviderException safetyEx = assertThrows(AiProviderException.class,
+                () -> providerSafety.recommend(AiProviderRequest.forCatalog("pedido proibido", "{}", 500)));
+        assertEquals(FailureType.SAFETY_REFUSAL, safetyEx.getFailure().type());
+        assertFalse(safetyEx.getMessage().contains(TEST_API_KEY));
 
-        server.expect(requestTo("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent"))
+        RestClient.Builder builder429 = RestClient.builder();
+        MockRestServiceServer server429 = MockRestServiceServer.bindTo(builder429).build();
+        GeminiFlashLiteProvider provider429 = new GeminiFlashLiteProvider(
+                builder429, "https://generativelanguage.googleapis.com", objectMapper,
+                TEST_API_KEY, "gemini-2.5-flash-lite", true, true, 500
+        );
+        server429.expect(requestTo("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent"))
+                .andRespond(withStatus(HttpStatus.TOO_MANY_REQUESTS));
+        AiProviderException err429 = assertThrows(AiProviderException.class,
+                () -> provider429.recommend(AiProviderRequest.forCatalog("Quero massa", "{}", 500)));
+        assertEquals(FailureType.RATE_LIMITED, err429.getFailure().type());
+
+        RestClient.Builder builder5xx = RestClient.builder();
+        MockRestServiceServer server5xx = MockRestServiceServer.bindTo(builder5xx).build();
+        GeminiFlashLiteProvider provider5xx = new GeminiFlashLiteProvider(
+                builder5xx, "https://generativelanguage.googleapis.com", objectMapper,
+                TEST_API_KEY, "gemini-2.5-flash-lite", true, true, 500
+        );
+        server5xx.expect(requestTo("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent"))
                 .andRespond(withServerError());
-
-        assertThrows(GeminiFlashLiteProvider.AssistantProviderUnavailableException.class,
-                () -> provider.recommend("Quero massa", "{}"));
+        AiProviderException err5xx = assertThrows(AiProviderException.class,
+                () -> provider5xx.recommend(AiProviderRequest.forCatalog("Quero massa", "{}", 500)));
+        assertEquals(FailureType.HTTP_5XX, err5xx.getFailure().type());
     }
 
     @Test
@@ -139,10 +170,10 @@ class GeminiFlashLiteProviderTest {
                 TEST_API_KEY, "gemini-2.5-flash-lite", true, true, 500
         );
 
-        String geminiPayload = objectMapper.writeValueAsString(java.util.Map.of(
-                "candidates", java.util.List.of(java.util.Map.of(
-                        "content", java.util.Map.of(
-                                "parts", java.util.List.of(java.util.Map.of("text", "não é json"))
+        String geminiPayload = objectMapper.writeValueAsString(Map.of(
+                "candidates", List.of(Map.of(
+                        "content", Map.of(
+                                "parts", List.of(Map.of("text", "não é json"))
                         )
                 ))
         ));
@@ -150,7 +181,8 @@ class GeminiFlashLiteProviderTest {
         server.expect(requestTo("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent"))
                 .andRespond(withSuccess(geminiPayload, MediaType.APPLICATION_JSON));
 
-        assertThrows(GeminiFlashLiteProvider.AssistantProviderUnavailableException.class,
-                () -> provider.recommend("Quero massa", "{}"));
+        AiProviderException ex = assertThrows(AiProviderException.class,
+                () -> provider.recommend(AiProviderRequest.forCatalog("Quero massa", "{}", 500)));
+        assertEquals(FailureType.MALFORMED_RESPONSE, ex.getFailure().type());
     }
 }

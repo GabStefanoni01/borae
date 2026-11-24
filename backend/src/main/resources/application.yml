@@ -74,16 +74,35 @@ app:
       cookie-same-site: ${ASSISTANT_SESSION_COOKIE_SAME_SITE:Lax}
     rate-limit:
       secret: ${ASSISTANT_RATE_LIMIT_SECRET:${app.assistant.session.secret:}}
+    ai:
+      primary-provider: ${AI_PRIMARY_PROVIDER:gemini}
+      fallback-provider: ${AI_FALLBACK_PROVIDER:grok}
+      fallback-enabled: ${AI_FALLBACK_ENABLED:true}
+      fallback-on-auth-or-config-error: ${AI_FALLBACK_ON_AUTH_OR_CONFIG_ERROR:true}
+      total-timeout-ms: ${AI_TOTAL_TIMEOUT_MS:15000}
+      circuit-breaker:
+        failure-threshold: ${AI_CIRCUIT_BREAKER_FAILURE_THRESHOLD:3}
+        open-duration-ms: ${AI_CIRCUIT_BREAKER_OPEN_DURATION_MS:30000}
     gemini:
       enabled: ${GEMINI_ENABLED:false}
       # Habilite somente após validar o tier/termos de processamento de dados do Google AI em produção.
       data-processing-approved: ${GEMINI_DATA_PROCESSING_APPROVED:false}
       api-key: ${GEMINI_API_KEY:}
       model: ${GEMINI_MODEL:gemini-2.5-flash-lite}
+      timeout-ms: ${GEMINI_TIMEOUT_MS:0}
       timeout-seconds: ${GEMINI_TIMEOUT_SECONDS:12}
       max-output-tokens: ${GEMINI_MAX_OUTPUT_TOKENS:500}
       input-price-per-million-usd: ${GEMINI_INPUT_PRICE_PER_MILLION_USD:0.10}
       output-price-per-million-usd: ${GEMINI_OUTPUT_PRICE_PER_MILLION_USD:0.40}
+    grok:
+      enabled: ${GROK_ENABLED:false}
+      # Provedor secundário de contingência (Prioridade 2). Habilite apenas após homologação futura e aprovação de termos da xAI.
+      data-processing-approved: ${GROK_DATA_PROCESSING_APPROVED:false}
+      api-key: ${GROK_API_KEY:}
+      base-url: ${GROK_BASE_URL:https://api.x.ai}
+      model: ${GROK_MODEL:grok-3-mini}
+      timeout-ms: ${GROK_TIMEOUT_MS:8000}
+      max-output-tokens: ${GROK_MAX_OUTPUT_TOKENS:500}
   storage:
     imagekit:
       private-key: ${IMAGEKIT_PRIVATE_KEY:}

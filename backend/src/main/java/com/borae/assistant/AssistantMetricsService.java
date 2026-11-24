@@ -72,6 +72,27 @@ public class AssistantMetricsService {
     }
 
     @Transactional
+    public void recordProviderSuccess(UUID restaurantId, AiProviderId providerId, boolean usedFallback) {
+        LocalDate today = LocalDate.now(AssistantQuotaService.BUSINESS_ZONE);
+        purgeExpired(today);
+        if (providerId == AiProviderId.GEMINI) {
+            incrementMetric(today, restaurantId, "PROVIDER_GEMINI_SUCCESS", 1);
+        } else if (providerId == AiProviderId.GROK) {
+            incrementMetric(today, restaurantId, "PROVIDER_GROK_SUCCESS", 1);
+        }
+        if (usedFallback) {
+            incrementMetric(today, restaurantId, "PROVIDER_FALLBACK_TO_GROK", 1);
+        }
+    }
+
+    @Transactional
+    public void recordSafetyRefusal(UUID restaurantId) {
+        LocalDate today = LocalDate.now(AssistantQuotaService.BUSINESS_ZONE);
+        purgeExpired(today);
+        incrementMetric(today, restaurantId, "PROVIDER_SAFETY_REFUSALS", 1);
+    }
+
+    @Transactional
     public void recordProductClick(UUID restaurantId, UUID productId) {
         LocalDate today = LocalDate.now(AssistantQuotaService.BUSINESS_ZONE);
         purgeExpired(today);
