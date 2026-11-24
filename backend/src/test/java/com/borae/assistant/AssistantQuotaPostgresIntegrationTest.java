@@ -65,6 +65,10 @@ class AssistantQuotaPostgresIntegrationTest {
         registry.add("spring.flyway.enabled", () -> true);
         registry.add("app.assistant.rate-limit.secret", () -> "test-rate-limit-secret-with-enough-entropy");
         registry.add("security.trusted-proxies", () -> "");
+        registry.add("app.assistant.gemini.input-price-per-million-usd", () -> "0.10");
+        registry.add("app.assistant.gemini.output-price-per-million-usd", () -> "0.40");
+        registry.add("app.assistant.grok.input-price-per-million-usd", () -> "1.25");
+        registry.add("app.assistant.grok.output-price-per-million-usd", () -> "2.50");
     }
 
     @Autowired
@@ -241,6 +245,92 @@ class AssistantQuotaPostgresIntegrationTest {
     }
 
     @Test
+    void calculatesSeparatePerProviderCostsAcrossMultiAttemptFallbackAndMarksUnconfiguredTariffsUnavailable() {
+        // Multi-tentativa: Gemini consumiu (150, 20) -> 150*0.10 + 20*0.40 = 23 micro-USD
+        //                  Grok respondeu (200, 40) -> 200*1.25 + 40*2.50 = 350 micro-USD
+        metricsService.recordInteractionOutcome(
+                RESTAURANT_ID, 250, false, false, java.util.List.of(PRODUCT_ID),
+                java.util.List.of(
+                        new AiProviderResponse.AttemptUsage(AiProviderId.GEMINI, 150, 20),
+                        new AiProviderResponse.AttemptUsage(AiProviderId.GROK, 200, 40)
+                )
+        );
+
+        assertEquals(150, metric("PROVIDER_GEMINI_INPUT_TOKENS"));
+        assertEquals(20, metric("PROVIDER_GEMINI_OUTPUT_TOKENS"));
+        assertEquals(23, metric("PROVIDER_GEMINI_COST_MICRO_USD"));
+        assertEquals(200, metric("PROVIDER_GROK_INPUT_TOKENS"));
+        assertEquals(40, metric("PROVIDER_GROK_OUTPUT_TOKENS"));
+        assertEquals(350, metric("PROVIDER_GROK_COST_MICRO_USD"));
+        assertEquals(350, metric("INPUT_TOKENS"));
+        assertEquals(60, metric("OUTPUT_TOKENS"));
+        assertEquals(373, metric("ESTIMATED_COST_MICRO_USD"));
+
+        // Quando Grok não tem tarifa configurada (-1), NÃO usa tarifa do Gemini e marca indisponível
+        AssistantMetricsService grokUnpricedService = new AssistantMetricsService(
+                jdbc, 0.10, 0.40, -1.0, -1.0
+        );
+        grokUnpricedService.recordInteractionOutcome(
+                RESTAURANT_ID, 120, false, false, java.util.List.of(),
+                java.util.List.of(new AiProviderResponse.AttemptUsage(AiProviderId.GROK, 300, 50))
+        );
+
+        assertEquals(500, metric("PROVIDER_GROK_INPUT_TOKENS"));
+        assertEquals(90, metric("PROVIDER_GROK_OUTPUT_TOKENS"));
+        assertEquals(350, metric("PROVIDER_GROK_COST_MICRO_USD")); // inalterado: não substituiu pela tarifa do Gemini!
+        assertEquals(1, metric("PROVIDER_GROK_COST_UNAVAILABLE"));
+        assertEquals(1, metric("ESTIMATED_COST_UNAVAILABLE"));
+    }
+
+    @Test
+    void recordsUnknownUsageAsCostUnavailableWithoutInventingTokensAndDistinguishesKnownZeroUsage() {
+        // 1. Gemini falhou (ex.: 503/timeout) sem metadados de uso + Grok respondeu com tokens + reasoning_tokens
+        metricsService.recordInteractionOutcome(
+                RESTAURANT_ID, 310, false, false, java.util.List.of(PRODUCT_ID),
+                java.util.List.of(
+                        AiProviderResponse.AttemptUsage.unknown(AiProviderId.GEMINI),
+                        AiProviderResponse.AttemptUsage.known(AiProviderId.GROK, 200, 40, 15)
+                )
+        );
+
+        assertEquals(1, metric("PROVIDER_GEMINI_USAGE_UNKNOWN"));
+        assertEquals(1, metric("PROVIDER_GEMINI_COST_UNAVAILABLE"));
+        assertEquals(1, metric("ESTIMATED_COST_UNAVAILABLE"));
+        assertEquals(0, metric("PROVIDER_GEMINI_INPUT_TOKENS"));
+        assertEquals(0, metric("PROVIDER_GEMINI_OUTPUT_TOKENS"));
+        assertEquals(0, metric("PROVIDER_GEMINI_COST_MICRO_USD"));
+        assertEquals(200, metric("PROVIDER_GROK_INPUT_TOKENS"));
+        assertEquals(40, metric("PROVIDER_GROK_OUTPUT_TOKENS"));
+        assertEquals(15, metric("PROVIDER_GROK_REASONING_TOKENS"));
+        assertEquals(350, metric("PROVIDER_GROK_COST_MICRO_USD"));
+
+        // 2. Ambos falham sem metadados de uso -> ambos registram USAGE_UNKNOWN e COST_UNAVAILABLE
+        metricsService.recordInteractionOutcome(
+                RESTAURANT_ID, 420, true, false, java.util.List.of(),
+                java.util.List.of(
+                        AiProviderResponse.AttemptUsage.unknown(AiProviderId.GEMINI),
+                        AiProviderResponse.AttemptUsage.unknown(AiProviderId.GROK)
+                )
+        );
+
+        assertEquals(2, metric("PROVIDER_GEMINI_USAGE_UNKNOWN"));
+        assertEquals(1, metric("PROVIDER_GROK_USAGE_UNKNOWN"));
+        assertEquals(2, metric("PROVIDER_GEMINI_COST_UNAVAILABLE"));
+        assertEquals(1, metric("PROVIDER_GROK_COST_UNAVAILABLE"));
+        assertEquals(3, metric("ESTIMATED_COST_UNAVAILABLE"));
+
+        // 3. Consumo conhecido igual a zero (usageKnown=true, 0, 0) com tarifa configurada NÃO incrementa USAGE_UNKNOWN nem COST_UNAVAILABLE
+        metricsService.recordInteractionOutcome(
+                RESTAURANT_ID, 90, false, false, java.util.List.of(),
+                java.util.List.of(AiProviderResponse.AttemptUsage.known(AiProviderId.GEMINI, 0, 0))
+        );
+
+        assertEquals(2, metric("PROVIDER_GEMINI_USAGE_UNKNOWN"));
+        assertEquals(2, metric("PROVIDER_GEMINI_COST_UNAVAILABLE"));
+        assertEquals(3, metric("ESTIMATED_COST_UNAVAILABLE"));
+    }
+
+    @Test
     void purgesAggregatedMetricsOlderThanRetentionWindowOnNextWrite() {
         jdbc.update("""
                 INSERT INTO assistant_daily_metrics (metric_date, restaurant_id, metric_key, metric_value)
@@ -259,14 +349,14 @@ class AssistantQuotaPostgresIntegrationTest {
     }
 
     private long metric(String key) {
-        Long value = jdbc.queryForObject("""
+        var values = jdbc.query("""
                 SELECT metric_value
                 FROM assistant_daily_metrics
                 WHERE metric_date = (CURRENT_TIMESTAMP AT TIME ZONE 'America/Sao_Paulo')::date
                   AND restaurant_id = ?
                   AND metric_key = ?
-                """, Long.class, RESTAURANT_ID, key);
-        return value == null ? 0 : value;
+                """, (rs, row) -> rs.getLong(1), RESTAURANT_ID, key);
+        return values.isEmpty() ? 0L : values.getFirst();
     }
 
     private int consumed(String scopeType, String scopeKey) {

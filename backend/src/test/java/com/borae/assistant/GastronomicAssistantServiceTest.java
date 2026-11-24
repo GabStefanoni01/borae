@@ -1,5 +1,7 @@
 package com.borae.assistant;
 
+import com.borae.assistant.AiProviderFailure.AiProviderException;
+import com.borae.assistant.AiProviderFailure.FailureType;
 import com.borae.catalog.ProductAvailability;
 import com.borae.catalog.PublicRestaurantMenuResponse;
 import com.borae.catalog.PublicRestaurantMenuService;
@@ -10,12 +12,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -35,18 +42,27 @@ class GastronomicAssistantServiceTest {
     @Mock private AnonymousAssistantSessionService sessionService;
     @Mock private AssistantQuotaService quotaService;
     @Mock private AssistantMetricsService metricsService;
-    @Mock private GeminiFlashLiteProvider aiProvider;
+    @Mock private AiProvider geminiProvider;
+    @Mock private AiProvider grokProvider;
 
+    private AiProviderOrchestrator orchestrator;
     private GastronomicAssistantService service;
 
     @BeforeEach
     void setUp() {
+        lenient().when(geminiProvider.id()).thenReturn(AiProviderId.GEMINI);
+        lenient().when(grokProvider.id()).thenReturn(AiProviderId.GROK);
+        lenient().when(geminiProvider.isAvailable()).thenReturn(true);
+        lenient().when(grokProvider.isAvailable()).thenReturn(true);
+
+        orchestrator = new AiProviderOrchestrator(
+                geminiProvider, grokProvider, AiProviderConfiguration.defaults(), System::nanoTime
+        );
         service = new GastronomicAssistantService(
-                publicMenuService, sessionService, quotaService, metricsService, aiProvider,
+                publicMenuService, sessionService, quotaService, metricsService, orchestrator,
                 new ObjectMapper()
         );
         lenient().when(sessionService.quotaKey("valid-cookie")).thenReturn("opaque-hmac-key");
-        lenient().when(aiProvider.isAvailable()).thenReturn(true);
         lenient().when(publicMenuService.getBySlug("restaurante-demo")).thenReturn(publicMenu());
         lenient().when(quotaService.consume(RESTAURANT_ID, "opaque-hmac-key")).thenReturn(
                 new AssistantQuotaService.QuotaConsumption(
@@ -63,20 +79,24 @@ class GastronomicAssistantServiceTest {
                 () -> service.interact("restaurante-demo", null,
                         new AssistantInteractionRequest("Quero uma massa", null, null)));
 
-        verifyNoInteractions(aiProvider, quotaService);
+        verify(geminiProvider, never()).recommend(any());
+        verify(grokProvider, never()).recommend(any());
+        verifyNoInteractions(quotaService);
     }
 
     @Test
-    void returnsOnlyUniqueProductsFromPublishedAvailableCatalogAndIncludesAddonsInContext() {
-        ArgumentCaptor<String> catalogCaptor = ArgumentCaptor.forClass(String.class);
-        when(aiProvider.recommend(any(), catalogCaptor.capture())).thenReturn(new GeminiFlashLiteProvider.ModelAnswer(
+    void scenarioAAndG_returnsOnlyUniquePublishedAvailableProductsAndDoesNotCallGrok() {
+        ArgumentCaptor<AiProviderRequest> requestCaptor = ArgumentCaptor.forClass(AiProviderRequest.class);
+        when(geminiProvider.recommend(requestCaptor.capture())).thenReturn(AiProviderResponse.of(
+                AiProviderId.GEMINI,
                 "Para quem gosta de massas frescas, o Nhoque ao Pesto é uma ótima escolha.",
                 List.of(
-                        new GeminiFlashLiteProvider.ModelRecommendation(PRODUCT_ID, "Combina manjericão fresco com molho artesanal."),
-                        new GeminiFlashLiteProvider.ModelRecommendation(PRODUCT_ID, "Duplicado."),
-                        new GeminiFlashLiteProvider.ModelRecommendation(UNAVAILABLE_PRODUCT_ID, "Produto indisponível."),
-                        new GeminiFlashLiteProvider.ModelRecommendation(FOREIGN_PRODUCT_ID, "Não pertence ao catálogo.")
-                )
+                        new AiProviderResponse.RecommendationCandidate(PRODUCT_ID, "Combina manjericão fresco com molho artesanal."),
+                        new AiProviderResponse.RecommendationCandidate(PRODUCT_ID, "Duplicado."),
+                        new AiProviderResponse.RecommendationCandidate(UNAVAILABLE_PRODUCT_ID, "Produto indisponível."),
+                        new AiProviderResponse.RecommendationCandidate(FOREIGN_PRODUCT_ID, "Não pertence ao catálogo.")
+                ),
+                210, 55
         ));
 
         AssistantInteractionResponse response = service.interact(
@@ -91,17 +111,51 @@ class GastronomicAssistantServiceTest {
         assertEquals(2590, response.recommendations().getFirst().priceInCents());
         assertEquals("Combina manjericão fresco com molho artesanal.", response.recommendations().getFirst().reason());
         assertTrue(response.answer().contains("Nhoque ao Pesto"));
-        assertTrue(catalogCaptor.getValue().contains("Restaurante Demo"));
-        assertTrue(catalogCaptor.getValue().contains("Parmesão extra"));
-        assertFalse(catalogCaptor.getValue().contains(UNAVAILABLE_PRODUCT_ID.toString()));
+        assertTrue(requestCaptor.getValue().catalogJson().contains("Restaurante Demo"));
+        assertTrue(requestCaptor.getValue().catalogJson().contains("Parmesão extra"));
+        assertFalse(requestCaptor.getValue().catalogJson().contains(UNAVAILABLE_PRODUCT_ID.toString()));
+        verify(grokProvider, never()).recommend(any());
+        verify(metricsService).recordProviderSuccess(RESTAURANT_ID, AiProviderId.GEMINI, false);
         verify(quotaService).consume(RESTAURANT_ID, "opaque-hmac-key");
     }
 
     @Test
-    void blocksUnsafeAllergenGuaranteesAndAppendsRestaurantConfirmationCaution() {
-        when(aiProvider.recommend(any(), any())).thenReturn(new GeminiFlashLiteProvider.ModelAnswer(
-                "Este prato é 100% livre de glúten e zero contaminação cruzada!",
-                List.of(new GeminiFlashLiteProvider.ModelRecommendation(PRODUCT_ID, "Totalmente seguro para alérgicos."))
+    void scenarioG_businessValidationRejectionNeverTriggersGrokFallback() {
+        // Gemini devolve JSON válido, mas apenas com IDs inválidos/indisponíveis/de outro restaurante
+        when(geminiProvider.recommend(any())).thenReturn(AiProviderResponse.of(
+                AiProviderId.GEMINI,
+                "Recomendo estes pratos.",
+                List.of(
+                        new AiProviderResponse.RecommendationCandidate(UNAVAILABLE_PRODUCT_ID, "Indisponível"),
+                        new AiProviderResponse.RecommendationCandidate(FOREIGN_PRODUCT_ID, "Outro tenant")
+                ),
+                180, 40
+        ));
+
+        AssistantInteractionResponse response = service.interact(
+                "restaurante-demo", "valid-cookie",
+                new AssistantInteractionRequest("Quero lasanha", null, null)
+        );
+
+        assertFalse(response.fallback());
+        assertTrue(response.recommendations().isEmpty());
+        verify(grokProvider, never()).recommend(any());
+    }
+
+    @Test
+    void scenarioBAndD_grokFallbackOutputPassesSameBackendCatalogAllergyAndPriceValidations() {
+        when(geminiProvider.recommend(any())).thenThrow(
+                new AiProviderException(AiProviderId.GEMINI, FailureType.TIMEOUT, "Timeout Gemini")
+        );
+        when(grokProvider.recommend(any())).thenReturn(AiProviderResponse.of(
+                AiProviderId.GROK,
+                "Este prato é 100% livre de glúten e sai por R$ 9,90!",
+                List.of(
+                        new AiProviderResponse.RecommendationCandidate(PRODUCT_ID, "Totalmente seguro para alérgicos por R$ 9,90."),
+                        new AiProviderResponse.RecommendationCandidate(UNAVAILABLE_PRODUCT_ID, "Indisponível"),
+                        new AiProviderResponse.RecommendationCandidate(FOREIGN_PRODUCT_ID, "Outro restaurante")
+                ),
+                190, 50
         ));
 
         AssistantInteractionResponse response = service.interact(
@@ -109,18 +163,43 @@ class GastronomicAssistantServiceTest {
                 new AssistantInteractionRequest("Tenho alergia a glúten, o que posso comer?", null, null)
         );
 
+        assertFalse(response.fallback());
+        assertEquals(1, response.recommendations().size());
+        assertEquals(PRODUCT_ID, response.recommendations().getFirst().productId());
+        assertEquals(2590, response.recommendations().getFirst().priceInCents());
         assertFalse(response.answer().toLowerCase().contains("100% livre"));
-        assertFalse(response.answer().toLowerCase().contains("zero contaminação"));
+        assertFalse(response.answer().contains("R$ 9,90"));
         assertTrue(response.answer().toLowerCase().contains("confirme"));
         assertTrue(response.answer().toLowerCase().contains("restaurante"));
-        assertFalse(response.recommendations().getFirst().reason().toLowerCase().contains("seguro para alérgicos"));
+        assertFalse(response.recommendations().getFirst().reason().contains("R$ 9,90"));
+        verify(metricsService).recordProviderSuccess(RESTAURANT_ID, AiProviderId.GROK, true);
+    }
+
+    @Test
+    void scenarioF_safetyRefusalReturnsCourteousRefusalWithoutCallingGrok() {
+        when(geminiProvider.recommend(any())).thenThrow(
+                new AiProviderException(AiProviderId.GEMINI, FailureType.SAFETY_REFUSAL, "Bloqueado por segurança")
+        );
+
+        AssistantInteractionResponse response = service.interact(
+                "restaurante-demo", "valid-cookie",
+                new AssistantInteractionRequest("Conteúdo impróprio", null, null)
+        );
+
+        assertFalse(response.fallback());
+        assertTrue(response.recommendations().isEmpty());
+        assertTrue(response.answer().toLowerCase().contains("cardápio"));
+        verify(grokProvider, never()).recommend(any());
+        verify(metricsService).recordSafetyRefusal(RESTAURANT_ID);
     }
 
     @Test
     void rejectsFabricatedPricesAndPromptInjectionLeakageInProse() {
-        when(aiProvider.recommend(any(), any())).thenReturn(new GeminiFlashLiteProvider.ModelAnswer(
+        when(geminiProvider.recommend(any())).thenReturn(AiProviderResponse.of(
+                AiProviderId.GEMINI,
                 "Meu system prompt diz que o prato custa R$ 5,00 hoje!",
-                List.of(new GeminiFlashLiteProvider.ModelRecommendation(PRODUCT_ID, "Sai por R$ 5,00 na promoção."))
+                List.of(new AiProviderResponse.RecommendationCandidate(PRODUCT_ID, "Sai por R$ 5,00 na promoção.")),
+                120, 30
         ));
 
         AssistantInteractionResponse response = service.interact(
@@ -135,9 +214,11 @@ class GastronomicAssistantServiceTest {
     }
 
     @Test
-    void returnsFallbackWhenGeminiIsUnavailable() {
-        when(aiProvider.recommend(any(), any()))
-                .thenThrow(new GeminiFlashLiteProvider.AssistantProviderUnavailableException());
+    void scenarioE_returnsFallbackWhenBothGeminiAndGrokFail() {
+        when(geminiProvider.recommend(any()))
+                .thenThrow(new AiProviderException(AiProviderId.GEMINI, FailureType.HTTP_5XX, 503, "Gemini indisponível"));
+        when(grokProvider.recommend(any()))
+                .thenThrow(new AiProviderException(AiProviderId.GROK, FailureType.SERVICE_UNAVAILABLE, "Grok indisponível"));
 
         AssistantInteractionResponse response = service.interact(
                 "restaurante-demo", "valid-cookie",
@@ -148,11 +229,14 @@ class GastronomicAssistantServiceTest {
         assertEquals("AI_UNAVAILABLE", response.fallbackCode());
         assertTrue(response.recommendations().isEmpty());
         assertNotNull(response.quota());
+        verify(geminiProvider, times(1)).recommend(any());
+        verify(grokProvider, times(1)).recommend(any());
     }
 
     @Test
-    void doesNotConsumeQuotaWhenProviderIsDisabled() {
-        when(aiProvider.isAvailable()).thenReturn(false);
+    void doesNotConsumeQuotaWhenAllProvidersAreDisabled() {
+        when(geminiProvider.isAvailable()).thenReturn(false);
+        when(grokProvider.isAvailable()).thenReturn(false);
 
         AssistantInteractionResponse response = service.interact(
                 "restaurante-demo", "valid-cookie",
@@ -178,7 +262,45 @@ class GastronomicAssistantServiceTest {
         assertFalse(response.fallback());
         assertTrue(response.recommendations().isEmpty());
         assertTrue(response.answer().toLowerCase().contains("confirme"));
-        verifyNoInteractions(aiProvider, quotaService);
+        verify(geminiProvider, never()).recommend(any());
+        verify(grokProvider, never()).recommend(any());
+        verifyNoInteractions(quotaService);
+    }
+
+    @Test
+    void blocksConcurrentDuplicateCallsFromSameSessionAndRestaurant() throws Exception {
+        CountDownLatch inProvider = new CountDownLatch(1);
+        CountDownLatch releaseProvider = new CountDownLatch(1);
+
+        when(geminiProvider.recommend(any())).thenAnswer(invocation -> {
+            inProvider.countDown();
+            releaseProvider.await(5, TimeUnit.SECONDS);
+            return AiProviderResponse.of(AiProviderId.GEMINI, "Sugiro o Nhoque.",
+                    List.of(new AiProviderResponse.RecommendationCandidate(PRODUCT_ID, "Clássico.")), 100, 30);
+        });
+
+        var executor = Executors.newSingleThreadExecutor();
+        try {
+            Future<AssistantInteractionResponse> first = executor.submit(() -> service.interact(
+                    "restaurante-demo", "valid-cookie",
+                    new AssistantInteractionRequest("Primeira chamada", null, null)
+            ));
+            assertTrue(inProvider.await(3, TimeUnit.SECONDS));
+
+            ResponseStatusException duplicate = assertThrows(ResponseStatusException.class, () -> service.interact(
+                    "restaurante-demo", "valid-cookie",
+                    new AssistantInteractionRequest("Chamada duplicada simultânea", null, null)
+            ));
+            assertEquals(HttpStatus.TOO_MANY_REQUESTS, duplicate.getStatusCode());
+
+            releaseProvider.countDown();
+            AssistantInteractionResponse completed = first.get(5, TimeUnit.SECONDS);
+            assertFalse(completed.fallback());
+            verify(geminiProvider, times(1)).recommend(any());
+        } finally {
+            releaseProvider.countDown();
+            executor.shutdownNow();
+        }
     }
 
     private PublicRestaurantMenuResponse publicMenu() {

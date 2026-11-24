@@ -1,13 +1,13 @@
 package com.borae.assistant;
 
-import com.borae.assistant.GeminiFlashLiteProvider.AssistantProviderUnavailableException;
-import com.borae.assistant.GeminiFlashLiteProvider.ModelAnswer;
-import com.borae.assistant.GeminiFlashLiteProvider.ModelRecommendation;
+import com.borae.assistant.AiProviderFailure.AiProviderException;
+import com.borae.assistant.AiProviderFailure.FailureType;
 import com.borae.catalog.ProductAvailability;
 import com.borae.catalog.PublicRestaurantMenuResponse;
 import com.borae.catalog.PublicRestaurantMenuService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -19,6 +19,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -50,7 +51,7 @@ public class GastronomicAssistantService {
     );
 
     private static final Pattern PROMPT_LEAK_PATTERN = Pattern.compile(
-            "(?i)(system\\s*prompt|instru[çc][oõ]es\\s*internas|regras\\s*do\\s*sistema|api[_\\s-]*key|x-goog-api-key|gemini_api_key)"
+            "(?i)(system\\s*prompt|instru[çc][oõ]es\\s*internas|regras\\s*do\\s*sistema|api[_\\s-]*key|x-goog-api-key|gemini_api_key|grok_api_key)"
     );
 
     private static final Pattern CONFIRM_WITH_RESTAURANT_PATTERN = Pattern.compile(
@@ -61,22 +62,24 @@ public class GastronomicAssistantService {
     private final AnonymousAssistantSessionService sessionService;
     private final AssistantQuotaService quotaService;
     private final AssistantMetricsService metricsService;
-    private final GeminiFlashLiteProvider aiProvider;
+    private final AiProviderOrchestrator aiOrchestrator;
     private final ObjectMapper objectMapper;
+    private final Set<String> inFlightKeys = ConcurrentHashMap.newKeySet();
 
+    @Autowired
     public GastronomicAssistantService(
             PublicRestaurantMenuService publicMenuService,
             AnonymousAssistantSessionService sessionService,
             AssistantQuotaService quotaService,
             AssistantMetricsService metricsService,
-            GeminiFlashLiteProvider aiProvider,
+            AiProviderOrchestrator aiOrchestrator,
             ObjectMapper objectMapper
     ) {
         this.publicMenuService = publicMenuService;
         this.sessionService = sessionService;
         this.quotaService = quotaService;
         this.metricsService = metricsService;
-        this.aiProvider = aiProvider;
+        this.aiOrchestrator = aiOrchestrator;
         this.objectMapper = objectMapper;
     }
 
@@ -89,6 +92,27 @@ public class GastronomicAssistantService {
         }
 
         PublicRestaurantMenuResponse menu = publicMenuService.getBySlug(slug);
+        String inFlightKey = quotaKey + ":" + menu.id();
+        if (!inFlightKeys.add(inFlightKey)) {
+            throw new ResponseStatusException(
+                    HttpStatus.TOO_MANY_REQUESTS,
+                    "Já existe uma consulta em andamento para esta sessão. Aguarde a resposta."
+            );
+        }
+
+        try {
+            return executeInteraction(menu, quotaKey, request, startedAt);
+        } finally {
+            inFlightKeys.remove(inFlightKey);
+        }
+    }
+
+    private AssistantInteractionResponse executeInteraction(
+            PublicRestaurantMenuResponse menu,
+            String quotaKey,
+            AssistantInteractionRequest request,
+            long startedAt
+    ) {
         List<CatalogProduct> eligible = eligibleProducts(menu, request);
         if (eligible.isEmpty()) {
             metricsService.recordInteractionOutcome(menu.id(), elapsedMillis(startedAt),
@@ -113,7 +137,7 @@ public class GastronomicAssistantService {
             );
         }
 
-        if (!aiProvider.isAvailable()) {
+        if (!aiOrchestrator.hasAnyAvailableProvider()) {
             metricsService.recordInteractionOutcome(menu.id(), elapsedMillis(startedAt),
                     true, false, List.of(), 0, 0);
             return new AssistantInteractionResponse(
@@ -122,19 +146,23 @@ public class GastronomicAssistantService {
             );
         }
 
-        // Commit quota before the provider call: provider errors still consume the attempted interaction.
+        // Consome a cota antes da chamada externa: falhas técnicas ainda contabilizam a tentativa.
         AssistantQuotaService.QuotaConsumption quota = quotaService.consume(menu.id(), quotaKey);
         AssistantInteractionResponse.Quota quotaDto = new AssistantInteractionResponse.Quota(
                 quota.remainingConsumer(), quota.remainingRestaurant(), quota.resetsAt()
         );
 
+        AiProviderRequest providerRequest = AiProviderRequest.forCatalog(
+                request.message(), catalogJson, aiOrchestrator.maxOutputTokens()
+        );
+
         try {
-            ModelAnswer modelAnswer = aiProvider.recommend(request.message(), catalogJson);
+            AiProviderResponse providerResponse = aiOrchestrator.recommend(providerRequest);
             Map<UUID, CatalogProduct> allowed = boundedCatalog.stream()
                     .collect(Collectors.toMap(CatalogProduct::productId, Function.identity()));
             List<AssistantInteractionResponse.Recommendation> recommendations = new ArrayList<>();
             Set<UUID> seen = new HashSet<>();
-            for (ModelRecommendation candidate : modelAnswer.recommendations()) {
+            for (AiProviderResponse.RecommendationCandidate candidate : providerResponse.recommendations()) {
                 CatalogProduct product = allowed.get(candidate.productId());
                 if (product == null || !seen.add(candidate.productId())) {
                     continue;
@@ -149,17 +177,30 @@ public class GastronomicAssistantService {
                 }
             }
 
-            String answer = safeAnswer(modelAnswer.answer(), recommendations, menu.name(), request);
+            String answer = safeAnswer(providerResponse.answer(), recommendations, menu.name(), request);
+            metricsService.recordProviderSuccess(
+                    menu.id(), providerResponse.provider(), providerResponse.usedFallbackProvider()
+            );
             metricsService.recordInteractionOutcome(
                     menu.id(), elapsedMillis(startedAt), false, recommendations.isEmpty(),
                     recommendations.stream().map(AssistantInteractionResponse.Recommendation::productId).toList(),
-                    modelAnswer.inputTokens(), modelAnswer.outputTokens()
+                    providerResponse.attempts()
             );
             return new AssistantInteractionResponse(answer, List.copyOf(recommendations), quotaDto, false, null);
-        } catch (AssistantProviderUnavailableException exception) {
+        } catch (AiProviderException exception) {
+            FailureType type = exception.getFailure().type();
+            if (type == FailureType.SAFETY_REFUSAL) {
+                metricsService.recordSafetyRefusal(menu.id());
+                metricsService.recordInteractionOutcome(menu.id(), elapsedMillis(startedAt),
+                        false, true, List.of(), exception.getAttemptUsages());
+                return new AssistantInteractionResponse(
+                        "Não consigo responder a esse pedido. Posso ajudar apenas com recomendações sobre os itens disponíveis neste cardápio.",
+                        List.of(), quotaDto, false, null
+                );
+            }
             metricsService.recordProviderError(menu.id());
             metricsService.recordInteractionOutcome(menu.id(), elapsedMillis(startedAt),
-                    true, false, List.of(), 0, 0);
+                    true, false, List.of(), exception.getAttemptUsages());
             return new AssistantInteractionResponse(
                     "Não consegui consultar o assistente agora. Você ainda pode explorar o cardápio normalmente.",
                     List.of(), quotaDto, true, "AI_UNAVAILABLE"

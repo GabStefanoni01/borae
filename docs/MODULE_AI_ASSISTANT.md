@@ -1,6 +1,6 @@
 # Especificação de módulo — Assistente gastronômico
 
-**Status:** integrado no backend e no frontend do cardápio público na branch `feature/gastronomic-assistant-integration` (homologação com Gemini simulado concluída; ativação em produção depende da configuração de `GEMINI_API_KEY`, `GEMINI_ENABLED=true` e `GEMINI_DATA_PROCESSING_APPROVED=true`).
+**Status:** integrado no backend e no frontend do cardápio público na `main` (PR #35) e endurecido para arquitetura multi-provider com contingência **Gemini (Prioridade 1) → Grok / xAI Responses API `store=false` com `reasoning.effort=none` e validação estrita de `status="completed"` (Prioridade 2)**, deadline global monotônico (`System.nanoTime()`), preservação de tentativas sem metadados de uso (`USAGE_UNKNOWN` / `COST_UNAVAILABLE`), métricas de custo isoladas por provedor e `AI_FALLBACK_ON_AUTH_OR_CONFIG_ERROR=false` por padrão, conforme [ai-provider-fallback.md](architecture/ai-provider-fallback.md). Ativação em produção depende de configuração humana das variáveis de ambiente e aprovação dos termos dos fornecedores.
 
 ## Provedor e arquitetura de integração — D-10
 

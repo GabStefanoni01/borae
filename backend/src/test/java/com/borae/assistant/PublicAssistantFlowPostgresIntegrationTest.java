@@ -1,16 +1,15 @@
 package com.borae.assistant;
 
+import com.borae.assistant.AiProviderFailure.AiProviderException;
+import com.borae.assistant.AiProviderFailure.FailureType;
 import com.borae.catalog.Menu;
 import com.borae.catalog.MenuCategory;
 import com.borae.catalog.MenuCategoryRepository;
 import com.borae.catalog.MenuProduct;
 import com.borae.catalog.MenuProductRepository;
 import com.borae.catalog.MenuRepository;
-import com.borae.catalog.MenuStatus;
 import com.borae.catalog.ProductAvailability;
-import com.borae.catalog.ProductLifecycleStatus;
 import com.borae.identity.Restaurant;
-import com.borae.identity.RestaurantPublicationStatus;
 import com.borae.identity.RestaurantRepository;
 import com.borae.security.RateLimitService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,16 +37,15 @@ import java.util.UUID;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * Testes de integração ponta a ponta do Assistente Gastronômico com PostgreSQL 16 (Flyway V1..V13)
- * e cadeia completa do Spring Security ({@code BoraeSecurityShieldFilter} + CORS + Controllers +
- * {@code AssistantExceptionHandler} + {@code AssistantQuotaService} + {@code AssistantIpRateLimitService}).
+ * Testes de integração ponta a ponta do Assistente Gastronômico com PostgreSQL 16 (Flyway V1..V13),
+ * cadeia completa do Spring Security e orquestração multi-provider (Prioridade 1: Gemini → Prioridade 2: Grok).
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -88,9 +86,13 @@ class PublicAssistantFlowPostgresIntegrationTest {
     @Autowired private MenuCategoryRepository categoryRepository;
     @Autowired private MenuProductRepository productRepository;
     @Autowired private RateLimitService rateLimitService;
+    @Autowired private AiProviderOrchestrator orchestrator;
 
     @MockitoBean
     private GeminiFlashLiteProvider geminiProvider;
+
+    @MockitoBean
+    private GrokAiProvider grokProvider;
 
     private String restaurantSlug;
     private UUID restaurantId;
@@ -101,6 +103,7 @@ class PublicAssistantFlowPostgresIntegrationTest {
     @BeforeEach
     void setUp() {
         rateLimitService.resetAll();
+        orchestrator.resetCircuitBreakers();
         jdbcTemplate.update("DELETE FROM assistant_daily_quota");
         jdbcTemplate.update("DELETE FROM assistant_ip_rate_limit");
         jdbcTemplate.update("DELETE FROM assistant_daily_metrics");
@@ -148,7 +151,10 @@ class PublicAssistantFlowPostgresIntegrationTest {
         ));
         foreignProductId = foreign.getId();
 
+        when(geminiProvider.id()).thenReturn(AiProviderId.GEMINI);
+        when(grokProvider.id()).thenReturn(AiProviderId.GROK);
         when(geminiProvider.isAvailable()).thenReturn(true);
+        when(grokProvider.isAvailable()).thenReturn(true);
     }
 
     @Test
@@ -184,13 +190,14 @@ class PublicAssistantFlowPostgresIntegrationTest {
                 .andExpect(header().doesNotExist(HttpHeaders.SET_COOKIE));
 
         // 5. Interaction returns only available product of this restaurant (rejects unavailable & cross-tenant)
-        when(geminiProvider.recommend(anyString(), anyString())).thenReturn(
-                new GeminiFlashLiteProvider.ModelAnswer(
+        when(geminiProvider.recommend(any(AiProviderRequest.class))).thenReturn(
+                AiProviderResponse.of(
+                        AiProviderId.GEMINI,
                         "Recomendo o Spaghetti ao Sugo para uma refeição clássica.",
                         List.of(
-                                new GeminiFlashLiteProvider.ModelRecommendation(availableProductId, "Massa com molho de tomate pelati e manjericão."),
-                                new GeminiFlashLiteProvider.ModelRecommendation(unavailableProductId, "Não deve aparecer"),
-                                new GeminiFlashLiteProvider.ModelRecommendation(foreignProductId, "Outro restaurante")
+                                new AiProviderResponse.RecommendationCandidate(availableProductId, "Massa com molho de tomate pelati e manjericão."),
+                                new AiProviderResponse.RecommendationCandidate(unavailableProductId, "Não deve aparecer"),
+                                new AiProviderResponse.RecommendationCandidate(foreignProductId, "Outro restaurante")
                         ),
                         240,
                         60
@@ -212,7 +219,9 @@ class PublicAssistantFlowPostgresIntegrationTest {
                 .andExpect(jsonPath("$.quota.remainingConsumer").value(19))
                 .andExpect(jsonPath("$.quota.remainingRestaurant").value(99));
 
-        // 6. Case-insensitive slug normalization from Session 02 works seamlessly with assistant interaction & click
+        verify(grokProvider, never()).recommend(any());
+
+        // 6. Case-insensitive slug normalization from Session 02 works seamlessly with assistant click
         mockMvc.perform(post("/api/v1/public/restaurants/{slug}/assistant/recommendations/{productId}/click",
                         restaurantSlug.toUpperCase(), availableProductId).cookie(sessionCookie))
                 .andExpect(status().isNoContent());
@@ -240,11 +249,106 @@ class PublicAssistantFlowPostgresIntegrationTest {
     }
 
     @Test
+    void fallsBackFromGeminiToGrokEndToEndWithFullCatalogValidationAndAggregateMetrics() throws Exception {
+        Cookie sessionCookie = extractSessionCookie(mockMvc.perform(post("/api/v1/public/assistant/sessions"))
+                .andExpect(status().isNoContent()).andReturn());
+
+        when(geminiProvider.recommend(any(AiProviderRequest.class))).thenThrow(
+                new AiProviderException(AiProviderId.GEMINI, FailureType.HTTP_5XX, 503, "Gemini fora do ar")
+        );
+        when(grokProvider.recommend(any(AiProviderRequest.class))).thenReturn(
+                AiProviderResponse.of(
+                        AiProviderId.GROK,
+                        "O Spaghetti ao Sugo é uma ótima escolha artesanal.",
+                        List.of(
+                                new AiProviderResponse.RecommendationCandidate(availableProductId, "Feito com tomate pelati e manjericão."),
+                                new AiProviderResponse.RecommendationCandidate(foreignProductId, "Outro restaurante")
+                        ),
+                        200,
+                        50
+                )
+        );
+
+        mockMvc.perform(post("/api/v1/public/restaurants/{slug}/assistant/interactions", restaurantSlug)
+                        .cookie(sessionCookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("message", "O que sugere de massa?"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.fallback").value(false))
+                .andExpect(jsonPath("$.recommendations", hasSize(1)))
+                .andExpect(jsonPath("$.recommendations[0].productId").value(availableProductId.toString()))
+                .andExpect(jsonPath("$.recommendations[0].priceInCents").value(4200));
+
+        Long grokSuccess = jdbcTemplate.queryForObject(
+                "SELECT metric_value FROM assistant_daily_metrics WHERE restaurant_id = ? AND metric_key = 'PROVIDER_GROK_SUCCESS'",
+                Long.class, restaurantId
+        );
+        Long fallbackCount = jdbcTemplate.queryForObject(
+                "SELECT metric_value FROM assistant_daily_metrics WHERE restaurant_id = ? AND metric_key = 'PROVIDER_FALLBACK_TO_GROK'",
+                Long.class, restaurantId
+        );
+        Long grokInputTokens = jdbcTemplate.queryForObject(
+                "SELECT metric_value FROM assistant_daily_metrics WHERE restaurant_id = ? AND metric_key = 'PROVIDER_GROK_INPUT_TOKENS'",
+                Long.class, restaurantId
+        );
+        Long grokCostUnavailable = jdbcTemplate.queryForObject(
+                "SELECT metric_value FROM assistant_daily_metrics WHERE restaurant_id = ? AND metric_key = 'PROVIDER_GROK_COST_UNAVAILABLE'",
+                Long.class, restaurantId
+        );
+        Long geminiUsageUnknown = jdbcTemplate.queryForObject(
+                "SELECT metric_value FROM assistant_daily_metrics WHERE restaurant_id = ? AND metric_key = 'PROVIDER_GEMINI_USAGE_UNKNOWN'",
+                Long.class, restaurantId
+        );
+        Long geminiCostUnavailable = jdbcTemplate.queryForObject(
+                "SELECT metric_value FROM assistant_daily_metrics WHERE restaurant_id = ? AND metric_key = 'PROVIDER_GEMINI_COST_UNAVAILABLE'",
+                Long.class, restaurantId
+        );
+        Long totalCostUnavailable = jdbcTemplate.queryForObject(
+                "SELECT metric_value FROM assistant_daily_metrics WHERE restaurant_id = ? AND metric_key = 'ESTIMATED_COST_UNAVAILABLE'",
+                Long.class, restaurantId
+        );
+        assertEquals(1L, grokSuccess);
+        assertEquals(1L, fallbackCount);
+        assertEquals(200L, grokInputTokens);
+        assertEquals(1L, grokCostUnavailable);
+        assertEquals(1L, geminiUsageUnknown);
+        assertEquals(1L, geminiCostUnavailable);
+        assertEquals(2L, totalCostUnavailable);
+    }
+
+    @Test
+    void doesNotFallbackToGrokOnGeminiAuthErrorByDefaultAndExposesNoInternalDetails() throws Exception {
+        Cookie sessionCookie = extractSessionCookie(mockMvc.perform(post("/api/v1/public/assistant/sessions"))
+                .andExpect(status().isNoContent()).andReturn());
+
+        when(geminiProvider.recommend(any(AiProviderRequest.class))).thenThrow(
+                new AiProviderException(AiProviderId.GEMINI, FailureType.AUTH_OR_CONFIG_ERROR, 401, "Erro de autenticação")
+        );
+
+        MvcResult result = mockMvc.perform(post("/api/v1/public/restaurants/{slug}/assistant/interactions", restaurantSlug)
+                        .cookie(sessionCookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("message", "O que recomenda?"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.fallback").value(true))
+                .andExpect(jsonPath("$.fallbackCode").value("AI_UNAVAILABLE"))
+                .andExpect(jsonPath("$.recommendations", hasSize(0)))
+                .andReturn();
+
+        String responseBody = result.getResponse().getContentAsString();
+        assertFalse(responseBody.toLowerCase().contains("401"));
+        assertFalse(responseBody.toLowerCase().contains("autentica"));
+        assertFalse(responseBody.toLowerCase().contains("api_key"));
+        verify(grokProvider, never()).recommend(any());
+    }
+
+    @Test
     void returnsStructured429WhenConsumerDailyQuotaIsExceededWithoutBlockingOtherSessionsOnSameIp() throws Exception {
-        when(geminiProvider.recommend(anyString(), anyString())).thenReturn(
-                new GeminiFlashLiteProvider.ModelAnswer(
+        when(geminiProvider.recommend(any(AiProviderRequest.class))).thenReturn(
+                AiProviderResponse.of(
+                        AiProviderId.GEMINI,
                         "Sugiro o Spaghetti ao Sugo.",
-                        List.of(new GeminiFlashLiteProvider.ModelRecommendation(availableProductId, "Clássico da casa.")),
+                        List.of(new AiProviderResponse.RecommendationCandidate(availableProductId, "Clássico da casa.")),
                         100, 30
                 )
         );
