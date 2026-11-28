@@ -322,7 +322,7 @@ class GastronomicAssistantServiceTest {
         );
         return new PublicRestaurantMenuResponse(
                 RESTAURANT_ID, "Restaurante Demo", "restaurante-demo", "Cozinha artesanal",
-                null, null, null, null, "Italiana", List.of(menu)
+                null, null, null, null, "Italiana", null, null, List.of(menu)
         );
     }
 }
