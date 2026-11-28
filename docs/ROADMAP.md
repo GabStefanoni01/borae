@@ -41,13 +41,13 @@ Este roadmap organiza dependências. Não é autorização para implementar toda
 - [ ] QR Code do restaurante e, posteriormente, por mesa.
 - [ ] Testes de autorização e de exposição pública apenas dos dados publicados.
 
-## Fase 4 — Experiência 3D/AR
-- [x] Definir armazenamento de mídia: Cloudflare R2 (D-09 aprovada).
-- [ ] Upload e validação de GLB/glTF.
-- [ ] Associação do modelo a um produto.
-- [ ] Calibração de dimensões físicas.
-- [ ] Visualização 3D e fallback.
-- [ ] AR em dispositivos compatíveis.
+## Fase 4 — Experiência de realidade aumentada por fotografia
+**Escopo mantido:** exibir a fotografia original do produto em uma experiência de AR compatível. Não haverá geração automática de modelos 3D de pratos.
+- [x] Experiência de AR baseada na fotografia original, com fallback para visualização convencional.
+- [x] Preservar a imagem original do produto; não remover fundo nem alterar o arquivo enviado.
+- [ ] Validar continuamente compatibilidade, acessibilidade, desempenho e fallback em dispositivos suportados.
+
+**Fora do escopo/cancelado:** geração de GLB/glTF a partir de fotos, TripoSR/ZeroGPU, worker de geração 3D, calibração de modelos gerados e pipeline de publicação de modelos 3D. As PRs #32 e #37 foram encerradas sem merge por decisão de produto.
 
 ## Fase 5 — Assistente gastronômico
 - [ ] Definir contratos backend para contexto e recomendações.
