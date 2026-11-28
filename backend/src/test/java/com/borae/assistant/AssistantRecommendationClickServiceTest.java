@@ -78,7 +78,7 @@ class AssistantRecommendationClickServiceTest {
         );
         return new PublicRestaurantMenuResponse(
                 RESTAURANT_ID, "Restaurante Demo", "restaurante-demo", null,
-                null, null, null, null, "Italiana", List.of(menu)
+                null, null, null, null, "Italiana", null, null, List.of(menu)
         );
     }
 }
