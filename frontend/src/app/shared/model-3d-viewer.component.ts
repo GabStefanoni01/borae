@@ -84,7 +84,9 @@ export class Model3dViewerComponent {
   readonly alt = input('Modelo 3D do produto');
   /** Imagem convencional exibida antes do carregamento e como fallback. */
   readonly poster = input<string | null>(null);
-  readonly ar = input(false);\n  /** Permite excluir Scene Viewer quando o GLB é um Blob local, inacessível fora do navegador. */\n  readonly arModes = input('webxr scene-viewer quick-look');
+  readonly ar = input(false);
+  /** Permite excluir Scene Viewer quando o GLB é um Blob local, inacessível fora do navegador. */
+  readonly arModes = input('webxr scene-viewer quick-look');
   readonly widthMm = input<number | null>(null);
   readonly heightMm = input<number | null>(null);
   readonly depthMm = input<number | null>(null);
