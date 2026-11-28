@@ -124,7 +124,7 @@ type LoadState = 'loading' | 'ready' | 'not-found' | 'error';
                                     <span class="pm-item-price">{{ price(p.priceInCents) }}</span>
                                     @if (p.availability === 'UNAVAILABLE') { <span class="pm-off-tag">Indisponível no momento</span> }
                                     @else if (p.addons.length) { <span class="pm-item-extra">{{ p.addons.length }} {{ p.addons.length === 1 ? 'adicional' : 'adicionais' }}</span> }
-                                    @if (p.model3d) { <span class="pm-item-3d" title="Disponível em 3D">3D</span> }
+                                    @if (p.imageUrl) { <span class="pm-item-3d" title="Fotografia disponível em realidade aumentada">AR</span> }
                                   </span>
                                 </span>
                                 @if (p.imageUrl) {
@@ -163,7 +163,7 @@ type LoadState = 'loading' | 'ready' | 'not-found' | 'error';
         @if (detail(); as p) {
           <div class="pm-sheet-inner">
             <button type="button" class="pm-sheet-close" (click)="close()" aria-label="Fechar detalhes"><bo-icon name="x" [size]="18" /></button>
-            <bo-menu-product-card [product]="p" />
+            <bo-menu-product-card [product]="p" [photoAr]="true" />
           </div>
         }
       </dialog>
@@ -286,6 +286,6 @@ export class PublicMenuPage {
   protected price(cents: number): string { return formatCents(cents); }
 
   protected itemLabel(p: PublicProduct): string {
-    return `${p.name}, ${formatCents(p.priceInCents)}${p.availability === 'UNAVAILABLE' ? ', indisponível no momento' : ''}${p.model3d ? ', disponível em 3D' : ''}. Ver detalhes`;
+    return `${p.name}, ${formatCents(p.priceInCents)}${p.availability === 'UNAVAILABLE' ? ', indisponível no momento' : ''}${p.imageUrl ? ', fotografia disponível em realidade aumentada' : ''}. Ver detalhes`;
   }
 }
