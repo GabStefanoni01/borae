@@ -11,6 +11,6 @@ describe('PhotoArViewerComponent', () => {
     const host = fixture.nativeElement as HTMLElement;
     expect(host.querySelector('.par-preview img')?.getAttribute('src')).toBe('https://ik.imagekit.io/borae/prato.webp');
     expect(host.querySelector('.par-start')?.textContent).toContain('Posicionar na mesa');
-    expect(host.querySelector('bo-model-viewer')).toBeNull();
+    expect(host.querySelector('bo-model-3d-viewer')).toBeNull();
   });
 });
