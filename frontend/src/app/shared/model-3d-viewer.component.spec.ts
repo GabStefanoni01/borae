@@ -32,6 +32,17 @@ describe('Model3dViewerComponent', () => {
     expect(mv.querySelector('[slot="ar-button"]')?.textContent).toContain('Ver no seu ambiente');
   });
 
+  it('informa quando o aparelho não oferece suporte a AR e mantém a visualização', async () => {
+    const { el, fixture } = await setup(undefined, { ar: true, arModes: 'webxr quick-look' });
+    const mv = el.querySelector('model-viewer') as HTMLElement & { canActivateAR: boolean };
+    mv.canActivateAR = false;
+    mv.dispatchEvent(new Event('load'));
+    fixture.detectChanges();
+
+    expect(el.querySelector('model-viewer')).toBeTruthy();
+    expect(el.textContent).toContain('A realidade aumentada não está disponível neste navegador ou aparelho');
+  });
+
   it('ao carregar, ajusta a escala para as dimensões físicas e mostra o tamanho', async () => {
     const { el, fixture } = await setup(undefined, { widthMm: 300, heightMm: 70, depthMm: 300 });
     const mv = el.querySelector('model-viewer') as HTMLElement & { getDimensions: () => object; scale: string };
