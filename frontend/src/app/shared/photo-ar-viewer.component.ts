@@ -32,7 +32,7 @@ type PhotoArState = 'idle' | 'generating' | 'ready' | 'error';
           </button>
         }
       } @else if (state() === 'ready' && modelUrl()) {
-        <bo-model-3d-viewer [src]="modelUrl()!" [alt]="alt()" [poster]="imageUrl()" [ar]="true" />
+        <bo-model-3d-viewer [src]="modelUrl()!" [alt]="alt()" [poster]="imageUrl()" [ar]="true" [arModes]="'webxr quick-look'" />
         <p class="par-note">A fotografia é apresentada como uma superfície plana. A escala e a detecção da mesa dependem do aparelho.</p>
       } @else {
         <div class="par-error" role="alert">
