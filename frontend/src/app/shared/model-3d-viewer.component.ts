@@ -47,7 +47,7 @@ type ViewerState = 'loading' | 'ready' | 'error';
           <model-viewer class="mv-el" [attr.src]="src()" [attr.alt]="alt()" [attr.poster]="poster() || null"
             loading="eager" camera-controls touch-action="pan-y" shadow-intensity="1" exposure="1" interaction-prompt="auto"
             [attr.auto-rotate]="reduceMotion ? null : ''" [attr.ar]="ar() ? '' : null"
-            ar-modes="webxr scene-viewer quick-look" [attr.ar-scale]="hasDimensions() ? 'fixed' : 'auto'"
+            [attr.ar-modes]="arModes()" ar-placement="floor" [attr.ar-scale]="hasDimensions() ? 'fixed' : 'auto'"
             (load)="onLoad($event)" (error)="onError()" (progress)="onProgress($event)">
             @if (ar()) {
               <button slot="ar-button" type="button" class="mv-ar"><bo-icon name="cube" [size]="16" /> Ver no seu ambiente</button>
@@ -84,7 +84,7 @@ export class Model3dViewerComponent {
   readonly alt = input('Modelo 3D do produto');
   /** Imagem convencional exibida antes do carregamento e como fallback. */
   readonly poster = input<string | null>(null);
-  readonly ar = input(false);
+  readonly ar = input(false);\n  /** Permite excluir Scene Viewer quando o GLB é um Blob local, inacessível fora do navegador. */\n  readonly arModes = input('webxr scene-viewer quick-look');
   readonly widthMm = input<number | null>(null);
   readonly heightMm = input<number | null>(null);
   readonly depthMm = input<number | null>(null);
