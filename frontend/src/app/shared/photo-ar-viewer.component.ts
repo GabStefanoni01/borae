@@ -3,8 +3,6 @@ import {
 } from '@angular/core';
 import { IconComponent } from './icon.component';
 import { Model3dViewerComponent } from './model-3d-viewer.component';
-import * as THREE from 'three';
-import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
 
 type PhotoArState = 'idle' | 'generating' | 'ready' | 'error';
 
@@ -101,6 +99,11 @@ export class PhotoArViewerComponent implements OnDestroy {
   }
 
   private async createFlatGlb(image: HTMLImageElement): Promise<Blob> {
+    // Carrega Three.js somente quando a pessoa solicita AR; não aumenta o bundle inicial do cardápio.
+    const [{ default: THREE }, { GLTFExporter }] = await Promise.all([
+      import('three'),
+      import('three/examples/jsm/exporters/GLTFExporter.js')
+    ]);
     const canvas = document.createElement('canvas');
     const maxDimension = 2048;
     const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight));
