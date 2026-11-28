@@ -67,7 +67,7 @@ O restaurante informa largura, altura e profundidade em milímetros. Esses valor
 - [x] API pública só inclui modelo publicado de produto elegível.
 - [ ] Upload e entrega GLB homologados com a conta ImageKit.
 - [x] Testes de integração com PostgreSQL concluídos no CI com Testcontainers (6 testes, sem falhas ou skips). Falhas reais do storage ImageKit ainda dependem de homologação.
-- [ ] Experiência de fotografia plana em AR validada em Android/Chrome/WebXR e iPhone/Safari/Quick Look.
+- [ ] Experiência de fotografia plana em AR validada em Android/Chrome/WebXR e iPhone/Safari/Quick Look (teste físico pendente).
 - [ ] Visualizador de modelos GLB antigos (se mantido) validado separadamente; não faz parte do novo escopo de foto AR.
-- [ ] Imagem convencional permanece como fallback em falhas/incompatibilidade.
+- [x] Imagem convencional permanece visível como fallback quando a geração local falha ou AR não está disponível.
 - [ ] Testes em dispositivos móveis representativos e acessibilidade concluídos.
