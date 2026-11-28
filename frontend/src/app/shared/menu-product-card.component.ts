@@ -51,7 +51,7 @@ export interface MenuProductView {
       }
       @if (unavailable()) { <span class="mp-flag">Indisponível no momento</span> }
       @if (photoAr() && product().imageUrl && !imageFailed()) {
-        <button type="button" class="mp-3d-btn" (click)="showPhotoAr.set(true)"><bo-icon name="scan" [size]="16" /> Ver em realidade aumentada</button>
+        <button type="button" class="mp-3d-btn" (click)="showPhotoAr.set(true)"><bo-icon name="camera" [size]="16" /> Ver em realidade aumentada</button>
       } @else if (!photoAr() && product().model3d) {
         <button type="button" class="mp-3d-btn" (click)="show3d.set(true)"><bo-icon name="cube" [size]="16" /> Ver em 3D</button>
       }
