@@ -5,6 +5,8 @@ import com.borae.identity.RestaurantPublicationStatus;
 import com.borae.identity.RestaurantRepository;
 import com.borae.identity.RestaurantMediaRepository;
 import com.borae.identity.RestaurantMediaType;
+import com.borae.identity.RestaurantBusinessHours;
+import com.borae.identity.RestaurantBusinessHoursRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +16,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.time.DayOfWeek;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -26,19 +31,22 @@ public class PublicRestaurantMenuService {
     private final MenuProductRepository productRepository;
     private final Product3DModelRepository modelRepository;
     private final RestaurantMediaRepository mediaRepository;
+    private final RestaurantBusinessHoursRepository businessHoursRepository;
 
     public PublicRestaurantMenuService(RestaurantRepository restaurantRepository,
                                        MenuRepository menuRepository,
                                        MenuCategoryRepository categoryRepository,
                                        MenuProductRepository productRepository,
                                        Product3DModelRepository modelRepository,
-                                       RestaurantMediaRepository mediaRepository) {
+                                       RestaurantMediaRepository mediaRepository,
+                                       RestaurantBusinessHoursRepository businessHoursRepository) {
         this.restaurantRepository = restaurantRepository;
         this.menuRepository = menuRepository;
         this.categoryRepository = categoryRepository;
         this.productRepository = productRepository;
         this.modelRepository = modelRepository;
         this.mediaRepository = mediaRepository;
+        this.businessHoursRepository = businessHoursRepository;
     }
 
     @Transactional(readOnly = true)
@@ -100,6 +108,14 @@ public class PublicRestaurantMenuService {
         String logoUrl = mediaRepository.findFirstByRestaurant_IdAndMediaType(restaurant.getId(), RestaurantMediaType.LOGO)
                 .map(com.borae.identity.RestaurantMedia::getPublicUrl)
                 .orElse(null);
-        return PublicRestaurantMenuResponse.from(restaurant, menus, logoUrl);
+        List<RestaurantBusinessHours> businessHours =
+                businessHoursRepository.findAllByRestaurant_IdOrderByDayOfWeekAscPositionAsc(restaurant.getId());
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("America/Sao_Paulo"));
+        DayOfWeek today = now.getDayOfWeek();
+        boolean isOpen = businessHours.stream()
+                .filter(hours -> hours.getDayOfWeek() == today)
+                .anyMatch(hours -> !now.toLocalTime().isBefore(hours.getOpeningTime())
+                        && now.toLocalTime().isBefore(hours.getClosingTime()));
+        return PublicRestaurantMenuResponse.from(restaurant, menus, logoUrl, isOpen);
     }
 }
