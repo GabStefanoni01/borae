@@ -100,7 +100,7 @@ export class PhotoArViewerComponent implements OnDestroy {
 
   private async createFlatGlb(image: HTMLImageElement): Promise<Blob> {
     // Carrega Three.js somente quando a pessoa solicita AR; não aumenta o bundle inicial do cardápio.
-    const [{ default: THREE }, { GLTFExporter }] = await Promise.all([
+    const [THREE, { GLTFExporter }] = await Promise.all([
       import('three'),
       import('three/examples/jsm/exporters/GLTFExporter.js')
     ]);
