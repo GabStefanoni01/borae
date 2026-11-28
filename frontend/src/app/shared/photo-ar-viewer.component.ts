@@ -1,5 +1,5 @@
 import {
-  ChangeDetectionStrategy, Component, OnDestroy, afterNextRender, input, signal
+  ChangeDetectionStrategy, Component, OnDestroy, input, signal
 } from '@angular/core';
 import { IconComponent } from './icon.component';
 import { Model3dViewerComponent } from './model-3d-viewer.component';
