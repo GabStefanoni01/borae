@@ -28,7 +28,7 @@ type PhotoArState = 'idle' | 'generating' | 'ready' | 'error';
         </div>
         @if (state() === 'idle') {
           <button type="button" class="par-start" (click)="generate()">
-            <bo-icon name="scan" [size]="17" /> Posicionar na mesa
+            <bo-icon name="camera" [size]="17" /> Posicionar na mesa
           </button>
         }
       } @else if (state() === 'ready' && modelUrl()) {
