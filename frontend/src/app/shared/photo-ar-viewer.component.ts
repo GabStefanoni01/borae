@@ -36,7 +36,8 @@ type PhotoArState = 'idle' | 'generating' | 'ready' | 'error';
         <p class="par-note">A fotografia é apresentada como uma superfície plana. A escala e a detecção da mesa dependem do aparelho.</p>
       } @else {
         <div class="par-error" role="alert">
-          <p>Não foi possível preparar a experiência AR neste aparelho.</p>
+          <p>Não foi possível preparar a experiência AR neste aparelho. Você ainda pode ver a fotografia original.</p>
+          <img class="par-fallback" [src]="imageUrl()" [alt]="alt()">
           <button type="button" class="par-start" (click)="reset()">Tentar novamente</button>
         </div>
       }
@@ -51,6 +52,7 @@ type PhotoArState = 'idle' | 'generating' | 'ready' | 'error';
     .par-start{justify-self:center;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border:0;border-radius:999px;background:#191919;color:#fff;font:inherit;font-weight:700}
     .par-note{font-size:12px;color:#666;line-height:1.5}
     .par-error{display:grid;gap:12px;justify-items:center;padding:20px;text-align:center}
+    .par-fallback{display:block;width:100%;max-height:280px;object-fit:contain;border-radius:12px}
   `]
 })
 export class PhotoArViewerComponent implements OnDestroy {
