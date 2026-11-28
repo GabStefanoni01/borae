@@ -16,6 +16,7 @@ public record PublicRestaurantMenuResponse(
         String category,
         String address,
         String logoUrl,
+        boolean isOpen,
         List<PublicMenu> menus
 ) {
     public record PublicMenu(UUID id, String name, String description, int displayOrder,
@@ -33,11 +34,11 @@ public record PublicRestaurantMenuResponse(
 
     public record PublicAddon(String name, long priceDeltaInCents) {}
 
-    public static PublicRestaurantMenuResponse from(Restaurant restaurant, List<PublicMenu> menus, String logoUrl) {
+    public static PublicRestaurantMenuResponse from(Restaurant restaurant, List<PublicMenu> menus, String logoUrl, boolean isOpen) {
         return new PublicRestaurantMenuResponse(
                 restaurant.getId(), restaurant.getName(), restaurant.getSlug(), restaurant.getDescription(),
                 restaurant.getPhone(), restaurant.getWhatsapp(), restaurant.getInstagram(),
-                restaurant.getWebsite(), restaurant.getCategory(), restaurant.getAddress(), logoUrl, List.copyOf(menus)
+                restaurant.getWebsite(), restaurant.getCategory(), restaurant.getAddress(), logoUrl, isOpen, List.copyOf(menus)
         );
     }
 }

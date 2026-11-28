@@ -63,6 +63,7 @@ export interface PublicRestaurantMenu {
   category: string | null;
   address: string | null;
   logoUrl: string | null;
+  isOpen: boolean;
   menus: PublicMenu[];
 }
 

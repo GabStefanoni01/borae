@@ -12,7 +12,7 @@ import { PublicMenuService, PublicRestaurantMenu } from './public-menu.service';
 const DATA: PublicRestaurantMenu = {
   id: 'r1', name: 'Cantina Bella Vista', slug: 'cantina', description: 'Massas artesanais', phone: '(11) 3333-4444',
   whatsapp: '(11) 99999-0000', instagram: '@cantina', website: null, category: 'Italiana',
-  address: 'Rua das Flores, 123 - São Paulo/SP', logoUrl: 'https://ik.imagekit.io/borae/cantina-logo.webp',
+  address: 'Rua das Flores, 123 - São Paulo/SP', logoUrl: 'https://ik.imagekit.io/borae/cantina-logo.webp', isOpen: true,
   menus: [
     {
       id: 'm1', name: 'Almoço', description: 'Ao meio-dia', displayOrder: 0, categories: [
@@ -73,6 +73,7 @@ describe('PublicMenuPage', () => {
     expect(api.getRestaurantMenu).toHaveBeenCalledWith('cantina');
     expect(text(el.querySelector('h1'))).toBe('Cantina Bella Vista');
     expect(text(el.querySelector('.pm-kicker'))).toBe('Italiana');
+    expect(text(el.querySelector('.pm-open-status'))).toBe('Aberto');
     expect(el.querySelector<HTMLImageElement>('.pm-logo')?.src).toBe('https://ik.imagekit.io/borae/cantina-logo.webp');
     const address = [...el.querySelectorAll<HTMLAnchorElement>('.pm-contacts a')].find(a => text(a).includes('Rua das Flores'));
     expect(address?.href).toContain('google.com/maps/search/');

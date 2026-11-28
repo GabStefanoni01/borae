@@ -66,6 +66,7 @@ type LoadState = 'loading' | 'ready' | 'not-found' | 'error';
                 <div class="pm-hero-text">
                   @if (r.category) { <span class="pm-kicker">{{ r.category }}</span> }
                   <h1 id="pm-name">{{ r.name }}</h1>
+                  <span class="pm-open-status" [class.closed]="!r.isOpen" role="status">{{ r.isOpen ? 'Aberto' : 'Fechado' }}</span>
                   @if (r.description) { <p>{{ r.description }}</p> }
                   @if (contacts().length) {
                     <ul class="pm-contacts">

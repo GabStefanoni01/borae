@@ -6,6 +6,7 @@ import com.borae.identity.RestaurantRepository;
 import com.borae.identity.RestaurantMedia;
 import com.borae.identity.RestaurantMediaRepository;
 import com.borae.identity.RestaurantMediaType;
+import com.borae.identity.RestaurantBusinessHoursRepository;
 import com.borae.identity.UserAccount;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,7 @@ class PublicRestaurantMenuServiceTest {
     @Mock private MenuProductRepository productRepository;
     @Mock private Product3DModelRepository modelRepository;
     @Mock private RestaurantMediaRepository mediaRepository;
+    @Mock private RestaurantBusinessHoursRepository businessHoursRepository;
 
     private PublicRestaurantMenuService service;
     private Restaurant restaurant;
@@ -41,7 +43,7 @@ class PublicRestaurantMenuServiceTest {
     @BeforeEach
     void setUp() {
         service = new PublicRestaurantMenuService(
-                restaurantRepository, menuRepository, categoryRepository, productRepository, modelRepository, mediaRepository);
+                restaurantRepository, menuRepository, categoryRepository, productRepository, modelRepository, mediaRepository, businessHoursRepository);
         restaurant = new Restaurant("Restaurante Teste", "restaurante-teste", "Descrição pública");
         ReflectionTestUtils.setField(restaurant, "publicationStatus", RestaurantPublicationStatus.PUBLISHED);
         ReflectionTestUtils.setField(restaurant, "address", "Rua das Flores, 123 - São Paulo/SP");
@@ -71,6 +73,7 @@ class PublicRestaurantMenuServiceTest {
         assertEquals("Restaurante Teste", response.name());
         assertEquals("Rua das Flores, 123 - São Paulo/SP", response.address());
         assertNull(response.logoUrl());
+        assertEquals(false, response.isOpen());
         assertEquals(1, response.menus().size());
         assertEquals(1, response.menus().get(0).categories().size());
         assertEquals(1, response.menus().get(0).categories().get(0).products().size());
@@ -101,6 +104,7 @@ class PublicRestaurantMenuServiceTest {
 
         assertEquals("https://ik.imagekit.io/demo/logo.webp", response.logoUrl());
         assertEquals("Rua das Flores, 123 - São Paulo/SP", response.address());
+        assertEquals(false, response.isOpen());
     }
 
     @Test
