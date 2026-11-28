@@ -3,6 +3,9 @@ package com.borae.catalog;
 import com.borae.identity.Restaurant;
 import com.borae.identity.RestaurantPublicationStatus;
 import com.borae.identity.RestaurantRepository;
+import com.borae.identity.RestaurantMedia;
+import com.borae.identity.RestaurantMediaRepository;
+import com.borae.identity.RestaurantMediaType;
 import com.borae.identity.UserAccount;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,6 +33,7 @@ class PublicRestaurantMenuServiceTest {
     @Mock private MenuCategoryRepository categoryRepository;
     @Mock private MenuProductRepository productRepository;
     @Mock private Product3DModelRepository modelRepository;
+    @Mock private RestaurantMediaRepository mediaRepository;
 
     private PublicRestaurantMenuService service;
     private Restaurant restaurant;
@@ -37,9 +41,10 @@ class PublicRestaurantMenuServiceTest {
     @BeforeEach
     void setUp() {
         service = new PublicRestaurantMenuService(
-                restaurantRepository, menuRepository, categoryRepository, productRepository, modelRepository);
+                restaurantRepository, menuRepository, categoryRepository, productRepository, modelRepository, mediaRepository);
         restaurant = new Restaurant("Restaurante Teste", "restaurante-teste", "Descrição pública");
         ReflectionTestUtils.setField(restaurant, "publicationStatus", RestaurantPublicationStatus.PUBLISHED);
+        ReflectionTestUtils.setField(restaurant, "address", "Rua das Flores, 123 - São Paulo/SP");
     }
 
     @Test
@@ -64,6 +69,8 @@ class PublicRestaurantMenuServiceTest {
         PublicRestaurantMenuResponse response = service.getBySlug("restaurante-teste");
 
         assertEquals("Restaurante Teste", response.name());
+        assertEquals("Rua das Flores, 123 - São Paulo/SP", response.address());
+        assertNull(response.logoUrl());
         assertEquals(1, response.menus().size());
         assertEquals(1, response.menus().get(0).categories().size());
         assertEquals(1, response.menus().get(0).categories().get(0).products().size());
@@ -77,6 +84,24 @@ class PublicRestaurantMenuServiceTest {
         assertEquals("Suco", publicProduct.addons().get(0).name());
     }
 
+
+
+    @Test
+    void exposesRestaurantLogoAndAddressInPublicMenu() {
+        when(restaurantRepository.findBySlugAndActiveTrueAndPublicationStatus(
+                "restaurante-teste", RestaurantPublicationStatus.PUBLISHED)).thenReturn(Optional.of(restaurant));
+        when(menuRepository.findAllByRestaurant_IdAndStatusOrderByDisplayOrderAscNameAsc(
+                restaurant.getId(), MenuStatus.PUBLISHED)).thenReturn(List.of());
+        RestaurantMedia logo = new RestaurantMedia(restaurant, RestaurantMediaType.LOGO, "logo-file",
+                "https://ik.imagekit.io/demo/logo.webp", "image/webp", 2048L, 512, 512);
+        when(mediaRepository.findFirstByRestaurant_IdAndMediaType(restaurant.getId(), RestaurantMediaType.LOGO))
+                .thenReturn(Optional.of(logo));
+
+        PublicRestaurantMenuResponse response = service.getBySlug("restaurante-teste");
+
+        assertEquals("https://ik.imagekit.io/demo/logo.webp", response.logoUrl());
+        assertEquals("Rua das Flores, 123 - São Paulo/SP", response.address());
+    }
 
     @Test
     void exposesOnlyPublishedProduct3dModelInPublicMenu() {
