@@ -61,6 +61,8 @@ export interface PublicRestaurantMenu {
   instagram: string | null;
   website: string | null;
   category: string | null;
+  address: string | null;
+  logoUrl: string | null;
   menus: PublicMenu[];
 }
 
