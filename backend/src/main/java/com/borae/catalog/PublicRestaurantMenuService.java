@@ -3,6 +3,8 @@ package com.borae.catalog;
 import com.borae.identity.Restaurant;
 import com.borae.identity.RestaurantPublicationStatus;
 import com.borae.identity.RestaurantRepository;
+import com.borae.identity.RestaurantMediaRepository;
+import com.borae.identity.RestaurantMediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,17 +25,20 @@ public class PublicRestaurantMenuService {
     private final MenuCategoryRepository categoryRepository;
     private final MenuProductRepository productRepository;
     private final Product3DModelRepository modelRepository;
+    private final RestaurantMediaRepository mediaRepository;
 
     public PublicRestaurantMenuService(RestaurantRepository restaurantRepository,
                                        MenuRepository menuRepository,
                                        MenuCategoryRepository categoryRepository,
                                        MenuProductRepository productRepository,
-                                       Product3DModelRepository modelRepository) {
+                                       Product3DModelRepository modelRepository,
+                                       RestaurantMediaRepository mediaRepository) {
         this.restaurantRepository = restaurantRepository;
         this.menuRepository = menuRepository;
         this.categoryRepository = categoryRepository;
         this.productRepository = productRepository;
         this.modelRepository = modelRepository;
+        this.mediaRepository = mediaRepository;
     }
 
     @Transactional(readOnly = true)
@@ -92,6 +97,9 @@ public class PublicRestaurantMenuService {
                 })
                 .toList();
 
-        return PublicRestaurantMenuResponse.from(restaurant, menus);
+        String logoUrl = mediaRepository.findFirstByRestaurant_IdAndMediaType(restaurant.getId(), RestaurantMediaType.LOGO)
+                .map(com.borae.identity.RestaurantMedia::getPublicUrl)
+                .orElse(null);
+        return PublicRestaurantMenuResponse.from(restaurant, menus, logoUrl);
     }
 }

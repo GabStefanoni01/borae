@@ -58,7 +58,11 @@ type LoadState = 'loading' | 'ready' | 'not-found' | 'error';
           @if (data(); as r) {
             <main class="pm-main">
               <section class="pm-hero" aria-labelledby="pm-name">
-                <span class="pm-avatar" aria-hidden="true">{{ initials() }}</span>
+                @if (r.logoUrl && !logoFailed()) {
+                  <img class="pm-logo" [src]="r.logoUrl" [alt]="'Logo de ' + r.name" loading="eager" decoding="async" (error)="logoFailed.set(true)">
+                } @else {
+                  <span class="pm-avatar" aria-hidden="true">{{ initials() }}</span>
+                }
                 <div class="pm-hero-text">
                   @if (r.category) { <span class="pm-kicker">{{ r.category }}</span> }
                   <h1 id="pm-name">{{ r.name }}</h1>
@@ -181,6 +185,7 @@ export class PublicMenuPage {
   protected readonly state = signal<LoadState>('loading');
   protected readonly data = signal<PublicRestaurantMenu | null>(null);
   protected readonly errorText = signal('');
+  protected readonly logoFailed = signal(false);
   private readonly selectedMenuId = signal<string | null>(null);
   protected readonly activeCategory = signal<string | null>(null);
   protected readonly detail = signal<PublicProduct | null>(null);
@@ -203,7 +208,7 @@ export class PublicMenuPage {
   protected readonly contacts = computed(() => {
     const r = this.data();
     if (!r) return [];
-    const list: { label: string; href: string; icon: 'smartphone' | 'camera' | 'globe' }[] = [];
+    const list: { label: string; href: string; icon: 'smartphone' | 'camera' | 'globe' | 'map-pin' }[] = [];
     const digits = (value: string) => value.replace(/\D/g, '');
     if (r.whatsapp && digits(r.whatsapp).length >= 10) {
       const number = digits(r.whatsapp);
@@ -215,6 +220,7 @@ export class PublicMenuPage {
       if (/^[A-Za-z0-9._]{1,30}$/.test(handle)) list.push({ label: `@${handle}`, href: `https://instagram.com/${handle}`, icon: 'camera' });
     }
     if (r.website && /^https?:\/\//i.test(r.website)) list.push({ label: 'Site', href: r.website, icon: 'globe' });
+    if (r.address?.trim()) list.push({ label: r.address.trim(), href: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.address.trim())}`, icon: 'map-pin' });
     return list;
   });
 
@@ -236,6 +242,7 @@ export class PublicMenuPage {
     this.api.getRestaurantMenu(this.slug()).subscribe({
       next: data => {
         this.data.set(data);
+        this.logoFailed.set(false);
         this.selectedMenuId.set(data.menus[0]?.id ?? null);
         this.activeCategory.set(null);
         this.state.set('ready');
