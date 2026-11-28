@@ -679,3 +679,64 @@ O contrato final deve evitar transferir arquivos grandes em JSON/base64. Preferi
 **MVP controlado:** habilitar para grupo limitado de restaurantes, com cotas, monitoramento, aprovação humana e fallback para foto convencional.
 
 Critério para avançar de fase: resultado visual reconhecível e suficientemente fiel, GLB seguro e leve para celular, licença comercial compatível, processo repetível e capacidade/custo dentro dos limites aprovados.
+
+## 15. Decisão consolidada — estratégia híbrida e compatibilidade com a main
+
+Esta seção consolida a decisão de produto registrada em `docs/3D_AR_HYBRID_STRATEGY_DECISION.md` e prevalece sobre trechos anteriores deste documento que deixem o método de captura em aberto ou proponham rotas incompatíveis com a API atual.
+
+### 15.1 Dois caminhos de entrada, um único fluxo
+
+**Fluxo principal — fotos + IA:** o restaurante pode selecionar fotos existentes do prato e enviá-las para geração. O MVP deve validar o mínimo de imagens e qualidade exigidos pelo pipeline aprovado.
+
+**Fluxo assistido — captura guiada:** o restaurante usa a câmera no Boraê para fotografar o prato em diferentes ângulos, com orientação de enquadramento, iluminação, estabilidade e progresso. A captura deve permitir revisar e descartar as imagens antes do envio.
+
+Os dois caminhos convergem para o mesmo job assíncrono, estados, validação de GLB, prévia, aprovação e publicação. Não criar entidades, filas ou processos de publicação separados para cada método.
+
+A captura guiada será baseada inicialmente em sequência de fotos. Vídeo não faz parte do compromisso do MVP e só deverá ser acrescentado se a PoC demonstrar vantagem técnica clara e compatibilidade com o pipeline escolhido.
+
+### 15.2 Estratégias de geração não são intercambiáveis
+
+- TripoSR e outros modelos de imagem única são avaliados como caminho de foto única; não presumir que utilizam automaticamente várias imagens.
+- A captura multiângulo exige um pipeline que realmente consuma múltiplas vistas, como fotogrametria/COLMAP ou outro método comprovado.
+- A PoC deve comparar as entradas com os mesmos pratos reais e documentar quando cada pipeline é adequado.
+- A seleção automática ou explícita do pipeline pode variar conforme a entrada, mas o contrato de job e a integração com o catálogo devem permanecer estáveis.
+- Nenhum serviço pago será acionado automaticamente. Cotas gratuitas não representam custo zero garantido nem SLA.
+
+### 15.3 Compatibilidade obrigatória com o módulo já implementado
+
+A auditoria da `main` confirma que o módulo atual associa o modelo ao produto por meio do caminho de menu. Os endpoints existentes documentados em `docs/API.md` são:
+
+- `GET /api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/model-3d`
+- `POST /api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/model-3d`
+- `PATCH /api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/model-3d/publication`
+- `DELETE /api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/model-3d`
+
+Portanto, qualquer endpoint novo de geração deve preservar esse mesmo escopo e incluir `{menuId}`:
+
+- `POST /api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/model-3d/generations`
+- `GET /api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/model-3d/generations/{generationId}`
+- `POST /api/v1/restaurants/{restaurantId}/menus/{menuId}/products/{productId}/model-3d/generations/{generationId}/approve`
+
+Esses caminhos são propostas para a nova funcionalidade; ainda precisam ser implementados e documentados. Não remover nem substituir os endpoints atuais de upload, consulta, publicação e remoção de GLB.
+
+O domínio `Product3DModel`, o serviço/controller atuais, `GlbFileValidator`, a autorização OWNER/MANAGER, o isolamento multi-tenant, a resposta pública e o visualizador existente são a base de integração. Não criar um segundo modelo de domínio nem um segundo mecanismo de publicação.
+
+### 15.4 Fluxo de aprovação e fallback
+
+O backend Spring Boot permanece a fonte de verdade para autorização, cotas, jobs duráveis, estado, validação, auditoria e publicação. O worker Python/serviço de inferência apenas recebe a tarefa e devolve artefato e metadados técnicos.
+
+O resultado deve ser validado como GLB e armazenado no ImageKit após homologação. A prévia deve ser privada até a aprovação explícita por OWNER/MANAGER. Uma nova geração não pode desativar o modelo atualmente publicado antes da aprovação válida da substituição.
+
+O cardápio público continua exibindo somente o modelo publicado, carregado sob demanda. AR depende da compatibilidade do dispositivo; a visualização 3D e a foto convencional continuam como fallbacks.
+
+### 15.5 Critérios adicionais da estratégia escolhida
+
+- [ ] Envio de fotos existentes funciona sem obrigar o restaurante a usar a câmera do Boraê.
+- [ ] Captura guiada multiângulo funciona no próprio Boraê e permite revisar/descartar antes do envio.
+- [ ] Ambos os caminhos convergem para o mesmo job e ciclo de aprovação.
+- [ ] A PoC comprova separadamente o uso de imagem única e de múltiplas vistas.
+- [ ] Os endpoints novos respeitam o caminho existente com `{menuId}`.
+- [ ] Os endpoints atuais de gerenciamento manual de GLB permanecem compatíveis.
+- [ ] Nenhum fallback pago é ativado sem decisão explícita.
+- [ ] Modelo anterior, foto convencional e experiência pública permanecem disponíveis em caso de falha.
+
