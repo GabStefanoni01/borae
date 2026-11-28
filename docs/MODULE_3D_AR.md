@@ -1,6 +1,21 @@
 # Especificação de módulo — Experiência 3D e realidade aumentada
 
-**Status:** backend MVP implementado na branch da PR #27. Testes PostgreSQL reais com Testcontainers passaram no Backend CI; Docker CI do último commit ainda está em execução. Homologação ImageKit e frontend (painel Angular, visualizador público e AR) ainda não foram concluídos.
+**Status:** backend de modelos GLB existente; experiência de fotografia plana em AR implementada na branch `feat/photo-ar-menu`. A experiência ainda depende de validação em aparelhos físicos Android e iPhone.
+
+## Decisão de produto — fotografia plana em AR (novembro/2026)
+
+O escopo aprovado para o cardápio público é **somente a fotografia original do prato posicionada horizontalmente sobre a mesa**. Não gerar geometria do alimento, não usar IA, TripoSR ou fotogrametria.
+
+- A fotografia existente é carregada pelo navegador e convertida em textura de um plano horizontal GLB.
+- A conversão é feita no dispositivo do consumidor com Three.js/GLTFExporter; não há GPU, API de geração ou processamento remoto.
+- Android: usar WebXR no Chrome com dispositivo compatível com ARCore.
+- iPhone: usar AR Quick Look com USDZ gerado pelo `model-viewer` a partir do GLB.
+- **Não usar Scene Viewer para este GLB local:** o app externo não consegue ler com segurança URLs `blob:` criadas pelo navegador. Para preservar custo zero e não fazer upload intermediário, o modo Android fica restrito a WebXR no navegador.
+- A fotografia é uma placa 2D, sem volume ou espessura real. A escala inicial é aproximada (maior lado de 30 cm) e pode ser ajustada pelo usuário conforme suporte da plataforma.
+- Se a imagem não puder ser carregada por CORS, se o navegador não suportar a exportação ou se AR não estiver disponível, manter a fotografia convencional e informar a indisponibilidade.
+- [x] Leitura CORS do ImageKit validada manualmente no domínio público do Boraê com uma foto real de produto: carregamento com `crossOrigin = 'anonymous'`, desenho em Canvas e exportação via `canvas.toBlob()` concluídos sem erro. A validação confirma a URL testada; outras imagens/origens devem seguir a mesma política.
+
+Essa abordagem não exige alteração no backend, no storage nem nos modelos de dados. O cadastro de fotos existente é suficiente.
 
 ## 1. Objetivo
 
@@ -52,6 +67,8 @@ O restaurante informa largura, altura e profundidade em milímetros. Esses valor
 - [x] API pública só inclui modelo publicado de produto elegível.
 - [ ] Upload e entrega GLB homologados com a conta ImageKit.
 - [x] Testes de integração com PostgreSQL concluídos no CI com Testcontainers (6 testes, sem falhas ou skips). Falhas reais do storage ImageKit ainda dependem de homologação.
-- [ ] Visualizador 3D e AR progressiva implementados no frontend.
-- [ ] Imagem convencional permanece como fallback em falhas/incompatibilidade.
+- [x] Leitura CORS da foto de produto do ImageKit validada no cardápio público por Canvas e `toBlob()`.
+- [ ] Experiência de fotografia plana em AR validada em Android/Chrome/WebXR e iPhone/Safari/Quick Look (teste físico pendente).
+- [ ] Visualizador de modelos GLB antigos (se mantido) validado separadamente; não faz parte do novo escopo de foto AR.
+- [x] Imagem convencional permanece visível como fallback quando a geração local falha ou AR não está disponível.
 - [ ] Testes em dispositivos móveis representativos e acessibilidade concluídos.

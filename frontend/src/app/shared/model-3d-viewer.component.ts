@@ -16,6 +16,7 @@ export const MODEL_VIEWER_LOADER = new InjectionToken<() => Promise<unknown>>('M
 interface ModelViewerElement extends HTMLElement {
   getDimensions?(): { x: number; y: number; z: number };
   scale: string;
+  canActivateAR?: boolean;
 }
 
 type ViewerState = 'loading' | 'ready' | 'error';
@@ -47,7 +48,7 @@ type ViewerState = 'loading' | 'ready' | 'error';
           <model-viewer class="mv-el" [attr.src]="src()" [attr.alt]="alt()" [attr.poster]="poster() || null"
             loading="eager" camera-controls touch-action="pan-y" shadow-intensity="1" exposure="1" interaction-prompt="auto"
             [attr.auto-rotate]="reduceMotion ? null : ''" [attr.ar]="ar() ? '' : null"
-            ar-modes="webxr scene-viewer quick-look" [attr.ar-scale]="hasDimensions() ? 'fixed' : 'auto'"
+            [attr.ar-modes]="arModes()" ar-placement="floor" [attr.ar-scale]="hasDimensions() ? 'fixed' : 'auto'"
             (load)="onLoad($event)" (error)="onError()" (progress)="onProgress($event)">
             @if (ar()) {
               <button slot="ar-button" type="button" class="mv-ar"><bo-icon name="cube" [size]="16" /> Ver no seu ambiente</button>
@@ -62,6 +63,9 @@ type ViewerState = 'loading' | 'ready' | 'error';
         }
       }
     </div>
+    @if (state() === 'ready' && ar() && arAvailable() === false) {
+      <p class="mv-help" role="status">A realidade aumentada não está disponível neste navegador ou aparelho. Você ainda pode visualizar a foto/modelo nesta tela.</p>
+    }
     @if (state() === 'ready') {
       <p class="mv-help">Arraste para girar e use dois dedos ou a roda do mouse para aproximar.{{ hasDimensions() ? ' Tamanho aproximado: ' + sizeLabel() + '.' : '' }}</p>
     }
@@ -85,6 +89,8 @@ export class Model3dViewerComponent {
   /** Imagem convencional exibida antes do carregamento e como fallback. */
   readonly poster = input<string | null>(null);
   readonly ar = input(false);
+  /** Permite excluir Scene Viewer quando o GLB é um Blob local, inacessível fora do navegador. */
+  readonly arModes = input('webxr scene-viewer quick-look');
   readonly widthMm = input<number | null>(null);
   readonly heightMm = input<number | null>(null);
   readonly depthMm = input<number | null>(null);
@@ -94,6 +100,7 @@ export class Model3dViewerComponent {
   protected readonly libReady = signal(false);
   protected readonly state = signal<ViewerState>('loading');
   protected readonly progress = signal(0);
+  protected readonly arAvailable = signal<boolean | null>(null);
   protected readonly reduceMotion = typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
   protected readonly hasDimensions = computed(() => [this.widthMm(), this.heightMm(), this.depthMm()].every(v => !!v && v > 0));
@@ -111,6 +118,7 @@ export class Model3dViewerComponent {
   protected onLoad(event: Event): void {
     const el = event.target as ModelViewerElement;
     const factor = calibrationFactor(el.getDimensions?.(), this.widthMm(), this.heightMm(), this.depthMm());
+    if (this.ar()) this.arAvailable.set(!!el.canActivateAR);
     if (factor) el.scale = `${factor} ${factor} ${factor}`;
     this.state.set('ready');
   }

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, input, signal, untracked } from '@angular/core';
 import { IconComponent } from './icon.component';
 import { Model3dViewerComponent } from './model-3d-viewer.component';
+import { PhotoArViewerComponent } from './photo-ar-viewer.component';
 import { formatCents, formatDelta } from './money';
 
 /** Dados exibidos ao consumidor (subconjunto de PublicProduct, sem campos administrativos). */
@@ -27,10 +28,15 @@ export interface MenuProductView {
   selector: 'bo-menu-product-card',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IconComponent, Model3dViewerComponent],
+  imports: [IconComponent, Model3dViewerComponent, PhotoArViewerComponent],
   host: { class: 'mp-card', '[class.mp-unavailable]': 'unavailable()' },
   template: `
-    @if (show3d() && product().model3d; as m) {
+    @if (photoAr() && showPhotoAr() && product().imageUrl) {
+      <div class="mp-3d">
+        <bo-photo-ar-viewer [imageUrl]="product().imageUrl!" [alt]="'Fotografia de ' + product().name" />
+        <button type="button" class="mp-3d-toggle" (click)="showPhotoAr.set(false)"><bo-icon name="image" [size]="15" /> Voltar à foto</button>
+      </div>
+    } @else if (show3d() && product().model3d; as m) {
       <div class="mp-3d">
         <bo-model-3d-viewer [src]="m.modelUrl" [alt]="'Modelo 3D de ' + product().name" [poster]="product().imageUrl"
           [widthMm]="m.widthMm" [heightMm]="m.heightMm" [depthMm]="m.depthMm" [ar]="true" />
@@ -44,7 +50,9 @@ export interface MenuProductView {
         <span class="mp-placeholder" aria-hidden="true"><bo-icon name="cloche" [size]="30" /></span>
       }
       @if (unavailable()) { <span class="mp-flag">Indisponível no momento</span> }
-      @if (product().model3d) {
+      @if (photoAr() && product().imageUrl && !imageFailed()) {
+        <button type="button" class="mp-3d-btn" (click)="showPhotoAr.set(true)"><bo-icon name="camera" [size]="16" /> Ver em realidade aumentada</button>
+      } @else if (!photoAr() && product().model3d) {
         <button type="button" class="mp-3d-btn" (click)="show3d.set(true)"><bo-icon name="cube" [size]="16" /> Ver em 3D</button>
       }
     </div>
@@ -77,15 +85,18 @@ export interface MenuProductView {
 })
 export class MenuProductCardComponent {
   readonly product = input.required<MenuProductView>();
+  /** Ativa a experiência de fotografia plana em AR na página pública. */
+  readonly photoAr = input(false);
   protected readonly imageFailed = signal(false);
   /** O visualizador (e a biblioteca 3D) só carrega quando o cliente pede. */
   protected readonly show3d = signal(false);
+  protected readonly showPhotoAr = signal(false);
   protected readonly unavailable = computed(() => this.product().availability === 'UNAVAILABLE');
   protected readonly price = computed(() => formatCents(this.product().priceInCents));
   protected delta(cents: number): string { return formatDelta(cents); }
 
   constructor() {
     // Outro produto no mesmo cartão: volta para a foto e não carrega o 3D anterior.
-    effect(() => { this.product(); untracked(() => { this.show3d.set(false); this.imageFailed.set(false); }); });
+    effect(() => { this.product(); untracked(() => { this.show3d.set(false); this.showPhotoAr.set(false); this.imageFailed.set(false); }); });
   }
 }
