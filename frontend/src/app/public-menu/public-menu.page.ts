@@ -220,6 +220,7 @@ export class PublicMenuPage {
       if (/^[A-Za-z0-9._]{1,30}$/.test(handle)) list.push({ label: `@${handle}`, href: `https://instagram.com/${handle}`, icon: 'camera' });
     }
     if (r.website && /^https?:\/\//i.test(r.website)) list.push({ label: 'Site', href: r.website, icon: 'globe' });
+    if (r.address?.trim()) list.push({ label: r.address.trim(), href: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.address.trim())}`, icon: 'map-pin' });
     return list;
   });
 
