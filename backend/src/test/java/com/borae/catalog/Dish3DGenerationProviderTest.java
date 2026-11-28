@@ -2,8 +2,6 @@ package com.borae.catalog;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.UUID;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 class Dish3DGenerationProviderTest {
@@ -56,10 +54,5 @@ class Dish3DGenerationProviderTest {
                 () -> assertThrows(IllegalArgumentException.class,
                         () -> new Dish3DGenerationProvider.GeneratedDishModel(new byte[]{1}, "triposr", 0))
         );
-    }
-
-    @Test
-    void providerContractUsesGenerationUuid() {
-        assertNotNull(UUID.randomUUID());
     }
 }
